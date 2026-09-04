@@ -612,8 +612,18 @@ section,
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
 }
 .hero:before {
-  display: none;
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    rgba(4, 11, 20, 0.15) 0%,
+    rgba(4, 11, 20, 0.10) 45%,
+    rgba(4, 11, 20, 0.35) 100%
+  );
+  z-index: 2;
 }
+
  {
   content: "";
   background: color-mix(
