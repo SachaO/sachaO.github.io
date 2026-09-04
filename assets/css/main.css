@@ -120,7 +120,6 @@ h6 {
   background: var(--surface-color);
   text-align: center;
   padding: 15px;
-  margin-bottom: 24px;
 }
 
 .php-email-form .loading:before {
@@ -588,7 +587,7 @@ section,
 .hero {
   width: 100%;
   height: 100vh;
-min-height: 700px;
+  min-height: 700px;
   position: relative;
   padding: 80px 0;
   display: flex;
@@ -596,16 +595,20 @@ min-height: 700px;
   justify-content: center;
 }
 
+/* Image du Hero */
 .hero img {
   position: absolute;
-  top: 70%;
+
+  top: 50%;
   right: 5%;
+
   transform: translateY(-50%);
 
   width: 45%;
   height: 75%;
 
   object-fit: cover;
+
   border-radius: 20px;
 
   z-index: 1;
@@ -613,31 +616,23 @@ min-height: 700px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
 }
 
+/* Overlay léger */
 .hero:before {
   content: "";
   position: absolute;
   inset: 0;
+
   background: linear-gradient(
     90deg,
     rgba(4, 11, 20, 0.15) 0%,
     rgba(4, 11, 20, 0.10) 45%,
     rgba(4, 11, 20, 0.35) 100%
   );
+
   z-index: 2;
 }
 
- {
-  content: "";
-  background: color-mix(
-    in srgb,
-    var(--background-color),
-    transparent 70%
-  );
-  position: absolute;
-  inset: 0;
-  z-index: 2;
-}
-
+/* Contenu du Hero */
 .hero .container {
   position: relative;
   z-index: 3;
@@ -659,6 +654,16 @@ min-height: 700px;
   border-bottom: 2px solid var(--accent-color);
 }
 
+/* Description sous le titre */
+.hero-description {
+  max-width: 500px;
+  margin-top: 25px !important;
+  font-size: 17px !important;
+  line-height: 1.7;
+  color: #cbd5e1;
+}
+
+/* Réseaux sociaux */
 .hero .social-links {
   margin-top: 25px;
 }
@@ -678,16 +683,6 @@ min-height: 700px;
 
 .hero .social-links a:hover {
   color: var(--accent-color);
-}
-
-@media (max-width: 768px) {
-  .hero h2 {
-    font-size: 32px;
-  }
-
-  .hero p {
-    font-size: 20px;
-  }
 }
 
 /*--------------------------------------------------------------
@@ -1618,6 +1613,34 @@ min-height: 700px;
   .section-title h2 {
     font-size: 28px;
   }
+
+  .hero {
+    padding: 60px 20px;
+  }
+
+  .hero img {
+    position: relative;
+    top: auto;
+    right: auto;
+    transform: none;
+
+    width: 100%;
+    height: 400px;
+
+    margin-top: 40px;
+  }
+
+  .hero h2 {
+    font-size: 32px;
+  }
+
+  .hero p {
+    font-size: 20px;
+  }
+
+  .hero-description {
+    font-size: 16px !important;
+  }
 }
 
 @media (max-width: 575px) {
@@ -1636,11 +1659,10 @@ min-height: 700px;
   .hero p {
     font-size: 18px;
   }
-.hero-description {
-  max-width: 500px;
-  margin-top: 25px;
-  font-size: 17px;
-  line-height: 1.7;
-  color: #cbd5e1;
-}
 
+  .hero-description {
+    max-width: 100%;
+    margin-top: 20px !important;
+    font-size: 16px !important;
+  }
+}
