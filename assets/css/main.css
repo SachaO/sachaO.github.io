@@ -1635,4 +1635,11 @@ section,
   .hero p {
     font-size: 18px;
   }
+.hero-description {
+  max-width: 500px;
+  margin-top: 25px;
+  font-size: 17px;
+  line-height: 1.7;
+  color: #cbd5e1;
 }
+
