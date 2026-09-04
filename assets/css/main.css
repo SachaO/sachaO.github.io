@@ -7,41 +7,38 @@
 */
 
 /*--------------------------------------------------------------
-# Font & Color Variables
+# Variables Globales & Thèmes
 --------------------------------------------------------------*/
-
-/* Fonts */
 :root {
+  /* Polices */
   --default-font: "Roboto", system-ui, -apple-system, "Segoe UI", Roboto,
     "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif,
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol",
     "Noto Color Emoji";
-
   --heading-font: "Raleway", sans-serif;
   --nav-font: "Poppins", sans-serif;
-}
 
-/* Global Colors */
-:root {
+  /* Couleurs Globales */
   --background-color: #ffffff;
   --default-color: #272829;
   --heading-color: #050d18;
   --accent-color: #149ddd;
   --surface-color: #ffffff;
   --contrast-color: #ffffff;
-}
 
-/* Nav Menu Colors */
-:root {
+  /* Couleurs Menu de Navigation */
   --nav-color: #a8a9b4;
   --nav-hover-color: #ffffff;
   --nav-mobile-background-color: #040b14;
   --nav-dropdown-background-color: #040b14;
   --nav-dropdown-color: #a8a9b4;
   --nav-dropdown-hover-color: #ffffff;
+
+  /* Comportement */
+  scroll-behavior: smooth;
 }
 
-/* Color Presets */
+/* Presets de couleurs */
 .light-background {
   --background-color: #f4fafd;
   --surface-color: #ffffff;
@@ -55,15 +52,9 @@
   --contrast-color: #ffffff;
 }
 
-/* Smooth scroll */
-:root {
-  scroll-behavior: smooth;
-}
-
 /*--------------------------------------------------------------
-# General Styling & Shared Classes
+# Styles Généraux
 --------------------------------------------------------------*/
-
 body {
   color: var(--default-color);
   background-color: var(--background-color);
@@ -91,63 +82,45 @@ h6 {
   font-family: var(--heading-font);
 }
 
-/*--------------------------------------------------------------
-# PHP Email Form Messages
---------------------------------------------------------------*/
-
-.php-email-form .error-message {
-  display: none;
-  background: #df1529;
-  color: #ffffff;
-  text-align: left;
-  padding: 15px;
-  margin-bottom: 24px;
-  font-weight: 600;
+section,
+.section {
+  color: var(--default-color);
+  background-color: var(--background-color);
+  padding: 60px 0;
+  overflow: clip;
 }
 
-.php-email-form .sent-message {
-  display: none;
-  color: #ffffff;
-  background: #059652;
-  text-align: center;
-  padding: 15px;
-  margin-bottom: 24px;
-  font-weight: 600;
+.section-title {
+  padding-bottom: 60px;
+  position: relative;
 }
 
-.php-email-form .loading {
-  display: none;
-  background: var(--surface-color);
-  text-align: center;
-  padding: 15px;
+.section-title h2 {
+  font-size: 32px;
+  font-weight: 700;
+  margin-bottom: 20px;
+  padding-bottom: 20px;
+  position: relative;
 }
 
-.php-email-form .loading:before {
+.section-title h2::after {
   content: "";
-  display: inline-block;
-  border-radius: 50%;
-  width: 24px;
-  height: 24px;
-  margin: 0 10px -6px 0;
-  border: 3px solid var(--accent-color);
-  border-top-color: var(--surface-color);
-  animation: php-email-form-loading 1s linear infinite;
+  position: absolute;
+  display: block;
+  width: 50px;
+  height: 3px;
+  background: var(--accent-color);
+  left: 0;
+  bottom: 0;
 }
 
-@keyframes php-email-form-loading {
-  0% {
-    transform: rotate(0deg);
-  }
-
-  100% {
-    transform: rotate(360deg);
-  }
+.section-title p {
+  margin-bottom: 0;
 }
 
 /*--------------------------------------------------------------
-# Global Header
+# En-tête (Header & Navigation)
 --------------------------------------------------------------*/
-
 .header {
   color: var(--default-color);
   background-color: var(--background-color);
@@ -217,19 +190,6 @@ h6 {
   background: var(--accent-color);
 }
 
-@media (min-width: 1200px) {
-  .header ~ main,
-  .header ~ #footer {
-    margin-left: 300px;
-  }
-}
-
-@media (max-width: 1199px) {
-  .header {
-    left: -100%;
-  }
-}
-
 .header.header-show {
   left: 0;
 }
@@ -261,10 +221,7 @@ h6 {
   );
 }
 
-/*--------------------------------------------------------------
-# Navigation Menu
---------------------------------------------------------------*/
-
+/* Navigation Menu */
 .mobile-nav-toggle {
   display: none;
 }
@@ -383,337 +340,43 @@ h6 {
 }
 
 /*--------------------------------------------------------------
-# Global Footer
---------------------------------------------------------------*/
-
-.footer {
-  color: var(--default-color);
-  background-color: var(--background-color);
-  font-size: 14px;
-  padding: 40px 0;
-  position: relative;
-  border-top: 1px solid
-    color-mix(in srgb, var(--default-color), transparent 90%);
-}
-
-.footer .copyright p {
-  margin-bottom: 0;
-}
-
-.footer .credits {
-  margin-top: 4px;
-  font-size: 13px;
-  text-align: center;
-}
-
-/*--------------------------------------------------------------
-# Preloader
---------------------------------------------------------------*/
-
-#preloader {
-  position: fixed;
-  inset: 0;
-  z-index: 999999;
-  overflow: hidden;
-  background: var(--background-color);
-  transition: all 0.6s ease-out;
-}
-
-#preloader:before {
-  content: "";
-  position: fixed;
-  top: calc(50% - 30px);
-  left: calc(50% - 30px);
-  border: 6px solid #ffffff;
-  border-color:
-    var(--accent-color)
-    transparent
-    var(--accent-color)
-    transparent;
-  border-radius: 50%;
-  width: 60px;
-  height: 60px;
-  animation: animate-preloader 1.5s linear infinite;
-}
-
-@keyframes animate-preloader {
-  0% {
-    transform: rotate(0deg);
-  }
-
-  100% {
-    transform: rotate(360deg);
-  }
-}
-
-/*--------------------------------------------------------------
-# Scroll Top Button
---------------------------------------------------------------*/
-
-.scroll-top {
-  position: fixed;
-  visibility: hidden;
-  opacity: 0;
-  right: 15px;
-  bottom: -15px;
-  z-index: 99999;
-  background-color: var(--accent-color);
-  width: 44px;
-  height: 44px;
-  border-radius: 50px;
-  transition: all 0.4s;
-}
-
-.scroll-top i {
-  font-size: 24px;
-  color: var(--contrast-color);
-  line-height: 0;
-}
-
-.scroll-top:hover {
-  background-color: color-mix(
-    in srgb,
-    var(--accent-color),
-    transparent 20%
-  );
-  color: var(--contrast-color);
-}
-
-.scroll-top.active {
-  visibility: visible;
-  opacity: 1;
-  bottom: 15px;
-}
-
-/*--------------------------------------------------------------
-# Disable aos animation delay on mobile devices
---------------------------------------------------------------*/
-
-@media screen and (max-width: 768px) {
-  [data-aos-delay] {
-    transition-delay: 0 !important;
-  }
-}
-
-/*--------------------------------------------------------------
-# Global Page Titles & Breadcrumbs
---------------------------------------------------------------*/
-
-.page-title {
-  color: var(--default-color);
-  background-color: var(--background-color);
-  padding: 25px 0;
-  position: relative;
-}
-
-.page-title h1 {
-  font-size: 24px;
-  font-weight: 700;
-}
-
-.page-title .breadcrumbs ol {
-  display: flex;
-  flex-wrap: wrap;
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  font-size: 14px;
-  font-weight: 400;
-}
-
-.page-title .breadcrumbs ol li + li {
-  padding-left: 10px;
-}
-
-.page-title .breadcrumbs ol li + li::before {
-  content: "/";
-  display: inline-block;
-  padding-right: 10px;
-  color: color-mix(
-    in srgb,
-    var(--default-color),
-    transparent 70%
-  );
-}
-
-/*--------------------------------------------------------------
-# Global Sections
---------------------------------------------------------------*/
-
-section,
-.section {
-  color: var(--default-color);
-  background-color: var(--background-color);
-  padding: 60px 0;
-  overflow: clip;
-}
-
-/*--------------------------------------------------------------
-# Global Section Titles
---------------------------------------------------------------*/
-
-.section-title {
-  padding-bottom: 60px;
-  position: relative;
-}
-
-.section-title h2 {
-  font-size: 32px;
-  font-weight: 700;
-  margin-bottom: 20px;
-  padding-bottom: 20px;
-  position: relative;
-}
-
-.section-title h2:after {
-  content: "";
-  position: absolute;
-  display: block;
-  width: 50px;
-  height: 3px;
-  background: var(--accent-color);
-  left: 0;
-  bottom: 0;
-}
-
-.section-title p {
-  margin-bottom: 0;
-}
-
-/*--------------------------------------------------------------
 # Hero Section
 --------------------------------------------------------------*/
-
-/*--------------------------------------------------------------
-# Hero Section
---------------------------------------------------------------*/
-
-<section id="hero" class="hero section dark-background">
-      <img src="assets/img/hero-bg.jpg" alt="Background Data Center" data-aos="fade-in">
-      
-      <div class="container" data-aos="fade-up" data-aos-delay="100">
-        <div class="row align-items-center gy-4">
-          
-          <div class="col-lg-7">
-            <h2>Sacha Odin</h2>
-            <p><span class="typed" data-typed-items="Étudiant en BTS SIO - Spécialité SISR"></span></p>
-            <p class="hero-description">
-              Passionné par l’informatique et particulièrement intéressé par les systèmes, les réseaux et les infrastructures, je cherche constamment à développer mes compétences et à découvrir de nouvelles technologies.
-            </p>
-            <p class="hero-description">
-              J’ai notamment eu l’occasion d’effectuer un stage au sein d’un data center, une expérience qui m’a permis de découvrir concrètement le fonctionnement d’une infrastructure informatique professionnelle.
-            </p>
-            <p class="hero-description">
-              Curieux, motivé et toujours ouvert à de nouvelles opportunités, je suis également disponible pour échanger autour de projets, de technologies ou simplement discuter informatique.
-            </p>
-          </div>
-
-          <div class="col-lg-5">
-            <div class="hero-img-card shadow-lg p-2 rounded-4 bg-dark bg-opacity-50 border border-secondary">
-              <img src="assets/img/datacenter-photo.jpg" alt="Sacha Odin en Data Center" class="img-fluid rounded-3">
-            </div>
-          </div>
-
-        </div>
-      </div>
-    </section>
-
-/*--------------------------------------------------------------
-# Small Mobile
---------------------------------------------------------------*/
-
-@media (max-width: 575px) {
-
-  .hero {
-    padding: 60px 20px;
-  }
-
-  .hero h2 {
-    font-size: 30px;
-  }
-
-  .hero p {
-    font-size: 18px;
-  }
-
-  .hero-description {
-    font-size: 15px;
-  }
-
-  .hero img {
-    width: 90%;
-    height: 40%;
-    right: 5%;
-    top: 70%;
-  }
-}
-
-/* Description sous le titre */
-.hero-description {
-  max-width: 500px;
-  margin-top: 25px !important;
-  font-size: 17px !important;
-  line-height: 1.7;
-  color: #cbd5e1;
-}
-
-/* Réseaux sociaux */
-.hero .social-links {
-  margin-top: 25px;
-}
-
-.hero .social-links a {
-  font-size: 24px;
-  display: inline-block;
-  color: color-mix(
-    in srgb,
-    var(--default-color),
-    transparent 50%
-  );
-  line-height: 1;
-  margin-right: 20px;
-  transition: 0.3s;
-}
-
-.hero .social-links a:hover {
-  color: var(--accent-color);
-}
-
-/*--------------------------------------------------------------
-# About Section
---------------------------------------------------------------*/
-
-.about .content h2 {
-  font-weight: 700;
-  font-size: 24px;
-}
-
-.about .content ul {
-  list-style: none;
-  padding: 0;
-}
-
-.about .content ul li {
-  margin-bottom: 20px;
+.hero {
+  position: relative;
+  min-height: 100vh;
   display: flex;
   align-items: center;
 }
 
-.about .content ul strong {
-  margin-right: 10px;
+.hero img {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 1;
 }
 
-.about .content ul i {
-  font-size: 16px;
-  margin-right: 5px;
-  color: var(--accent-color);
-  line-height: 0;
+.hero .container {
+  position: relative;
+  z-index: 2;
+}
+
+.hero-description-block {
+  margin-top: 15px;
+}
+
+.hero-description {
+  margin-bottom: 12px;
+  font-size: 1.05rem;
+  line-height: 1.6;
 }
 
 /*--------------------------------------------------------------
-# Stats Section
+# Section Stats
 --------------------------------------------------------------*/
-
 .stats .stats-item {
   padding: 30px;
   width: 100%;
@@ -749,9 +412,8 @@ section,
 }
 
 /*--------------------------------------------------------------
-# Skills Section
+# Section Compétences (Skills)
 --------------------------------------------------------------*/
-
 .skills .progress {
   height: 60px;
   display: block;
@@ -790,10 +452,22 @@ section,
   background-color: var(--accent-color);
 }
 
-/*--------------------------------------------------------------
-# Resume Section
---------------------------------------------------------------*/
+/* Styles spécifiques pour fond sombre */
+#skills .progress .skill {
+  color: #ffffff;
+}
 
+#skills .progress-bar-wrap {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+#skills .progress-bar {
+  background-color: var(--accent-color);
+}
+
+/*--------------------------------------------------------------
+# Section Parcours (Resume)
+--------------------------------------------------------------*/
 .resume .resume-title {
   color: var(--heading-color);
   font-size: 26px;
@@ -854,10 +528,26 @@ section,
   border: 2px solid var(--accent-color);
 }
 
-/*--------------------------------------------------------------
-# Portfolio Section
---------------------------------------------------------------*/
+/* Styles spécifiques pour fond sombre */
+#resume .resume-title {
+  color: #ffffff;
+}
 
+#resume .resume-item h4 {
+  color: #e5e7eb;
+}
+
+#resume .resume-item h5 {
+  color: #ffffff;
+}
+
+#resume .resume-item::before {
+  background: #101a29;
+}
+
+/*--------------------------------------------------------------
+# Section Portfolio
+--------------------------------------------------------------*/
 .portfolio .portfolio-filters {
   padding: 0;
   margin: 0 auto 20px auto;
@@ -871,10 +561,9 @@ section,
   padding: 0;
   font-size: 14px;
   font-weight: 400;
-  margin: 0 10px;
+  margin: 0 10px 10px 10px;
   line-height: 1;
   text-transform: uppercase;
-  margin-bottom: 10px;
   transition: all 0.3s ease-in-out;
 }
 
@@ -889,13 +578,6 @@ section,
 
 .portfolio .portfolio-filters li:last-child {
   margin-right: 0;
-}
-
-@media (max-width: 575px) {
-  .portfolio .portfolio-filters li {
-    font-size: 14px;
-    margin: 0 5px;
-  }
 }
 
 .portfolio .portfolio-content {
@@ -944,7 +626,7 @@ section,
   left: calc(50% - 40px);
   font-size: 26px;
   top: calc(50% - 14px);
-  color: #fff;
+  color: #ffffff;
   transition: 0.3s;
   line-height: 1.2;
 }
@@ -968,10 +650,77 @@ section,
   transform: scale(1.1);
 }
 
-/*--------------------------------------------------------------
-# Services Section
---------------------------------------------------------------*/
+/* Portfolio Details */
+.portfolio-details .portfolio-details-slider img {
+  width: 100%;
+}
 
+.portfolio-details .portfolio-details-slider .swiper-pagination {
+  margin-top: 20px;
+  position: relative;
+}
+
+.portfolio-details .portfolio-details-slider .swiper-pagination .swiper-pagination-bullet {
+  width: 12px;
+  height: 12px;
+  background-color: color-mix(
+    in srgb,
+    var(--default-color),
+    transparent 85%
+  );
+  opacity: 1;
+}
+
+.portfolio-details .portfolio-details-slider .swiper-pagination .swiper-pagination-bullet-active {
+  background-color: var(--accent-color);
+}
+
+.portfolio-details .portfolio-info {
+  padding: 30px;
+  box-shadow: 0px 0 30px rgba(0, 0, 0, 0.1);
+}
+
+.portfolio-details .portfolio-info h3 {
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--default-color), transparent 85%);
+}
+
+.portfolio-details .portfolio-info ul {
+  list-style: none;
+  padding: 0;
+  font-size: 15px;
+}
+
+.portfolio-details .portfolio-info ul li + li {
+  margin-top: 10px;
+}
+
+.portfolio-details .portfolio-description {
+  padding-top: 30px;
+}
+
+.portfolio-details .portfolio-description h2 {
+  font-size: 26px;
+  font-weight: 700;
+  margin-bottom: 20px;
+}
+
+.portfolio-details .portfolio-description p {
+  padding: 0;
+  color: color-mix(
+    in srgb,
+    var(--default-color),
+    transparent 30%
+  );
+}
+
+/*--------------------------------------------------------------
+# Section Services
+--------------------------------------------------------------*/
 .services .service-item {
   position: relative;
 }
@@ -1022,10 +771,78 @@ section,
   font-size: 14px;
 }
 
-/*--------------------------------------------------------------
-# Testimonials Section
---------------------------------------------------------------*/
+/* Service Details */
+.service-details .services-list {
+  padding: 10px 30px;
+  border: 1px solid
+    color-mix(in srgb, var(--default-color), transparent 90%);
+  margin-bottom: 20px;
+}
 
+.service-details .services-list a {
+  display: block;
+  line-height: 1;
+  padding: 8px 0 8px 15px;
+  border-left: 3px solid
+    color-mix(in srgb, var(--default-color), transparent 70%);
+  margin: 20px 0;
+  color: color-mix(
+    in srgb,
+    var(--default-color),
+    transparent 20%
+  );
+  transition: 0.3s;
+}
+
+.service-details .services-list a.active {
+  color: var(--heading-color);
+  font-weight: 700;
+  border-color: var(--accent-color);
+}
+
+.service-details .services-list a:hover {
+  border-color: var(--accent-color);
+}
+
+.service-details .services-img {
+  margin-bottom: 20px;
+}
+
+.service-details h3 {
+  font-size: 26px;
+  font-weight: 700;
+}
+
+.service-details h4 {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.service-details p,
+.service-details ul {
+  font-size: 15px;
+}
+
+.service-details ul {
+  list-style: none;
+  padding: 0;
+}
+
+.service-details ul li {
+  padding: 5px 0;
+  display: flex;
+  align-items: center;
+}
+
+.service-details ul i {
+  font-size: 20px;
+  margin-right: 8px;
+  color: var(--accent-color);
+}
+
+/*--------------------------------------------------------------
+# Section Témoignages (Testimonials)
+--------------------------------------------------------------*/
 .testimonials .testimonials-carousel,
 .testimonials .testimonials-slider {
   overflow: hidden;
@@ -1086,11 +903,10 @@ section,
 
 .testimonials .testimonial-item p {
   font-style: italic;
-  margin: 0 15px 15px 15px;
+  margin: 0 15px 35px 15px;
   padding: 20px;
   background-color: var(--surface-color);
   position: relative;
-  margin-bottom: 35px;
   border-radius: 6px;
   box-shadow: 0px 2px 15px rgba(0, 0, 0, 0.1);
 }
@@ -1129,19 +945,63 @@ section,
 }
 
 /*--------------------------------------------------------------
-# Contact Section
+# Formulaire de contact PHP
 --------------------------------------------------------------*/
+.php-email-form .error-message {
+  display: none;
+  background: #df1529;
+  color: #ffffff;
+  text-align: left;
+  padding: 15px;
+  margin-bottom: 24px;
+  font-weight: 600;
+}
 
+.php-email-form .sent-message {
+  display: none;
+  color: #ffffff;
+  background: #059652;
+  text-align: center;
+  padding: 15px;
+  margin-bottom: 24px;
+  font-weight: 600;
+}
+
+.php-email-form .loading {
+  display: none;
+  background: var(--surface-color);
+  text-align: center;
+  padding: 15px;
+}
+
+.php-email-form .loading::before {
+  content: "";
+  display: inline-block;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  margin: 0 10px -6px 0;
+  border: 3px solid var(--accent-color);
+  border-top-color: var(--surface-color);
+  animation: php-email-form-loading 1s linear infinite;
+}
+
+@keyframes php-email-form-loading {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/*--------------------------------------------------------------
+# Section Contact
+--------------------------------------------------------------*/
 .contact .info-wrap {
   background-color: var(--surface-color);
   box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.1);
   padding: 30px;
-}
-
-@media (max-width: 575px) {
-  .contact .info-wrap {
-    padding: 20px;
-  }
 }
 
 .contact .info-item {
@@ -1189,12 +1049,6 @@ section,
   height: 100%;
   padding: 30px;
   box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.1);
-}
-
-@media (max-width: 575px) {
-  .contact .php-email-form {
-    padding: 20px;
-  }
 }
 
 .contact .php-email-form input[type="text"],
@@ -1246,312 +1100,7 @@ section,
   );
 }
 
-/*--------------------------------------------------------------
-# Portfolio Details Section
---------------------------------------------------------------*/
-
-.portfolio-details .portfolio-details-slider img {
-  width: 100%;
-}
-
-.portfolio-details .portfolio-details-slider .swiper-pagination {
-  margin-top: 20px;
-  position: relative;
-}
-
-.portfolio-details
-  .portfolio-details-slider
-  .swiper-pagination
-  .swiper-pagination-bullet {
-  width: 12px;
-  height: 12px;
-  background-color: color-mix(
-    in srgb,
-    var(--default-color),
-    transparent 85%
-  );
-  opacity: 1;
-}
-
-.portfolio-details
-  .portfolio-details-slider
-  .swiper-pagination
-  .swiper-pagination-bullet-active {
-  background-color: var(--accent-color);
-}
-
-.portfolio-details .portfolio-info {
-  padding: 30px;
-  box-shadow: 0px 0 30px rgba(0, 0, 0, 0.1);
-}
-
-.portfolio-details .portfolio-info h3 {
-  font-size: 22px;
-  font-weight: 700;
-  margin-bottom: 20px;
-  padding-bottom: 20px;
-  border-bottom: 1px solid
-    color-mix(in srgb, var(--default-color), transparent 85%);
-}
-
-.portfolio-details .portfolio-info ul {
-  list-style: none;
-  padding: 0;
-  font-size: 15px;
-}
-
-.portfolio-details .portfolio-info ul li + li {
-  margin-top: 10px;
-}
-
-.portfolio-details .portfolio-description {
-  padding-top: 30px;
-}
-
-.portfolio-details .portfolio-description h2 {
-  font-size: 26px;
-  font-weight: 700;
-  margin-bottom: 20px;
-}
-
-.portfolio-details .portfolio-description p {
-  padding: 0;
-  color: color-mix(
-    in srgb,
-    var(--default-color),
-    transparent 30%
-  );
-}
-
-/*--------------------------------------------------------------
-# Service Details Section
---------------------------------------------------------------*/
-
-.service-details .services-list {
-  padding: 10px 30px;
-  border: 1px solid
-    color-mix(in srgb, var(--default-color), transparent 90%);
-  margin-bottom: 20px;
-}
-
-.service-details .services-list a {
-  display: block;
-  line-height: 1;
-  padding: 8px 0 8px 15px;
-  border-left: 3px solid
-    color-mix(in srgb, var(--default-color), transparent 70%);
-  margin: 20px 0;
-  color: color-mix(
-    in srgb,
-    var(--default-color),
-    transparent 20%
-  );
-  transition: 0.3s;
-}
-
-.service-details .services-list a.active {
-  color: var(--heading-color);
-  font-weight: 700;
-  border-color: var(--accent-color);
-}
-
-.service-details .services-list a:hover {
-  border-color: var(--accent-color);
-}
-
-.service-details .services-img {
-  margin-bottom: 20px;
-}
-
-.service-details h3 {
-  font-size: 26px;
-  font-weight: 700;
-}
-
-.service-details h4 {
-  font-size: 20px;
-  font-weight: 700;
-}
-
-.service-details p {
-  font-size: 15px;
-}
-
-.service-details ul {
-  list-style: none;
-  padding: 0;
-  font-size: 15px;
-}
-
-.service-details ul li {
-  padding: 5px 0;
-  display: flex;
-  align-items: center;
-}
-
-.service-details ul i {
-  font-size: 20px;
-  margin-right: 8px;
-  color: var(--accent-color);
-}
-
-/*--------------------------------------------------------------
-# Starter Section
---------------------------------------------------------------*/
-
-.starter-section {
-  /* Add your styles here */
-}
-
-/*--------------------------------------------------------------
-# Custom Gradient Sections
---------------------------------------------------------------*/
-
-/* À propos */
-#about {
-  background: linear-gradient(
-    180deg,
-    #040b14 0%,
-    #101a29 45%,
-    #1a2436 100%
-  ) !important;
-
-  color: #ffffff;
-}
-
-/* Compétences */
-#skills {
-  background: linear-gradient(
-    180deg,
-    #1a2436 0%,
-    #101a29 50%,
-    #040b14 100%
-  ) !important;
-
-  color: #ffffff;
-}
-
-/* Parcours */
-#resume {
-  background: linear-gradient(
-    180deg,
-    #040b14 0%,
-    #101a29 50%,
-    #1a2436 100%
-  ) !important;
-
-  color: #ffffff;
-}
-
-/* Contact */
-#contact {
-  background: linear-gradient(
-    180deg,
-    #1a2436 0%,
-    #101a29 50%,
-    #040b14 100%
-  ) !important;
-
-  color: #ffffff;
-}
-
-/*--------------------------------------------------------------
-# Text Colors on Dark Sections
---------------------------------------------------------------*/
-
-#about h1,
-#about h2,
-#about h3,
-#about h4,
-#about h5,
-#about h6,
-
-#skills h1,
-#skills h2,
-#skills h3,
-#skills h4,
-#skills h5,
-#skills h6,
-
-#resume h1,
-#resume h2,
-#resume h3,
-#resume h4,
-#resume h5,
-#resume h6,
-
-#contact h1,
-#contact h2,
-#contact h3,
-#contact h4,
-#contact h5,
-#contact h6 {
-  color: #ffffff;
-}
-
-#about p,
-#skills p,
-#resume p,
-#contact p {
-  color: #d1d5db;
-}
-
-/* Titres de sections */
-#about .section-title h2,
-#skills .section-title h2,
-#resume .section-title h2,
-#contact .section-title h2 {
-  color: #ffffff !important;
-}
-
-/* Sous-titres */
-#about .section-title p,
-#skills .section-title p,
-#resume .section-title p,
-#contact .section-title p {
-  color: #d1d5db !important;
-}
-
-/*--------------------------------------------------------------
-# Skills on Dark Background
---------------------------------------------------------------*/
-
-#skills .progress .skill {
-  color: #ffffff;
-}
-
-#skills .progress-bar-wrap {
-  background: rgba(255, 255, 255, 0.12);
-}
-
-#skills .progress-bar {
-  background-color: var(--accent-color);
-}
-
-/*--------------------------------------------------------------
-# Resume on Dark Background
---------------------------------------------------------------*/
-
-#resume .resume-title {
-  color: #ffffff;
-}
-
-#resume .resume-item h4 {
-  color: #e5e7eb;
-}
-
-#resume .resume-item h5 {
-  color: #ffffff;
-}
-
-#resume .resume-item::before {
-  background: #101a29;
-}
-
-/*--------------------------------------------------------------
-# Contact on Dark Background
---------------------------------------------------------------*/
-
+/* Styles spécifiques pour fond sombre */
 #contact .info-wrap,
 #contact .php-email-form {
   background-color: rgba(21, 31, 43, 0.85);
@@ -1581,11 +1130,214 @@ section,
 }
 
 /*--------------------------------------------------------------
-# Responsive Adjustments
+# Footer, Preloader & Scroll Top
 --------------------------------------------------------------*/
+.footer {
+  color: var(--default-color);
+  background-color: var(--background-color);
+  font-size: 14px;
+  padding: 40px 0;
+  position: relative;
+  border-top: 1px solid
+    color-mix(in srgb, var(--default-color), transparent 90%);
+}
+
+.footer .copyright p {
+  margin-bottom: 0;
+}
+
+.footer .credits {
+  margin-top: 4px;
+  font-size: 13px;
+  text-align: center;
+}
+
+#preloader {
+  position: fixed;
+  inset: 0;
+  z-index: 999999;
+  overflow: hidden;
+  background: var(--background-color);
+  transition: all 0.6s ease-out;
+}
+
+#preloader::before {
+  content: "";
+  position: fixed;
+  top: calc(50% - 30px);
+  left: calc(50% - 30px);
+  border: 6px solid #ffffff;
+  border-color:
+    var(--accent-color)
+    transparent
+    var(--accent-color)
+    transparent;
+  border-radius: 50%;
+  width: 60px;
+  height: 60px;
+  animation: animate-preloader 1.5s linear infinite;
+}
+
+@keyframes animate-preloader {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.scroll-top {
+  position: fixed;
+  visibility: hidden;
+  opacity: 0;
+  right: 15px;
+  bottom: -15px;
+  z-index: 99999;
+  background-color: var(--accent-color);
+  width: 44px;
+  height: 44px;
+  border-radius: 50px;
+  transition: all 0.4s;
+}
+
+.scroll-top i {
+  font-size: 24px;
+  color: var(--contrast-color);
+  line-height: 0;
+}
+
+.scroll-top:hover {
+  background-color: color-mix(
+    in srgb,
+    var(--accent-color),
+    transparent 20%
+  );
+  color: var(--contrast-color);
+}
+
+.scroll-top.active {
+  visibility: visible;
+  opacity: 1;
+  bottom: 15px;
+}
+
+.page-title {
+  color: var(--default-color);
+  background-color: var(--background-color);
+  padding: 25px 0;
+  position: relative;
+}
+
+.page-title h1 {
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.page-title .breadcrumbs ol {
+  display: flex;
+  flex-wrap: wrap;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  font-size: 14px;
+  font-weight: 400;
+}
+
+.page-title .breadcrumbs ol li + li {
+  padding-left: 10px;
+}
+
+.page-title .breadcrumbs ol li + li::before {
+  content: "/";
+  display: inline-block;
+  padding-right: 10px;
+  color: color-mix(
+    in srgb,
+    var(--default-color),
+    transparent 70%
+  );
+}
+
+/*--------------------------------------------------------------
+# Dégradés Personnalisés pour Sections Sombres
+--------------------------------------------------------------*/
+#about {
+  background: linear-gradient(
+    180deg,
+    #040b14 0%,
+    #101a29 45%,
+    #1a2436 100%
+  ) !important;
+  color: #ffffff;
+}
+
+#skills {
+  background: linear-gradient(
+    180deg,
+    #1a2436 0%,
+    #101a29 50%,
+    #040b14 100%
+  ) !important;
+  color: #ffffff;
+}
+
+#resume {
+  background: linear-gradient(
+    180deg,
+    #040b14 0%,
+    #101a29 50%,
+    #1a2436 100%
+  ) !important;
+  color: #ffffff;
+}
+
+#contact {
+  background: linear-gradient(
+    180deg,
+    #1a2436 0%,
+    #101a29 50%,
+    #040b14 100%
+  ) !important;
+  color: #ffffff;
+}
+
+/* Regroupement des styles de texte pour sections sombres */
+#about h1, #about h2, #about h3, #about h4, #about h5, #about h6,
+#skills h1, #skills h2, #skills h3, #skills h4, #skills h5, #skills h6,
+#resume h1, #resume h2, #resume h3, #resume h4, #resume h5, #resume h6,
+#contact h1, #contact h2, #contact h3, #contact h4, #contact h5, #contact h6,
+#about .section-title h2,
+#skills .section-title h2,
+#resume .section-title h2,
+#contact .section-title h2 {
+  color: #ffffff !important;
+}
+
+#about p,
+#skills p,
+#resume p,
+#contact p,
+#about .section-title p,
+#skills .section-title p,
+#resume .section-title p,
+#contact .section-title p {
+  color: #d1d5db !important;
+}
+
+/*--------------------------------------------------------------
+# Media Queries & Responsive
+--------------------------------------------------------------*/
+@media (min-width: 1200px) {
+  .header ~ main,
+  .header ~ #footer {
+    margin-left: 300px;
+  }
+}
 
 @media (max-width: 1199px) {
   .header {
+    left: -100%;
     background-color: #040b14;
   }
 
@@ -1594,7 +1346,11 @@ section,
   }
 }
 
-@media (max-width: 768px) {
+@media screen and (max-width: 768px) {
+  [data-aos-delay] {
+    transition-delay: 0s !important;
+  }
+
   section,
   .section {
     padding: 50px 0;
@@ -1617,10 +1373,8 @@ section,
     top: auto;
     right: auto;
     transform: none;
-
     width: 100%;
     height: 400px;
-
     margin-top: 40px;
   }
 
@@ -1658,5 +1412,15 @@ section,
     max-width: 100%;
     margin-top: 20px !important;
     font-size: 16px !important;
+  }
+
+  .contact .info-wrap,
+  .contact .php-email-form {
+    padding: 20px;
+  }
+
+  .portfolio .portfolio-filters li {
+    font-size: 14px;
+    margin: 0 5px;
   }
 }
