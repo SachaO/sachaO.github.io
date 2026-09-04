@@ -1272,4 +1272,35 @@ section,
 --------------------------------------------------------------*/
 .starter-section {
   /* Add your styles here */
+/* Dégradé doux entre le Hero (sombre) et À propos */
+#about {
+  background: linear-gradient(180deg, #040b14 0%, #1a2436 100%) !important;
+  color: #ffffff;
 }
+
+/* Dégradé pour la section Compétences */
+#skills {
+  background: linear-gradient(180deg, #1a2436 0%, #040b14 100%) !important;
+  color: #ffffff;
+}
+
+/* Dégradé pour la section Parcours */
+#resume {
+  background: linear-gradient(180deg, #040b14 0%, #1a2436 100%) !important;
+  color: #ffffff;
+}
+
+/* Dégradé pour la section Contact */
+#contact {
+  background: linear-gradient(180deg, #1a2436 0%, #040b14 100%) !important;
+  color: #ffffff;
+}
+
+/* Uniformisation des titres sur les fonds dégradés */
+.section-title h2 {
+  color: #ffffff !important;
+}
+
+.section-title p {
+  color: #d1d5db !important;
+}}
