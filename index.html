@@ -42,6 +42,7 @@
     <ul>
       <li><a href="#hero" class="active"><i class="bi bi-house navicon"></i>Accueil</a></li>
       <li><a href="#about"><i class="bi bi-person navicon"></i>À propos</a></li>
+      <li><a href="#projects"><i class="bi bi-folder2-open navicon"></i>Projets</a></li>
       <li><a href="#contact"><i class="bi bi-envelope navicon"></i>Contact</a></li>
     </ul>
   </nav>
@@ -102,8 +103,8 @@
 
         <div class="cv-box mt-4">
           <h4 class="cv-box-title"><i class="bi bi-file-earmark-pdf"></i> Mon CV</h4>
-          <embed src="assets/img/cv-sacha-odin.pdf" type="application/pdf" class="cv-preview">
-          <a href="assets/img/cv-sacha-odin.pdf" download class="btn-download-cv">
+          <embed src="assets/cv/cv-sacha-odin.pdf" type="application/pdf" class="cv-preview">
+          <a href="assets/cv/cv-sacha-odin.pdf" download class="btn-download-cv">
             <i class="bi bi-download"></i> Télécharger mon CV
           </a>
         </div>
@@ -111,6 +112,128 @@
     </div>
   </div>
 </section>
+
+<section id="projects" class="projects section">
+  <div class="container section-title" data-aos="fade-up">
+    <h2>Projets</h2>
+    <p>Projets réalisés à l'école et en stage — infrastructures, réseaux et systèmes.</p>
+  </div>
+
+  <div class="container" data-aos="fade-up" data-aos-delay="100">
+    <div class="row gy-4">
+
+      <!-- Projet école 1 -->
+      <div class="col-lg-4 col-md-6">
+        <div class="project-card">
+          <div class="project-meta">
+            <span class="project-tag-cat">École · 2025</span>
+          </div>
+          <h3>Infrastructure réseau virtualisée</h3>
+          <p class="project-tech">Windows Server · Active Directory · VLAN · VirtualBox</p>
+          <p class="project-desc-short">
+            Mise en place d'une infrastructure réseau d'entreprise virtualisée dans le cadre du BTS SIO : serveur Active Directory, segmentation VLAN, DHCP/DNS.
+          </p>
+          <button type="button" class="btn-voir-plus" data-bs-toggle="modal" data-bs-target="#projectModal1">
+            Voir plus <i class="bi bi-arrow-right"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Projet école 2 -->
+      <div class="col-lg-4 col-md-6">
+        <div class="project-card">
+          <div class="project-meta">
+            <span class="project-tag-cat">École · 2025</span>
+          </div>
+          <h3>Serveur Linux administré</h3>
+          <p class="project-tech">Debian/Ubuntu · SSH · Services réseau</p>
+          <p class="project-desc-short">
+            Déploiement et administration d'un serveur Linux : configuration des services réseau de base, sécurisation des accès et supervision.
+          </p>
+          <button type="button" class="btn-voir-plus" data-bs-toggle="modal" data-bs-target="#projectModal2">
+            Voir plus <i class="bi bi-arrow-right"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Projet stage -->
+      <div class="col-lg-4 col-md-6">
+        <div class="project-card">
+          <div class="project-meta">
+            <span class="project-tag-cat">Stage · Data center</span>
+          </div>
+          <h3>Découverte d'une infrastructure pro</h3>
+          <p class="project-tech">Infrastructure · Data center · Systèmes</p>
+          <p class="project-desc-short">
+            Stage au sein d'un data center, permettant de découvrir concrètement le fonctionnement d'une infrastructure informatique professionnelle.
+          </p>
+          <button type="button" class="btn-voir-plus" data-bs-toggle="modal" data-bs-target="#projectModal3">
+            Voir plus <i class="bi bi-arrow-right"></i>
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- Modals Projets -->
+<div class="modal fade project-modal" id="projectModal1" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">Infrastructure réseau virtualisée</h3>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p class="project-tech">Windows Server · Active Directory · VLAN · VirtualBox</p>
+        <p>
+          [À compléter : décris ici le contexte du projet, ton rôle, les étapes de mise en place
+          et ce que tu as appris (ex : création des comptes AD, stratégies de groupe,
+          segmentation réseau par VLAN, résolution de pannes).]
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade project-modal" id="projectModal2" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">Serveur Linux administré</h3>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p class="project-tech">Debian/Ubuntu · SSH · Services réseau</p>
+        <p>
+          [À compléter : décris ici le contexte du projet, les services installés/configurés
+          (ex : serveur SSH, pare-feu, DNS), les difficultés rencontrées et ce que
+          tu as appris sur l'administration Linux.]
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade project-modal" id="projectModal3" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">Découverte d'une infrastructure pro</h3>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p class="project-tech">Infrastructure · Data center · Systèmes</p>
+        <p>
+          [À compléter : décris ici le nom de l'entreprise (si tu veux le citer), la durée du stage,
+          les tâches observées ou réalisées sur place (baies serveurs, câblage, supervision,
+          sécurité physique...) et ce que cette expérience t'a appris.]
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
 
 <section id="contact" class="contact section">
   <div class="container section-title" data-aos="fade-up">
