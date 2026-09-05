@@ -822,6 +822,206 @@ section,
 }
 
 /*--------------------------------------------------------------
+# CV PDF Box (About Section)
+--------------------------------------------------------------*/
+
+.cv-box {
+  background-color: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 20px;
+  max-width: 320px;
+}
+
+.cv-box-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #ffffff;
+}
+
+.cv-box-title i {
+  color: var(--accent-color);
+  font-size: 20px;
+}
+
+.cv-preview {
+  width: 100%;
+  height: 220px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: #ffffff;
+  display: block;
+}
+
+.btn-download-cv {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 15px;
+  padding: 8px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--contrast-color);
+  background: var(--accent-color);
+  border-radius: 50px;
+  transition: 0.3s;
+}
+
+.btn-download-cv:hover {
+  background: color-mix(in srgb, var(--accent-color), transparent 25%);
+  color: var(--contrast-color);
+}
+
+@media (max-width: 575px) {
+  .cv-box {
+    max-width: 100%;
+  }
+
+  .cv-preview {
+    height: 180px;
+  }
+}
+
+/*--------------------------------------------------------------
+# Projects Section
+--------------------------------------------------------------*/
+
+#projects {
+  background: linear-gradient(
+    180deg,
+    #040b14 0%,
+    #101a29 50%,
+    #1a2436 100%
+  ) !important;
+
+  color: #ffffff;
+}
+
+#projects h1,
+#projects h2,
+#projects h3,
+#projects h4,
+#projects h5,
+#projects h6 {
+  color: #ffffff;
+}
+
+#projects p {
+  color: #d1d5db;
+}
+
+#projects .section-title h2 {
+  color: #ffffff !important;
+}
+
+#projects .section-title p {
+  color: #d1d5db !important;
+}
+
+.project-card {
+  height: 100%;
+  background-color: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 25px;
+  display: flex;
+  flex-direction: column;
+  transition: 0.3s;
+}
+
+.project-card:hover {
+  border-color: var(--accent-color);
+  transform: translateY(-4px);
+}
+
+.project-meta {
+  margin-bottom: 12px;
+}
+
+.project-tag-cat {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--accent-color);
+  background: color-mix(in srgb, var(--accent-color), transparent 88%);
+  padding: 4px 12px;
+  border-radius: 50px;
+}
+
+.project-card h3 {
+  font-size: 19px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: #ffffff;
+}
+
+.project-tech {
+  font-size: 13px;
+  color: color-mix(in srgb, var(--accent-color), white 20%);
+  margin-bottom: 12px;
+  font-weight: 500;
+}
+
+.project-desc-short {
+  font-size: 14px;
+  color: #d1d5db;
+  flex-grow: 1;
+  margin-bottom: 18px;
+}
+
+.btn-voir-plus {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--accent-color);
+  transition: 0.3s;
+}
+
+.btn-voir-plus:hover {
+  gap: 10px;
+  color: color-mix(in srgb, var(--accent-color), transparent 25%);
+}
+
+/* Modales projets */
+.project-modal .modal-content {
+  background-color: #101a29;
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.project-modal .modal-header {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.project-modal .modal-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.project-modal .modal-body p {
+  color: #d1d5db;
+  font-size: 15px;
+  line-height: 1.7;
+}
+
+.project-modal .modal-body .project-tech {
+  color: color-mix(in srgb, var(--accent-color), white 20%);
+}
+
+/*--------------------------------------------------------------
 # Stats Section
 --------------------------------------------------------------*/
 
