@@ -584,10 +584,6 @@ section,
 # Hero Section
 --------------------------------------------------------------*/
 
-/*--------------------------------------------------------------
-# Hero Section
---------------------------------------------------------------*/
-
 .hero {
   width: 100%;
   height: 100vh;
@@ -615,6 +611,7 @@ section,
   height: 70%;
 
   object-fit: cover;
+  object-position: top; /* garde le haut (la tête) visible lors du recadrage */
 
   /* Apparence */
   border-radius: 20px;
@@ -725,6 +722,8 @@ section,
     height: 45%;
     right: 10%;
     top: 65%;
+    object-fit: cover;
+    object-position: top; /* évite que la tête soit coupée en mobile */
   }
 }
 
@@ -756,6 +755,8 @@ section,
     height: 40%;
     right: 5%;
     top: 70%;
+    object-fit: cover;
+    object-position: top; /* évite que la tête soit coupée sur petits écrans */
   }
 }
 
