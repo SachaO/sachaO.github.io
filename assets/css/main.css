@@ -60,6 +60,26 @@
   scroll-behavior: smooth;
 }
 
+/* Couleurs du dégradé de fond animé (mêmes tons que le thème, légère variation) */
+:root {
+  --aurora-1: #04070b;
+  --aurora-2: #0a1a2e;
+  --aurora-3: #123350;
+  --aurora-4: #1a2436;
+}
+
+@keyframes auroraShift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
 /*--------------------------------------------------------------
 # General Styling & Shared Classes
 --------------------------------------------------------------*/
