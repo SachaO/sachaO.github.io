@@ -1972,3 +1972,31 @@ section,
     font-size: 16px !important;
   }
 }
+
+/*--------------------------------------------------------------
+# Cursor Light Effect (halo lumineux qui suit la souris)
+--------------------------------------------------------------*/
+
+#cursor-glow {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 4; /* au-dessus des fonds de section, en dessous du contenu (nav, texte, images) */
+  background: radial-gradient(
+    550px circle at var(--x, 50%) var(--y, 40%),
+    rgba(20, 157, 221, 0.10),
+    rgba(20, 157, 221, 0.04) 35%,
+    transparent 65%
+  );
+  mix-blend-mode: screen; /* n'éclaircit que les zones sombres, reste discret */
+  transition: opacity 0.3s ease;
+}
+
+/* On désactive l'effet sur mobile/tactile : pas de curseur, pas d'intérêt, et ça évite de la charge inutile */
+@media (hover: none), (pointer: coarse) {
+  #cursor-glow {
+    display: none;
+  }
+}
