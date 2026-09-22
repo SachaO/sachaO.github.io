@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 420" role="img" aria-label="Illustration d'un cerveau connecté">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#149ddd"/>
+      <stop offset="1" stop-color="#5bc7ff"/>
+    </linearGradient>
+    <filter id="glow"><feGaussianBlur stdDeviation="5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <g fill="none" stroke="url(#g)" stroke-width="3" stroke-linecap="round" filter="url(#glow)">
+    <path d="M259 74c-48-46-126-27-143 34-43-5-72 31-62 68-31 27-16 78 23 88-4 46 44 73 81 54 25 36 82 24 101-12 28 28 82 11 88-30 43-2 60-54 31-82 14-43-21-82-61-75-7-24-30-39-58-45z"/>
+    <path d="M259 74c-9 38-8 69-1 103 7 35 6 76-1 129"/>
+    <path d="M203 84c18 17 20 39 8 57-14 21-7 40 10 52 20 13 21 35 5 54-12 14-10 31 2 44"/>
+    <path d="M143 108c28 3 44 17 45 38 1 20-12 34-33 38"/>
+    <path d="M113 173c26-4 42 5 50 23 8 19 1 37-17 49"/>
+    <path d="M184 92c-8 18-3 33 12 43"/>
+    <path d="M317 90c-24 10-33 29-25 48 8 18 25 25 43 19"/>
+    <path d="M361 121c-24 8-36 25-32 44 4 19 20 31 39 31"/>
+    <path d="M390 190c-25 0-39 12-41 31-2 19 9 34 29 40"/>
+    <path d="M328 157c-16 13-18 31-7 45 11 15 30 18 45 8"/>
+  </g>
+  <g fill="#149ddd">
+    <circle cx="120" cy="95" r="5"/><circle cx="88" cy="178" r="5"/><circle cx="164" cy="300" r="5"/>
+    <circle cx="315" cy="72" r="5"/><circle cx="407" cy="190" r="5"/><circle cx="390" cy="276" r="5"/>
+  </g>
+  <g stroke="#149ddd" stroke-width="1.5" opacity=".45">
+    <path d="M120 95L67 50M120 95L41 130M88 178L35 205M164 300L89 351M315 72L362 30M407 190L482 154M390 276L458 321"/>
+  </g>
+</svg>
