@@ -94,7 +94,7 @@
       color: var(--accent-color);
     }
 
-    .veille-hero-title {
+    .veille-heading-wrap{position:relative;min-height:210px;padding-right:330px;display:flex;flex-direction:column;justify-content:center}\n    .veille-brain{position:absolute;right:0;top:50%;transform:translateY(-50%);width:300px;max-width:38%;opacity:.9;filter:drop-shadow(0 0 18px rgba(20,157,221,.28));animation:brainFloat 5s ease-in-out infinite}\n    @keyframes brainFloat{0%,100%{transform:translateY(-50%) translateY(0)}50%{transform:translateY(-50%) translateY(-9px)}}\n    .veille-hero-title {
       margin: 0 0 12px;
       color: #fff;
       font-size: clamp(34px, 4.5vw, 54px);
@@ -301,7 +301,7 @@
     }
 
     @media (max-width: 767px) {
-      .veille-intro-card,
+      .veille-heading-wrap{padding-right:0;min-height:0}.veille-brain{position:relative;right:auto;top:auto;transform:none;width:210px;max-width:65%;margin:20px auto 0;animation:none}\n      .veille-intro-card,
       .veille-card,
       .veille-hero-card,
       .veille-sources {
@@ -347,10 +347,10 @@
   <main class="main">
     <section class="section">
       <div class="container section-title" data-aos="fade-up">
-        <div class="veille-wrap">
+        <div class="veille-wrap veille-heading-wrap">
           <div class="veille-kicker"><i class="bi bi-broadcast-pin"></i> Veille technologique</div>
           <h2 class="veille-hero-title">Veille informatique</h2>
-          <p class="veille-hero-subtitle">Neurotechnologies, bio-informatique &amp; cybersécurité</p>
+          <p class="veille-hero-subtitle">Neurotechnologies, bio-informatique &amp; cybersécurité</p><img class="veille-brain" src="assets/img/brain-neuro.svg" alt="Illustration d’un cerveau connecté">
         </div>
       </div>
 
