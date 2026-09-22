@@ -22,10 +22,8 @@
   <style>
     /* La veille reprend volontairement la même ambiance que le reste du portfolio. */
     .veille-page {
-      min-height: 100vh;
-      background:
-        radial-gradient(circle at 82% 8%, rgba(20,157,221,.10), transparent 28%),
-        linear-gradient(180deg, #040b14 0%, #101a29 52%, #1a2436 100%);
+      min-height:100vh;
+      background:#081321;
     }
 
     .veille-page .main {
@@ -68,18 +66,7 @@
     }
 
     .veille-hero-card::after {
-      content: "";
-      position: absolute;
-      width: 320px;
-      height: 320px;
-      right: -120px;
-      top: -150px;
-      border-radius: 50%;
-      border: 1px solid rgba(20,157,221,.14);
-      box-shadow:
-        0 0 0 30px rgba(20,157,221,.03),
-        0 0 0 70px rgba(20,157,221,.02);
-      pointer-events: none;
+      display:none;
     }
 
     .veille-kicker {
@@ -94,7 +81,57 @@
       color: var(--accent-color);
     }
 
-    .veille-heading-wrap{position:relative;min-height:210px;padding-right:330px;display:flex;flex-direction:column;justify-content:center}\n    .veille-brain{position:absolute;right:0;top:50%;transform:translateY(-50%);width:300px;max-width:38%;opacity:.9;filter:drop-shadow(0 0 18px rgba(20,157,221,.28));animation:brainFloat 5s ease-in-out infinite}\n    @keyframes brainFloat{0%,100%{transform:translateY(-50%) translateY(0)}50%{transform:translateY(-50%) translateY(-9px)}}\n    .veille-hero-title {
+    .veille-heading-wrap{
+      position:relative;
+      min-height:220px;
+      padding-right:330px;
+      display:flex;
+      flex-direction:column;
+      justify-content:center;
+    }
+    .veille-brain{
+      position:absolute;
+      right:15px;
+      top:50%;
+      transform:translateY(-50%);
+      width:270px;
+      height:220px;
+      overflow:visible;
+      filter:drop-shadow(0 0 12px rgba(20,157,221,.22));
+    }
+    .brain-line{
+      fill:none;
+      stroke:#149ddd;
+      stroke-width:4;
+      stroke-linecap:round;
+      stroke-linejoin:round;
+      filter:drop-shadow(0 0 5px rgba(20,157,221,.65));
+    }
+    .brain-node{
+      fill:#149ddd;
+      filter:drop-shadow(0 0 7px rgba(20,157,221,.9));
+      animation:brainPulse 1.8s ease-in-out infinite;
+    }
+    .brain-node:nth-child(2){animation-delay:.3s}
+    .brain-node:nth-child(3){animation-delay:.6s}
+    .brain-node:nth-child(4){animation-delay:.9s}
+    .brain-node:nth-child(5){animation-delay:1.2s}
+    .brain-scan{
+      stroke:#7dd3fc;
+      stroke-width:2;
+      opacity:.8;
+      animation:brainScan 2.8s ease-in-out infinite;
+    }
+    @keyframes brainPulse{
+      0%,100%{r:4;opacity:.65}
+      50%{r:7;opacity:1}
+    }
+    @keyframes brainScan{
+      0%{transform:translateX(-80px);opacity:0}
+      20%,70%{opacity:.9}
+      100%{transform:translateX(80px);opacity:0}
+    }
+    .veille-hero-title {
       margin: 0 0 12px;
       color: #fff;
       font-size: clamp(34px, 4.5vw, 54px);
@@ -266,7 +303,7 @@
 
     .veille-question {
       border-left: 3px solid var(--accent-color);
-      background: linear-gradient(90deg, rgba(20,157,221,.08), rgba(255,255,255,.02));
+      background:#0d1b2a;
     }
 
     .veille-sources {
@@ -301,7 +338,9 @@
     }
 
     @media (max-width: 767px) {
-      .veille-heading-wrap{padding-right:0;min-height:0}.veille-brain{position:relative;right:auto;top:auto;transform:none;width:210px;max-width:65%;margin:20px auto 0;animation:none}\n      .veille-intro-card,
+      .veille-heading-wrap{padding-right:0;min-height:0}
+      .veille-brain{position:relative;right:auto;top:auto;transform:none;width:220px;height:170px;margin:20px auto 0}
+      .veille-intro-card,
       .veille-card,
       .veille-hero-card,
       .veille-sources {
@@ -350,7 +389,24 @@
         <div class="veille-wrap veille-heading-wrap">
           <div class="veille-kicker"><i class="bi bi-broadcast-pin"></i> Veille technologique</div>
           <h2 class="veille-hero-title">Veille informatique</h2>
-          <p class="veille-hero-subtitle">Neurotechnologies, bio-informatique &amp; cybersécurité</p><img class="veille-brain" src="assets/img/brain-neuro.svg" alt="Illustration d’un cerveau connecté">
+          <p class="veille-hero-subtitle">Neurotechnologies, bio-informatique &amp; cybersécurité</p>
+          <svg class="veille-brain" viewBox="0 0 300 220" aria-label="Illustration animée d'un cerveau connecté" role="img">
+            <g class="brain-line">
+              <path d="M146 37c-18-24-55-26-75-6-12 12-15 29-11 44-22 4-37 24-33 46-16 13-15 38 3 49-1 25 25 42 48 31 15 20 46 17 59-5 13 20 46 14 53-9 22-2 34-27 21-45 7-25-15-46-38-44-4-22-13-34-27-41z"/>
+              <path d="M146 37c-6 25-6 50 0 72 5 22 5 43 0 68"/>
+              <path d="M111 48c14 10 17 27 8 39-10 13-8 27 5 36 14 10 14 24 4 37"/>
+              <path d="M82 72c17 1 28 10 29 24"/>
+              <path d="M57 119c16-4 27 2 34 14"/>
+              <path d="M181 54c-16 7-22 20-16 33 6 12 18 18 31 14"/>
+              <path d="M210 79c-17 3-26 15-23 28 3 14 14 21 29 20"/>
+              <path d="M224 126c-16-2-27 6-29 19-2 13 6 23 20 27"/>
+            </g>
+            <g class="brain-node">
+              <circle cx="57" cy="119" r="4"/><circle cx="82" cy="72" r="4"/><circle cx="111" cy="48" r="4"/>
+              <circle cx="181" cy="54" r="4"/><circle cx="224" cy="126" r="4"/>
+            </g>
+            <path class="brain-scan" d="M55 30v165"/>
+          </svg>
         </div>
       </div>
 
