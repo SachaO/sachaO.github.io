@@ -1,187 +1,576 @@
 <!DOCTYPE html>
 <html lang="fr">
+
 <head>
   <meta charset="utf-8">
   <meta content="width=device-width, initial-scale=1.0" name="viewport">
   <title>Veille informatique – Sacha Odin</title>
+
   <link href="assets/img/favicon.png" rel="icon">
   <link href="assets/img/apple-touch-icon.png" rel="apple-touch-icon">
+
   <link href="https://fonts.googleapis.com" rel="preconnect">
   <link href="https://fonts.gstatic.com" rel="preconnect" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Roboto&family=Poppins&family=Raleway&display=swap" rel="stylesheet">
+
   <link href="assets/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
   <link href="assets/vendor/bootstrap-icons/bootstrap-icons.css" rel="stylesheet">
   <link href="assets/vendor/aos/aos.css" rel="stylesheet">
+
   <link href="assets/css/main.css" rel="stylesheet">
+
   <style>
-    .veille-intro{max-width:920px;margin:0 auto 55px}
-    .veille-lead{font-size:18px;line-height:1.9}
-    .veille-timeline{position:relative;max-width:950px;margin:0 auto;padding:15px 0 20px}
-    .veille-timeline::before{content:"";position:absolute;left:18px;top:0;bottom:0;width:1px;background:rgba(255,255,255,.18)}
-    .veille-event{position:relative;padding-left:60px;margin-bottom:52px}
-    .veille-dot{position:absolute;left:11px;top:7px;width:15px;height:15px;border-radius:50%;background:var(--accent-color,#149ddd);box-shadow:0 0 0 5px rgba(20,157,221,.12)}
-    .veille-date{font-family:Poppins,sans-serif;font-size:14px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent-color,#149ddd);font-weight:600;margin-bottom:8px}
-    .veille-event h3{font-size:24px;margin-bottom:12px}
-    .veille-event p{line-height:1.85;margin-bottom:14px}
-    .veille-source{display:inline-flex;align-items:center;gap:7px;margin:4px 18px 0 0;font-size:13px;text-decoration:none;opacity:.72;transition:.2s}
-    .veille-source:hover{opacity:1}
-    .veille-card{max-width:950px;margin:0 auto 45px;padding:30px;border:1px solid rgba(255,255,255,.09);border-radius:12px;background:rgba(255,255,255,.025)}
-    .veille-card h3{margin-bottom:15px}
-    .veille-card p{line-height:1.85}
-    .veille-sources{max-width:950px;margin:0 auto}
-    .veille-source-list{list-style:none;padding:0;margin:0}
-    .veille-source-list li{padding:13px 0;border-bottom:1px solid rgba(255,255,255,.08)}
-    .veille-source-list a{text-decoration:none}
-    @media(max-width:767px){.veille-event{padding-left:48px}.veille-timeline::before{left:14px}.veille-dot{left:7px}}
+    /* La veille reprend volontairement la même ambiance que le reste du portfolio. */
+    .veille-page {
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at 82% 8%, rgba(20,157,221,.10), transparent 28%),
+        linear-gradient(180deg, #040b14 0%, #101a29 52%, #1a2436 100%);
+    }
+
+    .veille-page .main {
+      background: transparent;
+    }
+
+    .veille-page .section {
+      background: transparent;
+    }
+
+    .veille-page .section-title {
+      padding-bottom: 45px;
+    }
+
+    .veille-page .section-title h2 {
+      color: #fff;
+      font-size: clamp(34px, 4vw, 48px);
+      margin-bottom: 14px;
+    }
+
+    .veille-page .section-title p {
+      color: #cbd5e1;
+      font-size: 18px;
+    }
+
+    .veille-wrap {
+      max-width: 1050px;
+      margin: 0 auto;
+    }
+
+    .veille-hero-card {
+      position: relative;
+      overflow: hidden;
+      margin-bottom: 42px;
+      padding: 34px;
+      border-radius: 16px;
+      border: 1px solid rgba(20,157,221,.18);
+      background: linear-gradient(145deg, rgba(20,157,221,.08), rgba(255,255,255,.025));
+      box-shadow: 0 18px 60px rgba(0,0,0,.18);
+    }
+
+    .veille-hero-card::after {
+      content: "";
+      position: absolute;
+      width: 320px;
+      height: 320px;
+      right: -120px;
+      top: -150px;
+      border-radius: 50%;
+      border: 1px solid rgba(20,157,221,.14);
+      box-shadow:
+        0 0 0 30px rgba(20,157,221,.03),
+        0 0 0 70px rgba(20,157,221,.02);
+      pointer-events: none;
+    }
+
+    .veille-kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 14px;
+      font-family: var(--nav-font);
+      font-size: 13px;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+      color: var(--accent-color);
+    }
+
+    .veille-hero-title {
+      margin: 0 0 12px;
+      color: #fff;
+      font-size: clamp(34px, 4.5vw, 54px);
+      line-height: 1.08;
+      font-weight: 700;
+    }
+
+    .veille-hero-subtitle {
+      margin: 0;
+      max-width: 760px;
+      color: #d1d5db;
+      font-size: 20px;
+      line-height: 1.6;
+    }
+
+    .veille-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 22px;
+    }
+
+    .veille-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 8px 12px;
+      border: 1px solid rgba(20,157,221,.18);
+      border-radius: 999px;
+      background: rgba(255,255,255,.03);
+      color: #cbd5e1;
+      font-size: 13px;
+      font-family: var(--nav-font);
+    }
+
+    .veille-intro-card,
+    .veille-card {
+      margin-bottom: 34px;
+      padding: 30px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.08);
+      background: rgba(8,19,33,.40);
+      box-shadow: 0 10px 35px rgba(0,0,0,.14);
+      backdrop-filter: blur(6px);
+    }
+
+    .veille-intro-card h3,
+    .veille-card h3,
+    .veille-sources h3 {
+      color: #fff;
+      margin-bottom: 16px;
+      font-size: 25px;
+    }
+
+    .veille-intro-card p,
+    .veille-card p,
+    .veille-event p {
+      color: #d1d5db;
+      line-height: 1.9;
+      font-size: 16px;
+    }
+
+    .veille-summary {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .veille-summary-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 13px;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,.08);
+      background: rgba(255,255,255,.025);
+      color: #e5e7eb;
+      font-size: 13px;
+    }
+
+    .veille-summary-item i,
+    .veille-source i {
+      color: var(--accent-color);
+    }
+
+    .veille-timeline {
+      position: relative;
+      margin: 48px 0 45px;
+      padding-left: 28px;
+    }
+
+    .veille-timeline::before {
+      content: "";
+      position: absolute;
+      left: 8px;
+      top: 4px;
+      bottom: 8px;
+      width: 2px;
+      background: linear-gradient(
+        180deg,
+        rgba(20,157,221,.80),
+        rgba(20,157,221,.22)
+      );
+    }
+
+    .veille-event {
+      position: relative;
+      margin-bottom: 34px;
+      padding: 0 0 28px 30px;
+      border-bottom: 1px solid rgba(255,255,255,.06);
+    }
+
+    .veille-event:last-child {
+      margin-bottom: 0;
+      border-bottom: 0;
+    }
+
+    .veille-dot {
+      position: absolute;
+      left: -1px;
+      top: 7px;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #0e2438;
+      border: 3px solid var(--accent-color);
+      box-shadow: 0 0 0 5px rgba(20,157,221,.10);
+    }
+
+    .veille-date {
+      display: inline-block;
+      margin-bottom: 7px;
+      font-family: var(--nav-font);
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: .10em;
+      text-transform: uppercase;
+      color: var(--accent-color);
+    }
+
+    .veille-event h3 {
+      margin-bottom: 12px;
+      color: #fff;
+      font-size: 23px;
+    }
+
+    .veille-event p {
+      margin-bottom: 12px;
+    }
+
+    .veille-source {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      margin: 3px 16px 0 0;
+      color: #78c9f3;
+      font-size: 13px;
+      text-decoration: none;
+      opacity: .82;
+      transition: .2s ease;
+    }
+
+    .veille-source:hover {
+      color: #fff;
+      opacity: 1;
+      transform: translateX(2px);
+    }
+
+    .veille-question {
+      border-left: 3px solid var(--accent-color);
+      background: linear-gradient(90deg, rgba(20,157,221,.08), rgba(255,255,255,.02));
+    }
+
+    .veille-sources {
+      margin-top: 46px;
+      padding: 30px;
+      border-top: 1px solid rgba(255,255,255,.08);
+    }
+
+    .veille-source-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .veille-source-list li {
+      padding: 13px 0;
+      border-bottom: 1px solid rgba(255,255,255,.07);
+    }
+
+    .veille-source-list li:last-child {
+      border-bottom: 0;
+    }
+
+    .veille-source-list a {
+      color: #b7dff5;
+      text-decoration: none;
+      font-size: 14px;
+    }
+
+    .veille-source-list a:hover {
+      color: #fff;
+    }
+
+    @media (max-width: 767px) {
+      .veille-intro-card,
+      .veille-card,
+      .veille-hero-card,
+      .veille-sources {
+        padding: 22px;
+      }
+
+      .veille-timeline {
+        padding-left: 22px;
+      }
+
+      .veille-event {
+        padding-left: 25px;
+      }
+    }
   </style>
 </head>
-<body class="index-page">
-<div id="cursor-glow"></div>
 
-<header id="header" class="header dark-background d-flex flex-column">
-  <i class="header-toggle d-xl-none bi bi-list"></i>
-  <div class="profile-img"><img src="assets/img/my-profile-img.jpg" alt="Sacha Odin" class="img-fluid rounded-circle"></div>
-  <a href="index.html" class="logo d-flex align-items-center justify-content-center"><h1 class="sitename">Sacha Odin</h1></a>
-  <nav id="navmenu" class="navmenu">
-    <ul>
-      <li><a href="index.html"><i class="bi bi-house navicon"></i>Accueil</a></li>
-      <li><a href="index.html#about"><i class="bi bi-person navicon"></i>À propos</a></li>
-      <li><a href="index.html#projects"><i class="bi bi-folder2-open navicon"></i>Projets</a></li>
-      <li><a href="veille.html" class="active"><i class="bi bi-activity navicon"></i>Veille informatique</a></li>
-      <li><a href="index.html#contact"><i class="bi bi-envelope navicon"></i>Contact</a></li>
-    </ul>
-  </nav>
-</header>
+<body class="index-page veille-page">
+  <div id="cursor-glow"></div>
 
-<main class="main">
-<section class="section">
-  <div class="container section-title" data-aos="fade-up">
-    <h2>Veille informatique</h2>
-    <p>Neurotechnologies, bio-informatique &amp; cybersécurité</p>
-  </div>
+  <header id="header" class="header dark-background d-flex flex-column">
+    <i class="header-toggle d-xl-none bi bi-list"></i>
 
-  <div class="container" data-aos="fade-up" data-aos-delay="100">
-    <div class="veille-intro">
-      <p class="veille-lead">
-        Depuis plusieurs décennies, les progrès de l'informatique et des neurosciences permettent progressivement de rapprocher l'être humain des machines. Cette évolution a notamment donné naissance aux interfaces cerveau-machine, ou BCI (<em>Brain-Computer Interfaces</em>). Leur principe est relativement simple à comprendre : récupérer des signaux provenant de l'activité cérébrale, les analyser à l'aide de systèmes informatiques puis les transformer en commandes permettant d'interagir avec un ordinateur ou un autre appareil.
-      </p>
-      <p class="veille-lead">
-        L'idée peut sembler récente, notamment avec la médiatisation d'entreprises comme Neuralink, mais les premières recherches remontent à plusieurs décennies. Dès les années 1920, les scientifiques commencent à enregistrer l'activité électrique du cerveau grâce à l'électroencéphalographie (EEG). Dans les années 1970 et 1980, les recherches progressent jusqu'à permettre d'envisager une communication directe entre l'activité cérébrale et des systèmes électroniques. En 1978, une expérience menée par William Dobelle permettait déjà de stimuler le cortex visuel d'un patient à l'aide d'une matrice d'électrodes, produisant des perceptions lumineuses artificielles.
-      </p>
-      <p class="veille-lead">
-        Durant les années 1990 et 2000, les interfaces cerveau-machine continuent de progresser. Les chercheurs développent notamment des systèmes capables d'interpréter certaines activités cérébrales afin de contrôler un curseur, communiquer ou commander des dispositifs mécaniques. En 2004, Matt Nagle devient notamment l'un des premiers patients à utiliser une interface cerveau-machine invasive pour contrôler un bras robotique.
-      </p>
-      <p class="veille-lead">
-        L'objectif initial de ces technologies est principalement médical. Il s'agit notamment de permettre à des personnes souffrant de paralysie ou de troubles moteurs de retrouver certaines capacités d'interaction avec leur environnement. Le développement des capteurs, de l'intelligence artificielle et de la puissance de calcul permet cependant d'envisager progressivement des applications beaucoup plus larges.
-      </p>
-      <a class="veille-source" href="https://pmc.ncbi.nlm.nih.gov/articles/PMC13317701/" target="_blank" rel="noopener">Source scientifique · Histoire des BCI ↗</a>
+    <div class="profile-img">
+      <img src="assets/img/my-profile-img.jpg" alt="Sacha Odin" class="img-fluid rounded-circle">
     </div>
 
-    <div class="veille-timeline">
-      <article class="veille-event" data-aos="fade-up">
-        <span class="veille-dot"></span>
-        <div class="veille-date">Années 1920</div>
-        <h3>Les premières mesures de l'activité cérébrale</h3>
-        <p>L'électroencéphalographie permet d'enregistrer l'activité électrique du cerveau. Cette technique devient l'une des bases historiques de l'étude des signaux neuronaux et, beaucoup plus tard, de certaines interfaces cerveau-machine.</p>
-        <a class="veille-source" href="https://pmc.ncbi.nlm.nih.gov/articles/PMC13317701/" target="_blank" rel="noopener">Source scientifique · Lire l'étude ↗</a>
-      </article>
+    <a href="index.html" class="logo d-flex align-items-center justify-content-center">
+      <h1 class="sitename">Sacha Odin</h1>
+    </a>
 
-      <article class="veille-event" data-aos="fade-up">
-        <span class="veille-dot"></span>
-        <div class="veille-date">1970–1980</div>
-        <h3>Les premières interactions cerveau–machine</h3>
-        <p>Les recherches passent progressivement de la simple observation des signaux cérébraux à leur utilisation pour produire une interaction avec un système électronique. Les travaux de William Dobelle sur la stimulation du cortex visuel illustrent cette évolution.</p>
-        <a class="veille-source" href="https://pmc.ncbi.nlm.nih.gov/articles/PMC13317701/" target="_blank" rel="noopener">Document scientifique · Historique des neurotechnologies ↗</a>
-      </article>
-
-      <article class="veille-event" data-aos="fade-up">
-        <span class="veille-dot"></span>
-        <div class="veille-date">2004</div>
-        <h3>Une BCI invasive utilisée pour contrôler un bras robotique</h3>
-        <p>Les travaux menés avec Matt Nagle montrent concrètement qu'une interface implantée peut permettre à une personne paralysée de commander un dispositif externe à partir de signaux cérébraux. La finalité reste alors essentiellement médicale.</p>
-        <a class="veille-source" href="https://pmc.ncbi.nlm.nih.gov/articles/PMC13317701/" target="_blank" rel="noopener">Source scientifique · Lire l'étude ↗</a>
-      </article>
-
-      <article class="veille-event" data-aos="fade-up">
-        <span class="veille-dot"></span>
-        <div class="veille-date">2024</div>
-        <h3>Neuralink et le passage aux essais humains</h3>
-        <p>L'année 2024 marque une étape importante dans la médiatisation des interfaces cerveau-machine avec Neuralink. L'entreprise commence ses essais humains et présente un système destiné notamment à permettre à une personne atteinte de paralysie d'interagir avec un ordinateur grâce à l'activité cérébrale.</p>
-        <p>Il est important de ne pas réduire les BCI à Neuralink : universités, laboratoires et autres entreprises travaillent depuis longtemps sur différentes formes d'interfaces invasives et non invasives. Cette étape rend toutefois plus concrète une question centrale pour ma veille : comment protéger une technologie capable de collecter des signaux issus de l'activité cérébrale lorsqu'elle devient connectée à des systèmes informatiques ?</p>
-        <a class="veille-source" href="https://www.reuters.com/legal/litigation/elon-musks-neuralink-says-it-has-21-participants-enrolled-trials-2026-01-28/" target="_blank" rel="noopener">Document associé · Suivi des essais Neuralink ↗</a>
-      </article>
-
-      <article class="veille-event" data-aos="fade-up">
-        <span class="veille-dot"></span>
-        <div class="veille-date">2025</div>
-        <h3>La question de la sécurité devient centrale</h3>
-        <p>À mesure que les interfaces cerveau-machine progressent, les discussions ne concernent plus uniquement leurs performances médicales. Les chercheurs étudient également la confidentialité, la sécurité et la protection des données. Une BCI repose sur une chaîne composée de capteurs, systèmes électroniques, logiciels, algorithmes, communications et appareils connectés : autant d'éléments qui peuvent nécessiter des mesures de sécurité.</p>
-        <p>Les travaux sur la cybersécurité des interfaces neuronales étudient notamment la protection des données neuronales, l'authentification, les autorisations et la sécurité des modèles d'intelligence artificielle chargés d'interpréter les signaux.</p>
-        <a class="veille-source" href="https://pubmed.ncbi.nlm.nih.gov/37883851/" target="_blank" rel="noopener">Source scientifique · Sécurité des interfaces neuronales ↗</a>
-      </article>
-
-      <article class="veille-event" data-aos="fade-up">
-        <span class="veille-dot"></span>
-        <div class="veille-date">2026</div>
-        <h3>Des applications médicales commencent à sortir du laboratoire</h3>
-        <p>En janvier 2026, Neuralink indiquait avoir 21 participants inscrits dans ses essais humains à travers le monde. Les premiers utilisateurs ont notamment pu effectuer des tâches numériques avec leur implant, comme contrôler un curseur ou interagir avec un ordinateur.</p>
-        <p>En mars 2026, la Chine a annoncé l'autorisation de commercialisation d'un dispositif médical utilisant une interface cerveau-machine, destiné notamment à aider certaines personnes atteintes de tétraplégie à retrouver une capacité de préhension grâce à une interface implantée et à un gant contrôlé par les signaux cérébraux.</p>
-        <p>Ces évolutions montrent que les BCI commencent progressivement à passer d'une technologie principalement expérimentale à des applications médicales concrètes. Plus une technologie est déployée, plus les exigences de sécurité, de fiabilité et de protection des données deviennent importantes.</p>
-        <a class="veille-source" href="https://www.reuters.com/legal/litigation/elon-musks-neuralink-says-it-has-21-participants-enrolled-trials-2026-01-28/" target="_blank" rel="noopener">Document associé · Neuralink, janvier 2026 ↗</a>
-        <a class="veille-source" href="https://www.reuters.com/business/healthcare-pharmaceuticals/china-approves-market-launch-brain-computer-interface-medical-device-world-first-2026-03-13/" target="_blank" rel="noopener">Document associé · Chine, mars 2026 ↗</a>
-      </article>
-    </div>
-
-    <div class="veille-card" data-aos="fade-up">
-      <h3>Le lien avec la cybersécurité</h3>
-      <p>C'est à ce niveau que cette veille rejoint directement ma formation en BTS SIO, spécialité SISR. Une interface cerveau-machine peut être considérée comme une chaîne composée de plusieurs éléments informatiques : acquisition de données, traitement des signaux, logiciels, algorithmes, communications et appareils connectés. Chacun de ces éléments peut potentiellement constituer un point nécessitant une protection.</p>
-      <p>Il serait toutefois incorrect d'affirmer aujourd'hui qu'un pirate informatique peut simplement « pirater le cerveau » ou voler directement les pensées d'une personne équipée d'un implant. Ces scénarios appartiennent encore largement à la prospective. En revanche, les risques de cybersécurité associés aux systèmes BCI font déjà l'objet de recherches scientifiques.</p>
-      <p>On peut ainsi envisager plusieurs catégories de menaces futures : un accès non autorisé aux données produites par un dispositif, une compromission du logiciel chargé de traiter ces données, une attaque contre les communications entre l'implant et un appareil externe, ou encore une manipulation des algorithmes chargés d'interpréter les signaux. La problématique concerne alors la confidentialité, mais aussi l'intégrité et la disponibilité du système — trois notions directement liées aux principes fondamentaux de la cybersécurité.</p>
-      <a class="veille-source" href="https://www.nature.com/articles/s41598-026-48527-x" target="_blank" rel="noopener">Source scientifique · Sécurisation des BCI ↗</a>
-    </div>
-
-    <div class="veille-card" data-aos="fade-up">
-      <h3>Vers une nouvelle catégorie de données ?</h3>
-      <p>Une donnée bancaire peut révéler des informations financières, une donnée de localisation peut révéler nos déplacements et une donnée médicale peut révéler notre état de santé. Les données neuronales pourraient, selon les capacités futures des systèmes, fournir des informations extrêmement personnelles sur l'activité cérébrale d'un individu.</p>
-      <p>Une revue publiée en 2026 souligne que les interfaces cerveau-machine implantables produisent des signaux neuronaux à haute résolution et identifie plusieurs lacunes dans les mécanismes actuels de protection : contrôle individuel limité, consentement, réutilisation des données et questions de propriété. Les auteurs insistent aussi sur le fait que les risques dépendent fortement du type de signal collecté et de ce que les algorithmes peuvent effectivement en déduire.</p>
-      <p>La question devient donc à la fois technique, juridique et éthique : comment protéger ces informations, qui peut y accéder, pendant combien de temps peuvent-elles être conservées et dans quelles conditions peuvent-elles être utilisées ?</p>
-      <a class="veille-source" href="https://www.nature.com/articles/s43856-026-01797-y" target="_blank" rel="noopener">Source scientifique · Protection des données iBCI ↗</a>
-    </div>
-
-    <div class="veille-card" data-aos="fade-up">
-      <h3>Et après ?</h3>
-      <p>L'évolution des interfaces cerveau-machine montre une tendance générale : les frontières entre informatique, biologie et humain deviennent progressivement moins nettes.</p>
-      <p>Il y a quelques décennies, un ordinateur était un appareil externe utilisé par une personne. Aujourd'hui, nous portons déjà des objets connectés capables de mesurer notre activité physique, notre sommeil ou différents paramètres biologiques. Les interfaces cerveau-machine représentent potentiellement une étape supplémentaire : au lieu de simplement utiliser un appareil avec nos mains ou notre voix, nous pourrions progressivement interagir avec lui à partir de signaux provenant directement de notre système nerveux.</p>
-      <p>Cette évolution pourrait apporter des avancées médicales considérables, notamment pour les personnes souffrant de handicaps moteurs ou neurologiques. Mais elle implique également de repenser certaines problématiques de cybersécurité.</p>
-      <p>La question qui guide donc ma veille n'est pas de savoir si une technologie comme Neuralink va nécessairement conduire à des « piratages de cerveau ». Il s'agit plutôt de comprendre comment la cybersécurité devra évoluer si des systèmes informatiques commencent à traiter directement des données provenant de notre cerveau et à interagir avec notre corps.</p>
-      <p>Aujourd'hui, ces technologies restent encore en développement et leurs usages sont principalement expérimentaux ou médicaux. Cependant, leur progression montre qu'il est pertinent de réfléchir dès maintenant aux mécanismes de sécurité qui devront accompagner leur développement. La cybersécurité pourrait ainsi devoir protéger non seulement nos fichiers, nos comptes et nos infrastructures, mais à terme également certaines des informations les plus personnelles qu'un système informatique puisse traiter : celles provenant directement de notre activité cérébrale.</p>
-    </div>
-
-    <div class="veille-sources" data-aos="fade-up">
-      <h3>Sources &amp; documents</h3>
-      <ul class="veille-source-list">
-        <li><a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC13317701/" target="_blank" rel="noopener">Revue scientifique · Histoire et évolution des interfaces cerveau-machine ↗</a></li>
-        <li><a href="https://pubmed.ncbi.nlm.nih.gov/37883851/" target="_blank" rel="noopener">PubMed · Travaux sur la sécurité des interfaces neuronales ↗</a></li>
-        <li><a href="https://www.nature.com/articles/s43856-026-01797-y" target="_blank" rel="noopener">Communications Medicine · Protection des données des iBCI, 2026 ↗</a></li>
-        <li><a href="https://www.nature.com/articles/s41598-026-48527-x" target="_blank" rel="noopener">Scientific Reports · Sécurisation des BCI et authentification, 2026 ↗</a></li>
-        <li><a href="https://www.reuters.com/legal/litigation/elon-musks-neuralink-says-it-has-21-participants-enrolled-trials-2026-01-28/" target="_blank" rel="noopener">Reuters · Neuralink et ses essais humains, janvier 2026 ↗</a></li>
-        <li><a href="https://www.reuters.com/business/healthcare-pharmaceuticals/china-approves-market-launch-brain-computer-interface-medical-device-world-first-2026-03-13/" target="_blank" rel="noopener">Reuters · Autorisation d'un dispositif BCI médical en Chine, mars 2026 ↗</a></li>
-        <li><a href="https://www.nature.com/articles/s41593-026-02447-1" target="_blank" rel="noopener">Nature Neuroscience · Considérations éthiques sur les iBCI, septembre 2026 ↗</a></li>
+    <nav id="navmenu" class="navmenu">
+      <ul>
+        <li><a href="index.html"><i class="bi bi-house navicon"></i>Accueil</a></li>
+        <li><a href="index.html#about"><i class="bi bi-person navicon"></i>À propos</a></li>
+        <li><a href="index.html#projects"><i class="bi bi-folder2-open navicon"></i>Projets</a></li>
+        <li><a href="veille.html" class="active"><i class="bi bi-activity navicon"></i>Veille informatique</a></li>
+        <li><a href="index.html#contact"><i class="bi bi-envelope navicon"></i>Contact</a></li>
       </ul>
+    </nav>
+  </header>
+
+  <main class="main">
+    <section class="section">
+      <div class="container section-title" data-aos="fade-up">
+        <div class="veille-wrap">
+          <div class="veille-kicker"><i class="bi bi-broadcast-pin"></i> Veille technologique</div>
+          <h2 class="veille-hero-title">Veille informatique</h2>
+          <p class="veille-hero-subtitle">Neurotechnologies, bio-informatique &amp; cybersécurité</p>
+        </div>
+      </div>
+
+      <div class="container">
+        <div class="veille-wrap">
+
+          <div class="veille-hero-card" data-aos="fade-up" data-aos-delay="100">
+            <div class="veille-kicker"><i class="bi bi-shield-lock"></i> Question centrale</div>
+            <h3 class="text-white mb-2">Quand l'informatique commence à communiquer avec le cerveau</h3>
+            <p class="veille-hero-subtitle">
+              L'intégration croissante de technologies numériques directement dans le corps humain
+              pourrait-elle créer de nouvelles menaces en matière de cybersécurité et de protection des données ?
+            </p>
+            <div class="veille-tags">
+              <span class="veille-tag"><i class="bi bi-cpu"></i> Neurotech</span>
+              <span class="veille-tag"><i class="bi bi-diagram-3"></i> BCI</span>
+              <span class="veille-tag"><i class="bi bi-shield-check"></i> Sécurité</span>
+              <span class="veille-tag"><i class="bi bi-database"></i> Données neuronales</span>
+            </div>
+          </div>
+
+          <div class="veille-intro-card" data-aos="fade-up">
+            <h3>Introduction</h3>
+            <p>
+              Depuis plusieurs décennies, les progrès de l'informatique et des neurosciences permettent progressivement de rapprocher l'être humain des machines. Cette évolution a notamment donné naissance aux interfaces cerveau-machine, ou BCI (<em>Brain-Computer Interfaces</em>). Leur principe est relativement simple à comprendre : récupérer des signaux provenant de l'activité cérébrale, les analyser à l'aide de systèmes informatiques puis les transformer en commandes permettant d'interagir avec un ordinateur ou un autre appareil.
+            </p>
+            <p>
+              L'idée peut sembler récente, notamment avec la médiatisation d'entreprises comme Neuralink, mais les premières recherches remontent à plusieurs décennies. Dès les années 1920, les scientifiques commencent à enregistrer l'activité électrique du cerveau grâce à l'électroencéphalographie (EEG). Dans les années 1970 et 1980, les recherches progressent jusqu'à permettre d'envisager une communication directe entre l'activité cérébrale et des systèmes électroniques. En 1978, une expérience menée par William Dobelle permettait déjà de stimuler le cortex visuel d'un patient à l'aide d'une matrice d'électrodes, produisant des perceptions lumineuses artificielles.
+            </p>
+            <p>
+              Durant les années 1990 et 2000, les interfaces cerveau-machine continuent de progresser. Les chercheurs développent notamment des systèmes capables d'interpréter certaines activités cérébrales afin de contrôler un curseur, communiquer ou commander des dispositifs mécaniques. En 2004, Matt Nagle devient notamment l'un des premiers patients à utiliser une interface cerveau-machine invasive pour contrôler un bras robotique.
+            </p>
+            <p>
+              L'objectif initial de ces technologies est principalement médical. Il s'agit notamment de permettre à des personnes souffrant de paralysie ou de troubles moteurs de retrouver certaines capacités d'interaction avec leur environnement. Le développement des capteurs, de l'intelligence artificielle et de la puissance de calcul permet cependant d'envisager progressivement des applications beaucoup plus larges.
+            </p>
+
+            <div class="veille-summary">
+              <span class="veille-summary-item"><i class="bi bi-clock-history"></i> Des années 1920 à aujourd'hui</span>
+              <span class="veille-summary-item"><i class="bi bi-heart-pulse"></i> Finalité médicale initiale</span>
+              <span class="veille-summary-item"><i class="bi bi-cpu"></i> Traitement informatique du signal</span>
+            </div>
+
+            <a class="veille-source" href="https://pmc.ncbi.nlm.nih.gov/articles/PMC13317701/" target="_blank" rel="noopener">
+              <i class="bi bi-journal-text"></i> Source scientifique · Histoire des BCI ↗
+            </a>
+          </div>
+
+          <div class="veille-timeline">
+            <article class="veille-event" data-aos="fade-up">
+              <span class="veille-dot"></span>
+              <div class="veille-date">Années 1920</div>
+              <h3>Les premières mesures de l'activité cérébrale</h3>
+              <p>
+                L'électroencéphalographie permet d'enregistrer l'activité électrique du cerveau. Cette technique devient l'une des bases historiques de l'étude des signaux neuronaux et, beaucoup plus tard, de certaines interfaces cerveau-machine.
+              </p>
+              <a class="veille-source" href="https://pmc.ncbi.nlm.nih.gov/articles/PMC13317701/" target="_blank" rel="noopener">
+                <i class="bi bi-arrow-up-right"></i> Source scientifique · Lire l'étude ↗
+              </a>
+            </article>
+
+            <article class="veille-event" data-aos="fade-up">
+              <span class="veille-dot"></span>
+              <div class="veille-date">1970–1980</div>
+              <h3>Les premières interactions cerveau–machine</h3>
+              <p>
+                Les recherches passent progressivement de la simple observation des signaux cérébraux à leur utilisation pour produire une interaction avec un système électronique. Les travaux de William Dobelle sur la stimulation du cortex visuel illustrent cette évolution.
+              </p>
+              <a class="veille-source" href="https://pmc.ncbi.nlm.nih.gov/articles/PMC13317701/" target="_blank" rel="noopener">
+                <i class="bi bi-file-earmark-text"></i> Document scientifique · Historique des neurotechnologies ↗
+              </a>
+            </article>
+
+            <article class="veille-event" data-aos="fade-up">
+              <span class="veille-dot"></span>
+              <div class="veille-date">2004</div>
+              <h3>Une BCI invasive utilisée pour contrôler un bras robotique</h3>
+              <p>
+                Les travaux menés avec Matt Nagle montrent concrètement qu'une interface implantée peut permettre à une personne paralysée de commander un dispositif externe à partir de signaux cérébraux. La finalité reste alors essentiellement médicale.
+              </p>
+              <a class="veille-source" href="https://pmc.ncbi.nlm.nih.gov/articles/PMC13317701/" target="_blank" rel="noopener">
+                <i class="bi bi-journal-text"></i> Source scientifique · Lire l'étude ↗
+              </a>
+            </article>
+
+            <article class="veille-event" data-aos="fade-up">
+              <span class="veille-dot"></span>
+              <div class="veille-date">2024</div>
+              <h3>Neuralink et le passage aux essais humains</h3>
+              <p>
+                L'année 2024 marque une étape importante dans la médiatisation des interfaces cerveau-machine avec Neuralink. L'entreprise commence ses essais humains et présente un système destiné notamment à permettre à une personne atteinte de paralysie d'interagir avec un ordinateur grâce à l'activité cérébrale.
+              </p>
+              <p>
+                Il est important de ne pas réduire les BCI à Neuralink : universités, laboratoires et autres entreprises travaillent depuis longtemps sur différentes formes d'interfaces invasives et non invasives. Cette étape rend toutefois plus concrète une question centrale pour ma veille : comment protéger une technologie capable de collecter des signaux issus de l'activité cérébrale lorsqu'elle devient connectée à des systèmes informatiques ?
+              </p>
+              <a class="veille-source" href="https://www.reuters.com/legal/litigation/elon-musks-neuralink-says-it-has-21-participants-enrolled-trials-2026-01-28/" target="_blank" rel="noopener">
+                <i class="bi bi-newspaper"></i> Document associé · Suivi des essais Neuralink ↗
+              </a>
+            </article>
+
+            <article class="veille-event" data-aos="fade-up">
+              <span class="veille-dot"></span>
+              <div class="veille-date">2025</div>
+              <h3>La question de la sécurité devient centrale</h3>
+              <p>
+                À mesure que les interfaces cerveau-machine progressent, les discussions ne concernent plus uniquement leurs performances médicales. Les chercheurs étudient également la confidentialité, la sécurité et la protection des données. Une BCI repose sur une chaîne composée de capteurs, systèmes électroniques, logiciels, algorithmes, communications et appareils connectés : autant d'éléments qui peuvent nécessiter des mesures de sécurité.
+              </p>
+              <p>
+                Les travaux sur la cybersécurité des interfaces neuronales étudient notamment la protection des données neuronales, l'authentification, les autorisations et la sécurité des modèles d'intelligence artificielle chargés d'interpréter les signaux.
+              </p>
+              <a class="veille-source" href="https://pubmed.ncbi.nlm.nih.gov/37883851/" target="_blank" rel="noopener">
+                <i class="bi bi-shield-lock"></i> Source scientifique · Sécurité des interfaces neuronales ↗
+              </a>
+            </article>
+
+            <article class="veille-event" data-aos="fade-up">
+              <span class="veille-dot"></span>
+              <div class="veille-date">2026</div>
+              <h3>Des applications médicales commencent à sortir du laboratoire</h3>
+              <p>
+                En janvier 2026, Neuralink indiquait avoir 21 participants inscrits dans ses essais humains à travers le monde. Les premiers utilisateurs ont notamment pu effectuer des tâches numériques avec leur implant, comme contrôler un curseur ou interagir avec un ordinateur.
+              </p>
+              <p>
+                En mars 2026, la Chine a annoncé l'autorisation de commercialisation d'un dispositif médical utilisant une interface cerveau-machine, destiné notamment à aider certaines personnes atteintes de tétraplégie à retrouver une capacité de préhension grâce à une interface implantée et à un gant contrôlé par les signaux cérébraux.
+              </p>
+              <p>
+                Ces évolutions montrent que les BCI commencent progressivement à passer d'une technologie principalement expérimentale à des applications médicales concrètes. Plus une technologie est déployée, plus les exigences de sécurité, de fiabilité et de protection des données deviennent importantes.
+              </p>
+              <a class="veille-source" href="https://www.reuters.com/legal/litigation/elon-musks-neuralink-says-it-has-21-participants-enrolled-trials-2026-01-28/" target="_blank" rel="noopener">
+                <i class="bi bi-newspaper"></i> Document associé · Neuralink, janvier 2026 ↗
+              </a>
+              <a class="veille-source" href="https://www.reuters.com/business/healthcare-pharmaceuticals/china-approves-market-launch-brain-computer-interface-medical-device-world-first-2026-03-13/" target="_blank" rel="noopener">
+                <i class="bi bi-newspaper"></i> Document associé · Chine, mars 2026 ↗
+              </a>
+            </article>
+          </div>
+
+          <div class="veille-card veille-question" data-aos="fade-up">
+            <h3>Le lien avec la cybersécurité</h3>
+            <p>
+              C'est à ce niveau que cette veille rejoint directement ma formation en BTS SIO, spécialité SISR. Une interface cerveau-machine peut être considérée comme une chaîne composée de plusieurs éléments informatiques : acquisition de données, traitement des signaux, logiciels, algorithmes, communications et appareils connectés. Chacun de ces éléments peut potentiellement constituer un point nécessitant une protection.
+            </p>
+            <p>
+              Il serait toutefois incorrect d'affirmer aujourd'hui qu'un pirate informatique peut simplement « pirater le cerveau » ou voler directement les pensées d'une personne équipée d'un implant. Ces scénarios appartiennent encore largement à la prospective. En revanche, les risques de cybersécurité associés aux systèmes BCI font déjà l'objet de recherches scientifiques.
+            </p>
+            <p>
+              On peut ainsi envisager plusieurs catégories de menaces futures : un accès non autorisé aux données produites par un dispositif, une compromission du logiciel chargé de traiter ces données, une attaque contre les communications entre l'implant et un appareil externe, ou encore une manipulation des algorithmes chargés d'interpréter les signaux. La problématique concerne alors la confidentialité, mais aussi l'intégrité et la disponibilité du système — trois notions directement liées aux principes fondamentaux de la cybersécurité.
+            </p>
+            <a class="veille-source" href="https://pubmed.ncbi.nlm.nih.gov/37883851/" target="_blank" rel="noopener">
+              <i class="bi bi-shield-check"></i> Source scientifique · Sécurisation des interfaces neuronales ↗
+            </a>
+          </div>
+
+          <div class="veille-card" data-aos="fade-up">
+            <h3>Vers une nouvelle catégorie de données ?</h3>
+            <p>
+              Une donnée bancaire peut révéler des informations financières, une donnée de localisation peut révéler nos déplacements et une donnée médicale peut révéler notre état de santé. Les données neuronales pourraient, selon les capacités futures des systèmes, fournir des informations extrêmement personnelles sur l'activité cérébrale d'un individu.
+            </p>
+            <p>
+              Une revue publiée en 2026 souligne que les interfaces cerveau-machine implantables produisent des signaux neuronaux à haute résolution et identifie plusieurs lacunes dans les mécanismes actuels de protection : contrôle individuel limité, consentement, réutilisation des données et questions de propriété. Les auteurs insistent aussi sur le fait que les risques dépendent fortement du type de signal collecté et de ce que les algorithmes peuvent effectivement en déduire.
+            </p>
+            <p>
+              La question devient donc à la fois technique, juridique et éthique : comment protéger ces informations, qui peut y accéder, pendant combien de temps peuvent-elles être conservées et dans quelles conditions peuvent-elles être utilisées ?
+            </p>
+            <a class="veille-source" href="https://www.nature.com/articles/s43856-026-01797-y" target="_blank" rel="noopener">
+              <i class="bi bi-database-lock"></i> Source scientifique · Protection des données iBCI ↗
+            </a>
+          </div>
+
+          <div class="veille-card" data-aos="fade-up">
+            <h3>Et après ?</h3>
+            <p>
+              L'évolution des interfaces cerveau-machine montre une tendance générale : les frontières entre informatique, biologie et humain deviennent progressivement moins nettes.
+            </p>
+            <p>
+              Il y a quelques décennies, un ordinateur était un appareil externe utilisé par une personne. Aujourd'hui, nous portons déjà des objets connectés capables de mesurer notre activité physique, notre sommeil ou différents paramètres biologiques. Les interfaces cerveau-machine représentent potentiellement une étape supplémentaire : au lieu de simplement utiliser un appareil avec nos mains ou notre voix, nous pourrions progressivement interagir avec lui à partir de signaux provenant directement de notre système nerveux.
+            </p>
+            <p>
+              Cette évolution pourrait apporter des avancées médicales considérables, notamment pour les personnes souffrant de handicaps moteurs ou neurologiques. Mais elle implique également de repenser certaines problématiques de cybersécurité.
+            </p>
+            <p>
+              La question qui guide donc ma veille n'est pas de savoir si une technologie comme Neuralink va nécessairement conduire à des « piratages de cerveau ». Il s'agit plutôt de comprendre comment la cybersécurité devra évoluer si des systèmes informatiques commencent à traiter directement des données provenant de notre cerveau et à interagir avec notre corps.
+            </p>
+            <p>
+              Aujourd'hui, ces technologies restent encore en développement et leurs usages sont principalement expérimentaux ou médicaux. Cependant, leur progression montre qu'il est pertinent de réfléchir dès maintenant aux mécanismes de sécurité qui devront accompagner leur développement. La cybersécurité pourrait ainsi devoir protéger non seulement nos fichiers, nos comptes et nos infrastructures, mais à terme également certaines des informations les plus personnelles qu'un système informatique puisse traiter : celles provenant directement de notre activité cérébrale.
+            </p>
+          </div>
+
+          <div class="veille-sources" data-aos="fade-up">
+            <h3>Sources &amp; documents</h3>
+            <ul class="veille-source-list">
+              <li><a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC13317701/" target="_blank" rel="noopener">Revue scientifique · Histoire et évolution des interfaces cerveau-machine ↗</a></li>
+              <li><a href="https://pubmed.ncbi.nlm.nih.gov/37883851/" target="_blank" rel="noopener">PubMed · Travaux sur la sécurité des interfaces neuronales ↗</a></li>
+              <li><a href="https://www.nature.com/articles/s43856-026-01797-y" target="_blank" rel="noopener">Communications Medicine · Protection des données des iBCI, 2026 ↗</a></li>
+              <li><a href="https://www.reuters.com/legal/litigation/elon-musks-neuralink-says-it-has-21-participants-enrolled-trials-2026-01-28/" target="_blank" rel="noopener">Reuters · Neuralink et ses essais humains, janvier 2026 ↗</a></li>
+              <li><a href="https://www.reuters.com/business/healthcare-pharmaceuticals/china-approves-market-launch-brain-computer-interface-medical-device-world-first-2026-03-13/" target="_blank" rel="noopener">Reuters · Autorisation d'un dispositif BCI médical en Chine, mars 2026 ↗</a></li>
+              <li><a href="https://doi.org/10.1109/IoT69654.2025.11297585" target="_blank" rel="noopener">IEEE · Recherche sur les enjeux de cybersécurité des neurotechnologies ↗</a></li>
+              <li><a href="https://journals.sagepub.com/doi/10.1177/20552076251326123" target="_blank" rel="noopener">SAGE · Réflexions récentes sur les neurotechnologies et les données ↗</a></li>
+            </ul>
+          </div>
+
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer id="footer" class="footer light-background">
+    <div class="container text-center">
+      <p>© 2026/2027 <strong>Sacha Odin</strong></p>
     </div>
-  </div>
-</section>
-</main>
+  </footer>
 
-<footer id="footer" class="footer light-background">
-  <div class="container text-center"><p>© 2026/2027 <strong>Sacha Odin</strong></p></div>
-</footer>
+  <a href="#" id="scroll-top" class="scroll-top d-flex align-items-center justify-content-center">
+    <i class="bi bi-arrow-up-short"></i>
+  </a>
 
-<a href="#" id="scroll-top" class="scroll-top d-flex align-items-center justify-content-center"><i class="bi bi-arrow-up-short"></i></a>
-<div id="preloader"></div>
-<script src="assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
-<script src="assets/vendor/aos/aos.js"></script>
-<script src="assets/js/main.js"></script>
-<script src="assets/js/cursor-glow.js"></script>
+  <div id="preloader"></div>
+
+  <script src="assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+  <script src="assets/vendor/aos/aos.js"></script>
+  <script src="assets/js/main.js"></script>
+  <script src="assets/js/cursor-glow.js"></script>
 </body>
 </html>
