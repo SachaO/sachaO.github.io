@@ -2260,3 +2260,68 @@ body::after {
     opacity: 0.7;
   }
 }
+
+
+/* Décor renforcé : visible directement dans les sections */
+#about,
+#projects,
+#contact {
+  position: relative;
+  background-image:
+    radial-gradient(circle at 8% 25%, rgba(20,157,221,.14), transparent 24%),
+    radial-gradient(circle at 92% 75%, rgba(20,157,221,.10), transparent 26%),
+    linear-gradient(rgba(20,157,221,.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(20,157,221,.055) 1px, transparent 1px) !important;
+  background-size: auto, auto, 45px 45px, 45px 45px !important;
+}
+
+#about::after,
+#projects::after,
+#contact::after {
+  content: "";
+  position: absolute;
+  width: 280px;
+  height: 280px;
+  right: 5%;
+  top: 12%;
+  border: 1px solid rgba(20,157,221,.16);
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 35px rgba(20,157,221,.025),
+    0 0 0 70px rgba(20,157,221,.018),
+    inset 0 0 45px rgba(20,157,221,.04);
+  pointer-events: none;
+  animation: decorPulse 7s ease-in-out infinite;
+}
+
+#about::before,
+#projects::before,
+#contact::before {
+  content: "";
+  position: absolute;
+  width: 420px;
+  height: 1px;
+  left: 0;
+  bottom: 18%;
+  background: linear-gradient(90deg, transparent, rgba(20,157,221,.35), transparent);
+  transform: rotate(-12deg);
+  pointer-events: none;
+}
+
+.project-card {
+  background: linear-gradient(145deg, rgba(21,31,43,.96), rgba(8,19,33,.92)) !important;
+  border: 1px solid rgba(20,157,221,.16);
+  box-shadow: 0 18px 45px rgba(0,0,0,.25), inset 0 1px rgba(255,255,255,.035);
+  transition: transform .35s ease, border-color .35s ease, box-shadow .35s ease;
+}
+
+.project-card:hover {
+  transform: translateY(-8px);
+  border-color: rgba(20,157,221,.55);
+  box-shadow: 0 25px 60px rgba(0,0,0,.38), 0 0 30px rgba(20,157,221,.08);
+}
+
+@keyframes decorPulse {
+  0%,100% { transform: scale(.96) rotate(0deg); opacity: .55; }
+  50% { transform: scale(1.04) rotate(8deg); opacity: 1; }
+}
