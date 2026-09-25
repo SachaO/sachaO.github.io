@@ -2098,3 +2098,165 @@ section,
     display: none;
   }
 }
+
+
+/*--------------------------------------------------------------
+# Tech Background / Décor visuel
+--------------------------------------------------------------*/
+
+body {
+  position: relative;
+  background:
+    radial-gradient(circle at 15% 20%, rgba(20, 157, 221, 0.08), transparent 28%),
+    radial-gradient(circle at 85% 70%, rgba(20, 157, 221, 0.06), transparent 30%),
+    #040b14;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.18;
+  background-image:
+    linear-gradient(rgba(20, 157, 221, 0.14) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(20, 157, 221, 0.14) 1px, transparent 1px);
+  background-size: 52px 52px;
+  mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%);
+}
+
+body::after {
+  content: "";
+  position: fixed;
+  width: 420px;
+  height: 420px;
+  left: 20%;
+  top: 18%;
+  pointer-events: none;
+  z-index: 0;
+  background: radial-gradient(circle, rgba(20, 157, 221, 0.12), transparent 68%);
+  filter: blur(10px);
+  animation: techFloat 14s ease-in-out infinite alternate;
+}
+
+.main,
+.footer {
+  position: relative;
+  z-index: 1;
+}
+
+.header::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: -1px;
+  width: 1px;
+  height: 100%;
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    rgba(20, 157, 221, 0.65),
+    transparent
+  );
+  opacity: 0.8;
+}
+
+.section-title h2 {
+  text-shadow: 0 0 24px rgba(20, 157, 221, 0.12);
+}
+
+.project-card,
+.cv-box,
+.cr-list,
+#contact .info-wrap,
+#contact .php-email-form {
+  position: relative;
+  overflow: hidden;
+}
+
+.project-card::before,
+.cv-box::before,
+.cr-list::before,
+#contact .info-wrap::before,
+#contact .php-email-form::before {
+  content: "";
+  position: absolute;
+  width: 180px;
+  height: 180px;
+  top: -90px;
+  right: -70px;
+  background: radial-gradient(circle, rgba(20, 157, 221, 0.12), transparent 70%);
+  pointer-events: none;
+}
+
+.project-card::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 18px;
+  width: 3px;
+  height: 48px;
+  background: linear-gradient(to bottom, var(--accent-color), transparent);
+  box-shadow: 0 0 18px rgba(20, 157, 221, 0.45);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.project-card:hover::after {
+  opacity: 1;
+}
+
+.hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+  background:
+    radial-gradient(circle at 12% 24%, rgba(20, 157, 221, 0.14) 0 2px, transparent 3px),
+    radial-gradient(circle at 74% 16%, rgba(255, 255, 255, 0.14) 0 1px, transparent 2px),
+    radial-gradient(circle at 88% 76%, rgba(20, 157, 221, 0.12) 0 2px, transparent 3px),
+    radial-gradient(circle at 42% 82%, rgba(255, 255, 255, 0.08) 0 1px, transparent 2px);
+  background-size: 260px 260px, 210px 210px, 320px 320px, 280px 280px;
+  animation: particleDrift 24s linear infinite;
+}
+
+@keyframes techFloat {
+  0% {
+    transform: translate3d(-30px, -15px, 0) scale(0.95);
+  }
+  100% {
+    transform: translate3d(80px, 60px, 0) scale(1.08);
+  }
+}
+
+@keyframes particleDrift {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(-12px, 8px, 0);
+  }
+  100% {
+    transform: translate3d(10px, -10px, 0);
+  }
+}
+
+@media (max-width: 768px) {
+  body::before {
+    background-size: 42px 42px;
+    opacity: 0.12;
+  }
+
+  body::after {
+    width: 280px;
+    height: 280px;
+    left: 5%;
+    top: 22%;
+  }
+
+  .hero::after {
+    opacity: 0.7;
+  }
+}
