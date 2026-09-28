@@ -592,6 +592,41 @@
         padding-left: 25px;
       }
     }
+    /* --- Décor immersif --- */
+    .neuro-decor{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:0}
+    .neuro-grid{position:absolute;inset:-10%;background:
+      linear-gradient(rgba(20,157,221,.07) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(20,157,221,.07) 1px,transparent 1px);
+      background-size:42px 42px;transform:perspective(500px) rotateX(58deg) scale(1.4) translateY(20%);
+      transform-origin:center bottom;opacity:.7;animation:gridMove 16s linear infinite}
+    .neuro-rings{position:absolute;width:700px;height:700px;left:-330px;top:18%;
+      border:1px solid rgba(20,157,221,.12);border-radius:50%;
+      box-shadow:0 0 0 70px rgba(20,157,221,.025),0 0 0 140px rgba(20,157,221,.018);
+      animation:ringSpin 24s linear infinite}
+    .neuro-rings::before,.neuro-rings::after{content:"";position:absolute;inset:90px;border:1px dashed rgba(125,211,252,.13);border-radius:50%}
+    .neuro-rings::after{inset:180px;border-style:solid;opacity:.55}
+    .neuro-lines{position:absolute;inset:0;opacity:.55}
+    .neuro-lines span{position:absolute;height:1px;background:linear-gradient(90deg,transparent,#149ddd,transparent);box-shadow:0 0 10px #149ddd}
+    .neuro-lines span:nth-child(1){width:35%;top:18%;left:-5%;transform:rotate(12deg);animation:linePulse 4s infinite}
+    .neuro-lines span:nth-child(2){width:25%;top:42%;right:-4%;transform:rotate(-18deg);animation:linePulse 5s 1s infinite}
+    .neuro-lines span:nth-child(3){width:42%;top:73%;left:-8%;transform:rotate(-7deg);animation:linePulse 6s 2s infinite}
+    .neuro-lines span:nth-child(4){width:28%;top:87%;right:-4%;transform:rotate(9deg);animation:linePulse 4.5s 1.5s infinite}
+    .neuro-node{position:absolute;width:7px;height:7px;border-radius:50%;background:#149ddd;box-shadow:0 0 0 7px rgba(20,157,221,.08),0 0 25px #149ddd;animation:nodePulse 2.5s ease-in-out infinite}
+    .neuro-node:nth-child(5){left:8%;top:24%}.neuro-node:nth-child(6){right:12%;top:36%}.neuro-node:nth-child(7){left:18%;top:64%}.neuro-node:nth-child(8){right:8%;top:78%}.neuro-node:nth-child(9){left:48%;top:91%}
+    .decor-label{position:absolute;font:9px var(--nav-font);letter-spacing:.3em;color:rgba(125,211,252,.3);white-space:nowrap}
+    .decor-label.a{top:11%;left:5%}.decor-label.b{top:58%;right:3%;transform:rotate(90deg)}.decor-label.c{bottom:4%;left:5%}
+    .hud-corner{position:absolute;width:70px;height:70px;border-color:rgba(20,157,221,.35);border-style:solid}
+    .hud-corner.tl{top:18px;left:18px;border-width:1px 0 0 1px}.hud-corner.tr{top:18px;right:18px;border-width:1px 1px 0 0}
+    .hud-corner.bl{bottom:18px;left:18px;border-width:0 0 1px 1px}.hud-corner.br{bottom:18px;right:18px;border-width:0 1px 1px 0}
+    .scan-beam{position:absolute;left:0;right:0;height:90px;background:linear-gradient(transparent,rgba(20,157,221,.055),transparent);filter:blur(2px);animation:scanPage 9s linear infinite}
+    .veille-page .main>.section{position:relative}
+    .veille-page .main>.section>*{position:relative}
+    @keyframes gridMove{from{background-position:0 0,0 0}to{background-position:42px 42px,42px 42px}}
+    @keyframes ringSpin{to{transform:rotate(360deg)}}
+    @keyframes linePulse{0%,100%{opacity:.15}50%{opacity:.9}}
+    @keyframes nodePulse{0%,100%{transform:scale(.7);opacity:.45}50%{transform:scale(1.5);opacity:1}}
+    @keyframes scanPage{0%{top:-10%}100%{top:105%}}
+    @media(max-width:767px){.neuro-grid{opacity:.35}.neuro-rings{width:420px;height:420px;left:-210px}.decor-label{display:none}.hud-corner{width:40px;height:40px}}
   </style>
 </head>
 
@@ -621,6 +656,17 @@
   </header>
 
   <main class="main">
+    <div class="neuro-decor" aria-hidden="true">
+      <div class="neuro-grid"></div>
+      <div class="neuro-rings"></div>
+      <div class="neuro-lines"><span></span><span></span><span></span><span></span></div>
+      <i class="neuro-node"></i><i class="neuro-node"></i><i class="neuro-node"></i><i class="neuro-node"></i><i class="neuro-node"></i>
+      <span class="decor-label a">NEURAL SYSTEM / ONLINE</span>
+      <span class="decor-label b">DATA STREAM 01 — ENCRYPTED</span>
+      <span class="decor-label c">BCI // CYBERSECURITY // 2026</span>
+      <span class="hud-corner tl"></span><span class="hud-corner tr"></span><span class="hud-corner bl"></span><span class="hud-corner br"></span>
+      <span class="scan-beam"></span>
+    </div>
     <section class="section">
       <div class="container section-title" data-aos="fade-up">
         <div class="veille-wrap veille-heading-wrap">
