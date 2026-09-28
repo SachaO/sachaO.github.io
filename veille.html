@@ -37,13 +37,14 @@
       position:absolute;
       inset:0;
       pointer-events:none;
-      opacity:.22;
+      opacity:.42;
       background-image:
-        linear-gradient(rgba(20,157,221,.08) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(20,157,221,.08) 1px, transparent 1px);
-      background-size:56px 56px;
-      mask-image:linear-gradient(to bottom,black,transparent 92%);
-      animation:gridDrift 18s linear infinite;
+        linear-gradient(rgba(20,157,221,.13) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(20,157,221,.13) 1px, transparent 1px);
+      background-size:70px 70px;
+      mask-image:linear-gradient(to bottom,black 0%,black 80%,transparent 100%);
+      animation:gridDrift 12s linear infinite;
+      z-index:0;
     }
 
     .veille-page .main::after{
@@ -67,6 +68,61 @@
 
     .veille-page .container{
       position:relative;
+    }
+
+    .veille-page .main .container:first-child::before{
+      content:"01  /  NEURAL INTERFACE";
+      position:absolute;
+      left:-120px;
+      top:55px;
+      writing-mode:vertical-rl;
+      font:10px var(--nav-font);
+      letter-spacing:.28em;
+      color:rgba(120,201,243,.32);
+      border-right:1px solid rgba(20,157,221,.2);
+      padding:0 12px 0 0;
+      z-index:2;
+      animation:sidePulse 3s ease-in-out infinite;
+    }
+
+    .veille-page .main .container:first-child::after{
+      content:"SECURE DATA STREAM  •  2026  •  BCI";
+      position:absolute;
+      right:20px;
+      top:20px;
+      font:9px var(--nav-font);
+      letter-spacing:.22em;
+      color:rgba(120,201,243,.3);
+      z-index:2;
+    }
+
+    .veille-wrap{
+      position:relative;
+    }
+
+    .veille-wrap::before{
+      content:"";
+      position:absolute;
+      width:5px;
+      height:5px;
+      border-radius:50%;
+      background:#149ddd;
+      box-shadow:
+        0 0 0 6px rgba(20,157,221,.08),
+        0 0 22px rgba(20,157,221,.9);
+      right:-35px;
+      top:120px;
+      animation:dotFloat 4s ease-in-out infinite;
+    }
+
+    @keyframes sidePulse{
+      0%,100%{opacity:.3}
+      50%{opacity:.9}
+    }
+
+    @keyframes dotFloat{
+      0%,100%{transform:translateY(0)}
+      50%{transform:translateY(100px)}
     }
 
     .veille-page .section-title::after{
@@ -275,7 +331,8 @@
       margin-bottom: 34px;
       padding: 30px;
       border-radius: 14px;
-      border: 1px solid rgba(255,255,255,.08);
+      border: 1px solid rgba(20,157,221,.16);
+      background:linear-gradient(135deg,rgba(12,30,48,.72),rgba(5,17,29,.54));
       
       box-shadow: 0 10px 35px rgba(0,0,0,.14);
       backdrop-filter: blur(6px);
