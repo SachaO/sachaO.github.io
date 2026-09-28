@@ -23,6 +23,44 @@
 
   <!-- Main CSS -->
   <link href="assets/css/main.css" rel="stylesheet">
+
+<style>
+/* --- Décor premium de la page d'accueil --- */
+.home-decor{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:1}
+#hero{position:relative;overflow:hidden}
+#hero>img{z-index:0}
+#hero>.container{position:relative;z-index:4}
+.home-grid{position:absolute;inset:-20%;background:
+ linear-gradient(rgba(20,157,221,.10) 1px,transparent 1px),
+ linear-gradient(90deg,rgba(20,157,221,.10) 1px,transparent 1px);
+ background-size:55px 55px;transform:perspective(700px) rotateX(62deg) scale(1.35) translateY(28%);
+ transform-origin:center bottom;opacity:.55;animation:homeGrid 14s linear infinite}
+.home-vignette{position:absolute;inset:0;background:
+ radial-gradient(circle at 72% 38%,rgba(20,157,221,.20),transparent 25%),
+ radial-gradient(circle at 15% 80%,rgba(40,110,180,.13),transparent 28%),
+ linear-gradient(90deg,rgba(2,10,18,.78),transparent 55%,rgba(2,10,18,.20));}
+.home-orbit{position:absolute;width:620px;height:620px;right:-170px;top:50%;transform:translateY(-50%);border:1px solid rgba(125,211,252,.20);border-radius:50%;box-shadow:0 0 0 55px rgba(20,157,221,.035),0 0 0 110px rgba(20,157,221,.025),inset 0 0 60px rgba(20,157,221,.05);animation:homeOrbit 24s linear infinite}
+.home-orbit:before,.home-orbit:after{content:"";position:absolute;inset:75px;border:1px dashed rgba(125,211,252,.18);border-radius:50%}
+.home-orbit:after{inset:170px;border-style:solid;opacity:.5}
+.home-line{position:absolute;height:1px;background:linear-gradient(90deg,transparent,#42c8ff,transparent);box-shadow:0 0 12px rgba(20,157,221,.9);opacity:.7}
+.home-line.l1{width:38%;left:-5%;top:23%;transform:rotate(12deg);animation:homeLine 4s infinite}
+.home-line.l2{width:30%;right:-8%;top:67%;transform:rotate(-15deg);animation:homeLine 5s 1s infinite}
+.home-line.l3{width:22%;left:18%;bottom:10%;transform:rotate(-8deg);animation:homeLine 4.5s 2s infinite}
+.home-node{position:absolute;width:7px;height:7px;border-radius:50%;background:#55d7ff;box-shadow:0 0 0 8px rgba(20,157,221,.08),0 0 24px #149ddd;animation:homeNode 2.6s ease-in-out infinite}
+.home-node.n1{left:17%;top:24%}.home-node.n2{right:28%;top:20%}.home-node.n3{right:13%;top:72%}.home-node.n4{left:39%;bottom:12%}
+.home-label{position:absolute;font:9px var(--nav-font);letter-spacing:.28em;color:rgba(160,220,247,.48);text-transform:uppercase}
+.home-label.a{top:18%;right:6%}.home-label.b{bottom:7%;right:5%}
+.home-corner{position:absolute;width:75px;height:75px;border-color:rgba(20,157,221,.38);border-style:solid}
+.home-corner.tl{top:28px;left:28px;border-width:1px 0 0 1px}.home-corner.tr{top:28px;right:28px;border-width:1px 1px 0 0}
+.home-corner.bl{bottom:28px;left:28px;border-width:0 0 1px 1px}.home-corner.br{bottom:28px;right:28px;border-width:0 1px 1px 0}
+.home-scan{position:absolute;left:0;right:0;height:80px;background:linear-gradient(transparent,rgba(20,157,221,.07),transparent);animation:homeScan 8s linear infinite}
+@keyframes homeGrid{from{background-position:0 0,0 0}to{background-position:55px 55px,55px 55px}}
+@keyframes homeOrbit{to{transform:translateY(-50%) rotate(360deg)}}
+@keyframes homeLine{0%,100%{opacity:.15}50%{opacity:.9}}
+@keyframes homeNode{0%,100%{transform:scale(.65);opacity:.45}50%{transform:scale(1.45);opacity:1}}
+@keyframes homeScan{0%{top:-15%}100%{top:110%}}
+@media(max-width:767px){.home-orbit{width:380px;height:380px;right:-180px}.home-grid{opacity:.3}.home-label{display:none}.home-corner{width:42px;height:42px}}
+</style>
 </head>
 
 <body class="index-page">
@@ -55,6 +93,18 @@
 <main class="main">
 
 <section id="hero" class="hero section dark-background">
+  <div class="home-decor" aria-hidden="true">
+    <div class="home-vignette"></div>
+    <div class="home-grid"></div>
+    <div class="home-orbit"></div>
+    <span class="home-line l1"></span><span class="home-line l2"></span><span class="home-line l3"></span>
+    <i class="home-node n1"></i><i class="home-node n2"></i><i class="home-node n3"></i><i class="home-node n4"></i>
+    <span class="home-label a">SYSTEMS // NETWORKS // SECURITY</span>
+    <span class="home-label b">SIO SISR • 2026</span>
+    <span class="home-corner tl"></span><span class="home-corner tr"></span><span class="home-corner bl"></span><span class="home-corner br"></span>
+    <span class="home-scan"></span>
+  </div>
+
   <img src="assets/img/hero-bg.jpg" alt="" data-aos="fade-in">
   <div class="container" data-aos="fade-up" data-aos-delay="100">
     <h2>Sacha Odin</h2>
