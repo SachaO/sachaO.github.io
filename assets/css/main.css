@@ -2325,3 +2325,39 @@ body::after {
   0%,100% { transform: scale(.96) rotate(0deg); opacity: .55; }
   50% { transform: scale(1.04) rotate(8deg); opacity: 1; }
 }
+
+
+/* Fix interaction with project modals and PDF links */
+.modal-backdrop {
+  z-index: 1050 !important;
+  pointer-events: auto;
+}
+
+.modal {
+  z-index: 1055 !important;
+}
+
+.project-modal {
+  pointer-events: none;
+}
+
+.project-modal.show {
+  pointer-events: auto;
+}
+
+.project-modal .modal-dialog,
+.project-modal .modal-content,
+.project-modal .modal-header,
+.project-modal .modal-body,
+.project-modal .cr-list,
+.project-modal .cr-item,
+.project-modal .cr-item-info,
+.project-modal .cr-download {
+  pointer-events: auto;
+}
+
+.project-modal .cr-download {
+  position: relative;
+  z-index: 2;
+  cursor: pointer;
+}
