@@ -2325,3 +2325,17 @@ body::after {
   0%,100% { transform: scale(.96) rotate(0deg); opacity: .55; }
   50% { transform: scale(1.04) rotate(8deg); opacity: 1; }
 }
+
+/* Z-index des modales projets : elles doivent toujours rester au-dessus du backdrop */
+body > .project-modal {
+  z-index: 20000 !important;
+}
+
+body > .modal-backdrop {
+  z-index: 19990 !important;
+}
+
+body > .project-modal .modal-content {
+  position: relative;
+  z-index: 20001 !important;
+}
