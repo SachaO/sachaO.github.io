@@ -627,6 +627,28 @@
     @keyframes nodePulse{0%,100%{transform:scale(.7);opacity:.45}50%{transform:scale(1.5);opacity:1}}
     @keyframes scanPage{0%{top:-10%}100%{top:105%}}
     @media(max-width:767px){.neuro-grid{opacity:.35}.neuro-rings{width:420px;height:420px;left:-210px}.decor-label{display:none}.hud-corner{width:40px;height:40px}}
+  
+    /* Lecteur de flux RSS */
+    .rss-panel{margin:44px 0 34px;padding:30px;border:1px solid rgba(20,157,221,.2);border-radius:16px;background:linear-gradient(135deg,rgba(12,30,48,.86),rgba(5,17,29,.76));box-shadow:0 14px 38px rgba(0,0,0,.18)}
+    .rss-panel h3{color:#fff;font-size:26px;margin:0 0 8px}
+    .rss-lead{color:#cbd5e1;line-height:1.7;margin-bottom:20px}
+    .rss-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:18px 0 20px}
+    .rss-status{font-size:13px;color:#9ca3af}
+    .rss-refresh{border:1px solid rgba(20,157,221,.5);background:rgba(20,157,221,.12);color:#cdeeff;border-radius:8px;padding:9px 14px;cursor:pointer;transition:background .2s}
+    .rss-refresh:hover{background:rgba(20,157,221,.24)}
+    .rss-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+    .rss-item{padding:18px;border:1px solid rgba(255,255,255,.09);border-radius:12px;background:rgba(255,255,255,.025);transition:transform .2s,border-color .2s}
+    .rss-item:hover{transform:translateY(-3px);border-color:rgba(20,157,221,.4)}
+    .rss-item-meta{display:flex;flex-wrap:wrap;gap:8px;align-items:center;color:#78c9f3;font-size:12px;margin-bottom:10px}
+    .rss-source{padding:3px 8px;border:1px solid rgba(20,157,221,.22);border-radius:999px;background:rgba(20,157,221,.07)}
+    .rss-item h4{font-size:17px;line-height:1.45;margin:0 0 9px;color:#fff}
+    .rss-item h4 a{color:inherit;text-decoration:none}
+    .rss-item h4 a:hover{color:#78c9f3}
+    .rss-item p{color:#cbd5e1;font-size:14px;line-height:1.7;margin:0}
+    .rss-empty{grid-column:1/-1;border:1px dashed rgba(20,157,221,.25);border-radius:10px;padding:18px;color:#cbd5e1;line-height:1.7}
+    .rss-footer{font-size:12px;color:#94a3b8;margin-top:16px;line-height:1.6}
+    @media(max-width:767px){.rss-panel{padding:22px 18px}.rss-grid{grid-template-columns:1fr}.rss-item{padding:16px}}
+
   </style>
 </head>
 
@@ -869,6 +891,27 @@
             </p>
           </div>
 
+
+          <section id="flux-rss" class="rss-panel" data-aos="fade-up" aria-labelledby="rss-title">
+            <div class="veille-kicker"><i class="bi bi-rss"></i> Mise à jour automatique</div>
+            <h3 id="rss-title">Flux RSS — Actualités informatiques</h3>
+            <p class="rss-lead">
+              Une sélection d’articles récents autour de la cybersécurité, des réseaux, des systèmes et des technologies.
+              Les titres et les liens sont récupérés depuis des flux RSS publics.
+            </p>
+            <div class="rss-toolbar">
+              <span id="rss-status" class="rss-status" role="status" aria-live="polite">Chargement des actualités…</span>
+              <button id="rss-refresh" class="rss-refresh" type="button"><i class="bi bi-arrow-clockwise"></i> Actualiser</button>
+            </div>
+            <div id="rss-articles" class="rss-grid">
+              <div class="rss-empty">Les actualités sont en cours de chargement…</div>
+            </div>
+            <p class="rss-footer">
+              Sources : CERT-FR, BleepingComputer et The Hacker News. Les articles restent la propriété de leurs éditeurs.
+              Si un flux est indisponible, réessayez ultérieurement.
+            </p>
+          </section>
+
           <div class="veille-sources" data-aos="fade-up">
             <h3>Sources &amp; documents</h3>
             <ul class="veille-source-list">
@@ -902,6 +945,79 @@
   <script src="assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
   <script src="assets/vendor/aos/aos.js"></script>
   <script src="assets/js/main.js"></script>
+
+  <script>
+    (() => {
+      const feeds = [
+        { name: "CERT-FR", url: "https://www.cert.ssi.gouv.fr/feed/" },
+        { name: "BleepingComputer", url: "https://www.bleepingcomputer.com/feed/" },
+        { name: "The Hacker News", url: "https://feeds.feedburner.com/TheHackersNews" }
+      ];
+      const proxy = "https://api.rss2json.com/v1/api.json?rss_url=";
+      const container = document.getElementById("rss-articles");
+      const status = document.getElementById("rss-status");
+      const refreshButton = document.getElementById("rss-refresh");
+      if (!container || !status || !refreshButton) return;
+
+      const escapeHtml = (value = "") => String(value).replace(/[&<>"']/g, ch => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+      })[ch]);
+      const cleanText = (html = "") => {
+        const doc = new DOMParser().parseFromString(String(html), "text/html");
+        return (doc.body.textContent || "").replace(/\s+/g, " ").trim();
+      };
+      const safeUrl = value => {
+        try {
+          const url = new URL(value);
+          return ["https:", "http:"].includes(url.protocol) ? url.href : "";
+        } catch { return ""; }
+      };
+      const formatDate = value => {
+        const date = new Date(value);
+        return Number.isNaN(date.getTime()) ? "" : new Intl.DateTimeFormat("fr-FR", {day:"2-digit",month:"short",year:"numeric"}).format(date);
+      };
+      const renderItem = item => {
+        const link = safeUrl(item.link);
+        if (!link) return "";
+        const title = cleanText(item.title || "Article sans titre");
+        const description = cleanText(item.description || item.content || "");
+        const date = formatDate(item.pubDate || item.published || "");
+        return `<article class="rss-item">
+          <div class="rss-item-meta"><span class="rss-source">${escapeHtml(item._source || "Flux RSS")}</span>${date ? `<time>${escapeHtml(date)}</time>` : ""}</div>
+          <h4><a href="${escapeHtml(link)}" target="_blank" rel="noopener noreferrer">${escapeHtml(title)}</a></h4>
+          <p>${escapeHtml(description.slice(0, 240))}${description.length > 240 ? "…" : ""}</p>
+        </article>`;
+      };
+      async function loadFeeds() {
+        refreshButton.disabled = true;
+        status.textContent = "Récupération des derniers articles…";
+        container.innerHTML = '<div class="rss-empty">Chargement en cours…</div>';
+        const results = await Promise.allSettled(feeds.map(async feed => {
+          const response = await fetch(proxy + encodeURIComponent(feed.url), { headers: { "Accept": "application/json" } });
+          if (!response.ok) throw new Error("Flux indisponible");
+          const data = await response.json();
+          if (data.status !== "ok" || !Array.isArray(data.items)) throw new Error("Format de flux invalide");
+          return data.items.slice(0, 8).map(item => ({...item, _source: feed.name}));
+        }));
+        const articles = results.flatMap(result => result.status === "fulfilled" ? result.value : []);
+        const unique = [...new Map(articles.filter(item => safeUrl(item.link)).map(item => [item.link, item])).values()]
+          .sort((a, b) => new Date(b.pubDate || b.published || 0) - new Date(a.pubDate || a.published || 0))
+          .slice(0, 12);
+        if (unique.length) {
+          container.innerHTML = unique.map(renderItem).join("");
+          const failedCount = results.filter(result => result.status === "rejected").length;
+          status.textContent = `${unique.length} article(s) affiché(s) · ${failedCount ? failedCount + " flux indisponible(s)" : "flux actualisés"}`;
+        } else {
+          container.innerHTML = '<div class="rss-empty">Impossible de récupérer les articles pour le moment. Le service de lecture RSS ou les sources peuvent être temporairement indisponibles. Vous pouvez ouvrir directement les sources : <a href="https://www.cert.ssi.gouv.fr/" target="_blank" rel="noopener noreferrer">CERT-FR</a>, <a href="https://www.bleepingcomputer.com/" target="_blank" rel="noopener noreferrer">BleepingComputer</a> et <a href="https://thehackernews.com/" target="_blank" rel="noopener noreferrer">The Hacker News</a>.</div>';
+          status.textContent = "Flux momentanément indisponibles";
+        }
+        refreshButton.disabled = false;
+      }
+      refreshButton.addEventListener("click", loadFeeds);
+      loadFeeds();
+    })();
+  </script>
+
   <script src="assets/js/cursor-glow.js"></script>
 </body>
 </html>
