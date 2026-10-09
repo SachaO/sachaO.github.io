@@ -1026,30 +1026,54 @@
         const refreshButton = document.getElementById(group.refreshId);
         if (!container || !status || !refreshButton) return;
 
+        // Évite que deux actualisations simultanées se remplacent l'une l'autre.
+        group.requestId = (group.requestId || 0) + 1;
+        const requestId = group.requestId;
         refreshButton.disabled = true;
         status.textContent = "Récupération des derniers articles…";
         container.innerHTML = '<div class="rss-empty">Chargement en cours…</div>';
-        const results = await Promise.allSettled(group.feeds.map(async feed => {
-          const response = await fetch(proxy + encodeURIComponent(feed.url), { headers: { "Accept": "application/json" } });
-          if (!response.ok) throw new Error("Flux indisponible");
-          const data = await response.json();
-          if (data.status !== "ok" || !Array.isArray(data.items)) throw new Error("Format de flux invalide");
-          return data.items.slice(0, 5).map(item => ({...item, _source: feed.name}));
-        }));
-        const articles = results.flatMap(result => result.status === "fulfilled" ? result.value : []);
-        const unique = [...new Map(articles.filter(item => safeUrl(item.link)).map(item => [item.link, item])).values()]
-          .sort((a, b) => new Date(b.pubDate || b.published || 0) - new Date(a.pubDate || a.published || 0))
-          .slice(0, 12);
 
-        if (unique.length) {
-          container.innerHTML = unique.map(renderItem).join("");
-          const failedCount = results.filter(result => result.status === "rejected").length;
-          status.textContent = `${unique.length} article(s) affiché(s) · ${failedCount ? failedCount + " flux indisponible(s)" : "flux actualisés"}`;
-        } else {
-          container.innerHTML = '<div class="rss-empty">Impossible de récupérer les articles pour le moment. Le service de lecture RSS ou les sources peuvent être temporairement indisponibles. Sources à consulter : ' + group.fallback + '.</div>';
-          status.textContent = "Flux momentanément indisponibles";
+        try {
+          const results = await Promise.allSettled(group.feeds.map(async feed => {
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 12000);
+            try {
+              const response = await fetch(proxy + encodeURIComponent(feed.url), {
+                headers: { "Accept": "application/json" },
+                signal: controller.signal
+              });
+              if (!response.ok) throw new Error("Flux indisponible (HTTP " + response.status + ")");
+              const data = await response.json();
+              if (data.status !== "ok" || !Array.isArray(data.items)) throw new Error("Format de flux invalide");
+              return data.items.slice(0, 5).map(item => ({...item, _source: feed.name}));
+            } finally {
+              clearTimeout(timeout);
+            }
+          }));
+
+          // Si une actualisation plus récente a commencé, ignore les anciens résultats.
+          if (requestId !== group.requestId) return;
+
+          const articles = results.flatMap(result => result.status === "fulfilled" ? result.value : []);
+          const unique = [...new Map(articles.filter(item => safeUrl(item.link)).map(item => [item.link, item])).values()]
+            .sort((a, b) => new Date(b.pubDate || b.published || 0) - new Date(a.pubDate || a.published || 0))
+            .slice(0, 12);
+
+          if (unique.length) {
+            container.innerHTML = unique.map(renderItem).join("");
+            const failedCount = results.filter(result => result.status === "rejected").length;
+            status.textContent = `${unique.length} article(s) affiché(s) · ${failedCount ? failedCount + " flux indisponible(s)" : "flux actualisés"}`;
+          } else {
+            container.innerHTML = '<div class="rss-empty">Impossible de récupérer les articles pour le moment. Le service de lecture RSS ou les sources peuvent être temporairement indisponibles. Sources à consulter : ' + group.fallback + '.</div>';
+            status.textContent = "Flux momentanément indisponibles";
+          }
+        } catch (error) {
+          if (requestId !== group.requestId) return;
+          container.innerHTML = '<div class="rss-empty">La récupération des actualités a échoué ou a expiré. Réessaie dans quelques instants. Sources à consulter : ' + group.fallback + '.</div>';
+          status.textContent = "Délai dépassé ou erreur de récupération";
+        } finally {
+          if (requestId === group.requestId) refreshButton.disabled = false;
         }
-        refreshButton.disabled = false;
       }
 
       groups.forEach(group => {
