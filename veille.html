@@ -921,7 +921,7 @@
             <div id="rss-stocks-articles" class="rss-grid">
               <div class="rss-empty">Les actualités boursières sont en cours de chargement…</div>
             </div>
-            <p class="rss-footer">Sources d’actualités : Google Actualités. SpaceX étant une entreprise non cotée, les articles la concernant ne représentent pas un cours d’action disponible en bourse.</p>
+            <p class="rss-footer">Sources d’actualités : Google Actualités. Les articles présentés concernent les quatre entreprises suivies et ne constituent pas des cours boursiers en temps réel ni des conseils d’investissement.</p>
           </section>
 
           <div class="veille-sources" data-aos="fade-up">
@@ -980,10 +980,10 @@
           refreshId: "rss-stocks-refresh",
           fallback: '<a href="https://news.google.com/" target="_blank" rel="noopener noreferrer">Google Actualités</a>',
           feeds: [
-            { name: "NVIDIA · NVDA", url: "https://news.google.com/rss/search?q=NVIDIA&hl=en-US&gl=US&ceid=US:en" },
-            { name: "Oracle · ORCL", url: "https://news.google.com/rss/search?q=%22Oracle+Corporation%22&hl=en-US&gl=US&ceid=US:en" },
-            { name: "Scholar Rock · SRRK", url: "https://news.google.com/rss/search?q=%22Scholar+Rock%22&hl=en-US&gl=US&ceid=US:en" },
-            { name: "Sionna Therapeutics · SION", url: "https://news.google.com/rss/search?q=%22Sionna+Therapeutics%22&hl=en-US&gl=US&ceid=US:en" }
+            { name: "NVIDIA · NVDA", url: "https://news.google.com/rss/search?q=NVIDIA+OR+NVDA&hl=en-US&gl=US&ceid=US:en" },
+            { name: "Oracle · ORCL", url: "https://news.google.com/rss/search?q=%22Oracle+Corporation%22+OR+ORCL&hl=en-US&gl=US&ceid=US:en" },
+            { name: "Scholar Rock · SRRK", url: "https://news.google.com/rss/search?q=%22Scholar+Rock%22+OR+SRRK&hl=en-US&gl=US&ceid=US:en" },
+            { name: "Sionna Therapeutics · SION", url: "https://news.google.com/rss/search?q=%22Sionna+Therapeutics%22+OR+SION&hl=en-US&gl=US&ceid=US:en" }
           ]
         }
       ];
