@@ -1038,19 +1038,46 @@
 
         try {
           const fetchFeed = async feed => {
-            const request = fetch(proxy + encodeURIComponent(feed.url), {
-              headers: { "Accept": "application/json" }
-            }).then(async response => {
-              if (!response.ok) throw new Error("Flux indisponible (HTTP " + response.status + ")");
+            const withTimeout = (promise, ms = 12000) => Promise.race([
+              promise,
+              new Promise((_, reject) => setTimeout(() => reject(new Error("Délai dépassé")), ms))
+            ]);
+
+            // Essai 1 : RSS2JSON.
+            try {
+              const response = await withTimeout(fetch(proxy + encodeURIComponent(feed.url), {
+                headers: { "Accept": "application/json" }
+              }));
+              if (!response.ok) throw new Error("RSS2JSON indisponible");
               const data = await response.json();
-              if (data.status !== "ok" || !Array.isArray(data.items)) throw new Error("Format de flux invalide");
-              return data.items.slice(0, 5).map(item => ({...item, _source: feed.name}));
-            });
-            // Garantie de terminer même si le service RSS2JSON ne répond pas.
-            const timeout = new Promise((_, reject) =>
-              setTimeout(() => reject(new Error("Délai dépassé")), 15000)
-            );
-            return Promise.race([request, timeout]);
+              if (data.status === "ok" && Array.isArray(data.items)) {
+                return data.items.slice(0, 5).map(item => ({...item, _source: feed.name}));
+              }
+            } catch (error) {
+              // Le service peut être indisponible ou avoir atteint sa limite : on essaie le repli.
+            }
+
+            // Essai 2 : récupérer le XML du flux et le lire directement.
+            const response = await withTimeout(fetch(
+              "https://api.allorigins.win/raw?url=" + encodeURIComponent(feed.url),
+              { headers: { "Accept": "application/xml,text/xml,*/*" } }
+            ));
+            if (!response.ok) throw new Error("Flux indisponible (HTTP " + response.status + ")");
+            const xmlText = await response.text();
+            const xml = new DOMParser().parseFromString(xmlText, "text/xml");
+            if (xml.querySelector("parsererror")) throw new Error("XML invalide");
+            return [...xml.querySelectorAll("item, entry")].slice(0, 5).map(item => {
+              const get = name => item.querySelector(name)?.textContent?.trim() || "";
+              const linkNode = item.querySelector("link");
+              const link = linkNode?.textContent?.trim() || linkNode?.getAttribute("href") || "";
+              return {
+                title: get("title"),
+                link,
+                description: get("description") || get("summary") || get("content"),
+                pubDate: get("pubDate") || get("published") || get("updated"),
+                _source: feed.name
+              };
+            }).filter(item => item.title && item.link);
           };
           const results = await Promise.allSettled(group.feeds.map(fetchFeed));
 
