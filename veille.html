@@ -1031,25 +1031,28 @@
         const requestId = group.requestId;
         refreshButton.disabled = true;
         status.textContent = "Récupération des derniers articles…";
-        container.innerHTML = '<div class="rss-empty">Chargement en cours…</div>';
+        // Conserve les articles déjà affichés pendant l'actualisation.
+        if (!container.children.length) {
+          container.innerHTML = '<div class="rss-empty">Chargement des actualités…</div>';
+        }
 
         try {
-          const results = await Promise.allSettled(group.feeds.map(async feed => {
-            const controller = new AbortController();
-            const timeout = setTimeout(() => controller.abort(), 12000);
-            try {
-              const response = await fetch(proxy + encodeURIComponent(feed.url), {
-                headers: { "Accept": "application/json" },
-                signal: controller.signal
-              });
+          const fetchFeed = async feed => {
+            const request = fetch(proxy + encodeURIComponent(feed.url), {
+              headers: { "Accept": "application/json" }
+            }).then(async response => {
               if (!response.ok) throw new Error("Flux indisponible (HTTP " + response.status + ")");
               const data = await response.json();
               if (data.status !== "ok" || !Array.isArray(data.items)) throw new Error("Format de flux invalide");
               return data.items.slice(0, 5).map(item => ({...item, _source: feed.name}));
-            } finally {
-              clearTimeout(timeout);
-            }
-          }));
+            });
+            // Garantie de terminer même si le service RSS2JSON ne répond pas.
+            const timeout = new Promise((_, reject) =>
+              setTimeout(() => reject(new Error("Délai dépassé")), 15000)
+            );
+            return Promise.race([request, timeout]);
+          };
+          const results = await Promise.allSettled(group.feeds.map(fetchFeed));
 
           // Si une actualisation plus récente a commencé, ignore les anciens résultats.
           if (requestId !== group.requestId) return;
