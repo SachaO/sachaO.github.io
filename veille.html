@@ -892,24 +892,36 @@
           </div>
 
 
-          <section id="flux-rss" class="rss-panel" data-aos="fade-up" aria-labelledby="rss-title">
-            <div class="veille-kicker"><i class="bi bi-rss"></i> Mise à jour automatique</div>
-            <h3 id="rss-title">Flux RSS — Actualités informatiques</h3>
+                    <section id="flux-rss-informatique" class="rss-panel" data-aos="fade-up" aria-labelledby="rss-it-title">
+            <div class="veille-kicker"><i class="bi bi-rss"></i> Flux 01 · Veille technologique</div>
+            <h3 id="rss-it-title">Actualités informatiques</h3>
             <p class="rss-lead">
-              Une sélection d’articles récents autour de la cybersécurité, des réseaux, des systèmes et des technologies.
-              Les titres et les liens sont récupérés depuis des flux RSS publics.
+              Actualités sur la cybersécurité, les vulnérabilités, les systèmes et les réseaux pour alimenter ma veille BTS SIO SISR.
             </p>
             <div class="rss-toolbar">
-              <span id="rss-status" class="rss-status" role="status" aria-live="polite">Chargement des actualités…</span>
-              <button id="rss-refresh" class="rss-refresh" type="button"><i class="bi bi-arrow-clockwise"></i> Actualiser</button>
+              <span id="rss-it-status" class="rss-status" role="status" aria-live="polite">Chargement des actualités informatiques…</span>
+              <button id="rss-it-refresh" class="rss-refresh" type="button"><i class="bi bi-arrow-clockwise"></i> Actualiser</button>
             </div>
-            <div id="rss-articles" class="rss-grid">
-              <div class="rss-empty">Les actualités sont en cours de chargement…</div>
+            <div id="rss-it-articles" class="rss-grid">
+              <div class="rss-empty">Les actualités informatiques sont en cours de chargement…</div>
             </div>
-            <p class="rss-footer">
-              Sources : CERT-FR, BleepingComputer et The Hacker News. Les articles restent la propriété de leurs éditeurs.
-              Si un flux est indisponible, réessayez ultérieurement.
+            <p class="rss-footer">Sources : CERT-FR, BleepingComputer et The Hacker News. Les articles restent la propriété de leurs éditeurs.</p>
+          </section>
+
+          <section id="flux-rss-bourse" class="rss-panel" data-aos="fade-up" aria-labelledby="rss-stocks-title">
+            <div class="veille-kicker"><i class="bi bi-graph-up-arrow"></i> Flux 02 · Marchés financiers</div>
+            <h3 id="rss-stocks-title">Veille boursière — Entreprises &amp; actions</h3>
+            <p class="rss-lead">
+              Actualités concernant NVIDIA, Oracle et d’autres entreprises suivies. Cette rubrique présente des articles de presse, pas les cours boursiers en temps réel ni des conseils d’investissement.
             </p>
+            <div class="rss-toolbar">
+              <span id="rss-stocks-status" class="rss-status" role="status" aria-live="polite">Chargement des actualités boursières…</span>
+              <button id="rss-stocks-refresh" class="rss-refresh" type="button"><i class="bi bi-arrow-clockwise"></i> Actualiser</button>
+            </div>
+            <div id="rss-stocks-articles" class="rss-grid">
+              <div class="rss-empty">Les actualités boursières sont en cours de chargement…</div>
+            </div>
+            <p class="rss-footer">Sources d’actualités : Google Actualités. SpaceX étant une entreprise non cotée, les articles la concernant ne représentent pas un cours d’action disponible en bourse.</p>
           </section>
 
           <div class="veille-sources" data-aos="fade-up">
@@ -948,16 +960,34 @@
 
   <script>
     (() => {
-      const feeds = [
-        { name: "CERT-FR", url: "https://www.cert.ssi.gouv.fr/feed/" },
-        { name: "BleepingComputer", url: "https://www.bleepingcomputer.com/feed/" },
-        { name: "The Hacker News", url: "https://feeds.feedburner.com/TheHackersNews" }
-      ];
       const proxy = "https://api.rss2json.com/v1/api.json?rss_url=";
-      const container = document.getElementById("rss-articles");
-      const status = document.getElementById("rss-status");
-      const refreshButton = document.getElementById("rss-refresh");
-      if (!container || !status || !refreshButton) return;
+      const groups = [
+        {
+          containerId: "rss-it-articles",
+          statusId: "rss-it-status",
+          refreshId: "rss-it-refresh",
+          fallback: '<a href="https://www.cert.ssi.gouv.fr/" target="_blank" rel="noopener noreferrer">CERT-FR</a>, <a href="https://www.bleepingcomputer.com/" target="_blank" rel="noopener noreferrer">BleepingComputer</a> et <a href="https://thehackernews.com/" target="_blank" rel="noopener noreferrer">The Hacker News</a>',
+          feeds: [
+            { name: "CERT-FR", url: "https://www.cert.ssi.gouv.fr/feed/" },
+            { name: "BleepingComputer", url: "https://www.bleepingcomputer.com/feed/" },
+            { name: "The Hacker News", url: "https://feeds.feedburner.com/TheHackerNews" }
+          ]
+        },
+        {
+          containerId: "rss-stocks-articles",
+          statusId: "rss-stocks-status",
+          refreshId: "rss-stocks-refresh",
+          fallback: '<a href="https://news.google.com/" target="_blank" rel="noopener noreferrer">Google Actualités</a>',
+          feeds: [
+            { name: "NVIDIA · NVDA", url: "https://news.google.com/rss/search?q=NVIDIA+stock+OR+NVDA&hl=fr&gl=FR&ceid=FR:fr" },
+            { name: "Oracle · ORCL", url: "https://news.google.com/rss/search?q=Oracle+stock+OR+ORCL&hl=fr&gl=FR&ceid=FR:fr" },
+            { name: "Scholar Rock · SRRK", url: "https://news.google.com/rss/search?q=Scholar+Rock+SRRK&hl=fr&gl=FR&ceid=FR:fr" },
+            { name: "Sionna Therapeutics · SION", url: "https://news.google.com/rss/search?q=Sionna+Therapeutics+SION&hl=fr&gl=FR&ceid=FR:fr" },
+            { name: "Innventure · INV", url: "https://news.google.com/rss/search?q=Innventure+INV+stock&hl=fr&gl=FR&ceid=FR:fr" },
+            { name: "SpaceX · entreprise non cotée", url: "https://news.google.com/rss/search?q=SpaceX+business+news&hl=fr&gl=FR&ceid=FR:fr" }
+          ]
+        }
+      ];
 
       const escapeHtml = (value = "") => String(value).replace(/[&<>"']/g, ch => ({
         "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
@@ -988,33 +1018,44 @@
           <p>${escapeHtml(description.slice(0, 240))}${description.length > 240 ? "…" : ""}</p>
         </article>`;
       };
-      async function loadFeeds() {
+
+      async function loadGroup(group) {
+        const container = document.getElementById(group.containerId);
+        const status = document.getElementById(group.statusId);
+        const refreshButton = document.getElementById(group.refreshId);
+        if (!container || !status || !refreshButton) return;
+
         refreshButton.disabled = true;
         status.textContent = "Récupération des derniers articles…";
         container.innerHTML = '<div class="rss-empty">Chargement en cours…</div>';
-        const results = await Promise.allSettled(feeds.map(async feed => {
+        const results = await Promise.allSettled(group.feeds.map(async feed => {
           const response = await fetch(proxy + encodeURIComponent(feed.url), { headers: { "Accept": "application/json" } });
           if (!response.ok) throw new Error("Flux indisponible");
           const data = await response.json();
           if (data.status !== "ok" || !Array.isArray(data.items)) throw new Error("Format de flux invalide");
-          return data.items.slice(0, 8).map(item => ({...item, _source: feed.name}));
+          return data.items.slice(0, 5).map(item => ({...item, _source: feed.name}));
         }));
         const articles = results.flatMap(result => result.status === "fulfilled" ? result.value : []);
         const unique = [...new Map(articles.filter(item => safeUrl(item.link)).map(item => [item.link, item])).values()]
           .sort((a, b) => new Date(b.pubDate || b.published || 0) - new Date(a.pubDate || a.published || 0))
           .slice(0, 12);
+
         if (unique.length) {
           container.innerHTML = unique.map(renderItem).join("");
           const failedCount = results.filter(result => result.status === "rejected").length;
           status.textContent = `${unique.length} article(s) affiché(s) · ${failedCount ? failedCount + " flux indisponible(s)" : "flux actualisés"}`;
         } else {
-          container.innerHTML = '<div class="rss-empty">Impossible de récupérer les articles pour le moment. Le service de lecture RSS ou les sources peuvent être temporairement indisponibles. Vous pouvez ouvrir directement les sources : <a href="https://www.cert.ssi.gouv.fr/" target="_blank" rel="noopener noreferrer">CERT-FR</a>, <a href="https://www.bleepingcomputer.com/" target="_blank" rel="noopener noreferrer">BleepingComputer</a> et <a href="https://thehackernews.com/" target="_blank" rel="noopener noreferrer">The Hacker News</a>.</div>';
+          container.innerHTML = '<div class="rss-empty">Impossible de récupérer les articles pour le moment. Le service de lecture RSS ou les sources peuvent être temporairement indisponibles. Sources à consulter : ' + group.fallback + '.</div>';
           status.textContent = "Flux momentanément indisponibles";
         }
         refreshButton.disabled = false;
       }
-      refreshButton.addEventListener("click", loadFeeds);
-      loadFeeds();
+
+      groups.forEach(group => {
+        const button = document.getElementById(group.refreshId);
+        if (button) button.addEventListener("click", () => loadGroup(group));
+        loadGroup(group);
+      });
     })();
   </script>
 
