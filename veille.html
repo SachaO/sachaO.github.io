@@ -968,7 +968,7 @@
           refreshId: "rss-it-refresh",
           fallback: '<a href="https://www.cert.ssi.gouv.fr/" target="_blank" rel="noopener noreferrer">CERT-FR</a>, <a href="https://www.bleepingcomputer.com/" target="_blank" rel="noopener noreferrer">BleepingComputer</a> et <a href="https://thehackernews.com/" target="_blank" rel="noopener noreferrer">The Hacker News</a>',
           feeds: [
-            { name: "Nature · Interfaces cerveau-machine", url: "https://www.nature.com/subjects/brain-machine-interface.rss" },
+            { name: "Google Actualités · Interfaces cerveau-machine", url: "https://news.google.com/rss/search?q=%22brain-computer+interface%22+OR+%22brain-machine+interface%22+OR+%22interface+cerveau-machine%22&hl=fr&gl=FR&ceid=FR:fr" },
             { name: "CERT-FR · Alertes cybersécurité", url: "https://www.cert.ssi.gouv.fr/feed/" },
             { name: "The Hacker News · Cybersécurité", url: "https://feeds.feedburner.com/TheHackersNews" },
             { name: "BleepingComputer · Sécurité informatique", url: "https://www.bleepingcomputer.com/feed/" }
@@ -1079,7 +1079,19 @@
               };
             }).filter(item => item.title && item.link);
           };
-          const results = await Promise.allSettled(group.feeds.map(fetchFeed));
+          // Interroge les sources l'une après l'autre pour limiter les blocages
+          // et les limites de débit du service RSS.
+          const results = [];
+          for (const feed of group.feeds) {
+            try {
+              results.push({ status: "fulfilled", value: await fetchFeed(feed) });
+            } catch (reason) {
+              results.push({ status: "rejected", reason });
+            }
+            if (group.feeds.length > 1) {
+              await new Promise(resolve => setTimeout(resolve, 700));
+            }
+          }
 
           // Si une actualisation plus récente a commencé, ignore les anciens résultats.
           if (requestId !== group.requestId) return;
