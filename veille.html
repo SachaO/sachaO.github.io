@@ -628,6 +628,23 @@
     @keyframes scanPage{0%{top:-10%}100%{top:105%}}
     @media(max-width:767px){.neuro-grid{opacity:.35}.neuro-rings{width:420px;height:420px;left:-210px}.decor-label{display:none}.hud-corner{width:40px;height:40px}}
   
+    /* Harmonise explicitement la zone RSS avec le thème sombre du portfolio. */
+    .veille-page #flux-rss,
+    .veille-page .rss-panel{
+      background-color:#081321!important;
+    }
+    .veille-page .rss-panel{
+      background:linear-gradient(135deg,rgba(12,30,48,.96),rgba(5,17,29,.94))!important;
+      border-color:rgba(20,157,221,.24);
+    }
+    .veille-page .rss-item{
+      background:rgba(255,255,255,.035)!important;
+      color:#e5edf5;
+    }
+    .veille-page .rss-empty{
+      background:rgba(5,17,29,.72)!important;
+      color:#cbd5e1;
+    }
     /* Navigation rapide vers les flux RSS */
     .rss-nav-link{font-size:14px!important;padding-left:32px!important;opacity:.88}
     .rss-nav-link .navicon{font-size:15px!important}
