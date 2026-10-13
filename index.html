@@ -1523,47 +1523,71 @@
 
         try {
           const fetchFeed = async feed => {
-            const withTimeout = (promise, ms = 12000) => Promise.race([
+            const withTimeout = (promise, ms = 11000) => Promise.race([
               promise,
               new Promise((_, reject) => setTimeout(() => reject(new Error("Délai dépassé")), ms))
             ]);
 
-            // Essai 1 : RSS2JSON.
+            const normalizeItems = items => items.slice(0, 5).map(item => ({
+              ...item,
+              _source: feed.name,
+              _category: feed.category || "it"
+            }));
+
+            // Essai 1 : RSS2JSON, puis repli si le service limite les requêtes.
             try {
               const response = await withTimeout(fetch(proxy + encodeURIComponent(feed.url), {
-                headers: { "Accept": "application/json" }
+                headers: { "Accept": "application/json" },
+                credentials: "omit"
               }));
               if (!response.ok) throw new Error("RSS2JSON indisponible");
               const data = await response.json();
-              if (data.status === "ok" && Array.isArray(data.items)) {
-                return data.items.slice(0, 5).map(item => ({...item, _source: feed.name, _category: feed.category || "it"}));
+              if (data.status === "ok" && Array.isArray(data.items) && data.items.length) {
+                return normalizeItems(data.items);
               }
             } catch (error) {
-              // Le service peut être indisponible ou avoir atteint sa limite : on essaie le repli.
+              // Le service peut être indisponible ou avoir atteint sa limite.
             }
 
-            // Essai 2 : récupérer le XML du flux et le lire directement.
-            const response = await withTimeout(fetch(
-              "https://api.allorigins.win/raw?url=" + encodeURIComponent(feed.url),
-              { headers: { "Accept": "application/xml,text/xml,*/*" } }
-            ));
-            if (!response.ok) throw new Error("Flux indisponible (HTTP " + response.status + ")");
-            const xmlText = await response.text();
-            const xml = new DOMParser().parseFromString(xmlText, "text/xml");
-            if (xml.querySelector("parsererror")) throw new Error("XML invalide");
-            return [...xml.querySelectorAll("item, entry")].slice(0, 5).map(item => {
-              const get = name => item.querySelector(name)?.textContent?.trim() || "";
-              const linkNode = item.querySelector("link");
-              const link = linkNode?.textContent?.trim() || linkNode?.getAttribute("href") || "";
-              return {
-                title: get("title"),
-                link,
-                description: get("description") || get("summary") || get("content"),
-                pubDate: get("pubDate") || get("published") || get("updated"),
-                _source: feed.name,
-                _category: feed.category || "it"
-              };
-            }).filter(item => item.title && item.link);
+            // Essais 2 et 3 : deux proxys CORS différents, car AllOrigins peut être intermittent.
+            const proxyUrls = [
+              "https://proxy.cors.dev/raw?url=" + encodeURIComponent(feed.url),
+              "https://api.allorigins.win/raw?url=" + encodeURIComponent(feed.url)
+            ];
+            let lastError = new Error("Aucun service de lecture RSS n'a répondu");
+            for (const proxyUrl of proxyUrls) {
+              try {
+                const response = await withTimeout(fetch(proxyUrl, {
+                  headers: { "Accept": "application/xml,text/xml,*/*" },
+                  credentials: "omit"
+                }));
+                if (!response.ok) throw new Error("Proxy RSS indisponible (HTTP " + response.status + ")");
+                const xmlText = await response.text();
+                const xml = new DOMParser().parseFromString(xmlText, "text/xml");
+                if (xml.querySelector("parsererror")) throw new Error("XML invalide");
+
+                const items = [...xml.querySelectorAll("item, entry")].slice(0, 5).map(item => {
+                  const get = name => item.querySelector(name)?.textContent?.trim() || "";
+                  const linkNode = item.querySelector('link[rel="alternate"]') || item.querySelector("link");
+                  const link = linkNode?.getAttribute("href") || linkNode?.textContent?.trim() || "";
+                  return {
+                    title: get("title"),
+                    link,
+                    description: get("description") || get("summary") || get("content"),
+                    pubDate: get("pubDate") || get("published") || get("updated"),
+                    _source: feed.name,
+                    _category: feed.category || "it"
+                  };
+                }).filter(item => item.title && item.link && safeUrl(item.link));
+
+                if (items.length) return items;
+                throw new Error("Le flux ne contient aucun article exploitable");
+              } catch (error) {
+                lastError = error;
+              }
+            }
+
+            throw lastError;
           };
           // Interroge les sources l'une après l'autre pour limiter les blocages
           // et les limites de débit du service RSS.
