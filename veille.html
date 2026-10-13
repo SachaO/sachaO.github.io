@@ -645,6 +645,34 @@
       background:rgba(5,17,29,.72)!important;
       color:#cbd5e1;
     }
+    /* Fond sombre explicite pour la rubrique RSS, même si le thème global définit des sections blanches. */
+    .veille-page #flux-rss,
+    .veille-page section#flux-rss.rss-panel{
+      background:#081321!important;
+      background-image:linear-gradient(135deg,rgba(12,30,48,.98),rgba(5,17,29,.96))!important;
+      color:#e5edf5!important;
+    }
+    .veille-page #flux-rss .rss-item{
+      background:rgba(255,255,255,.035)!important;
+      color:#e5edf5!important;
+    }
+    .veille-page #flux-rss .rss-empty{
+      background:rgba(5,17,29,.72)!important;
+      color:#cbd5e1!important;
+    }
+    .veille-page #flux-rss .rss-item[hidden]{display:none!important}
+    .veille-page #flux-rss .rss-filter[aria-pressed="true"]{
+      color:#fff!important;
+      background:rgba(20,157,221,.28)!important;
+      border-color:#149ddd!important;
+      box-shadow:0 0 0 1px rgba(20,157,221,.15);
+    }
+    .veille-page .navmenu a.rss-nav-link.active,
+    .veille-page .navmenu a.rss-nav-link.active:focus{
+      color:var(--contrast-color);
+      background:var(--nav-hover-color);
+    }
+    .veille-page .navmenu a.rss-nav-link.active .navicon{color:var(--accent-color)}
     /* Navigation rapide vers les flux RSS */
     .rss-nav-link{font-size:14px!important;padding-left:32px!important;opacity:.88}
     .rss-nav-link .navicon{font-size:15px!important}
@@ -921,9 +949,9 @@
           </div>
 
 
-                    <section id="flux-rss" aria-labelledby="rss-heading">
+                    <section id="flux-rss" class="rss-panel" aria-labelledby="rss-heading">
             <div class="rss-section-heading"><i class="bi bi-rss"></i><h3 id="rss-heading" style="margin:0">Flux RSS · Actualités en direct</h3></div>
-            <p class="rss-lead">Toutes les actualités sont réunies sur cette page. Utilise les catégories pour afficher la veille informatique et scientifique ou les entreprises que tu suis en Bourse.</p>
+            <p class="rss-lead">Toutes les actualités sont affichées dans une seule liste. Utilise les filtres pour trier la veille informatique et scientifique, NVIDIA, Oracle, Scholar Rock ou Sionna Therapeutics.</p>
             <div class="rss-filters" role="group" aria-label="Filtrer les actualités par catégorie">
               <button class="rss-filter" type="button" data-rss-filter="all" aria-pressed="true">Tout afficher</button>
               <button class="rss-filter" type="button" data-rss-filter="it" aria-pressed="false">Informatique &amp; sciences</button>
@@ -932,38 +960,14 @@
               <button class="rss-filter" type="button" data-rss-filter="srrk" aria-pressed="false">Scholar Rock</button>
               <button class="rss-filter" type="button" data-rss-filter="sion" aria-pressed="false">Sionna Therapeutics</button>
             </div>
-            <h4 class="rss-category-title" style="color:#b7dff5;margin:24px 0 12px" data-rss-heading="it"><i class="bi bi-cpu"></i> Informatique &amp; sciences</h4>
-          <section id="flux-rss-informatique" class="rss-panel" data-aos="fade-up" aria-labelledby="rss-it-title">
-            <div class="veille-kicker"><i class="bi bi-rss"></i> Flux 01 · Veille technologique</div>
-            <h3 id="rss-it-title">Actualités informatiques</h3>
-            <p class="rss-lead">
-              Actualités sur la cybersécurité, les vulnérabilités, les systèmes et les réseaux pour alimenter ma veille BTS SIO SISR.
-            </p>
             <div class="rss-toolbar">
-              <span id="rss-it-status" class="rss-status" role="status" aria-live="polite">Chargement des actualités informatiques…</span>
-              <button id="rss-it-refresh" class="rss-refresh" type="button"><i class="bi bi-arrow-clockwise"></i> Actualiser</button>
+              <span id="rss-all-status" class="rss-status" role="status" aria-live="polite">Chargement de toutes les actualités…</span>
+              <button id="rss-all-refresh" class="rss-refresh" type="button"><i class="bi bi-arrow-clockwise"></i> Actualiser</button>
             </div>
-            <div id="rss-it-articles" class="rss-grid">
-              <div class="rss-empty">Les actualités informatiques sont en cours de chargement…</div>
+            <div id="rss-all-articles" class="rss-grid">
+              <div class="rss-empty">Les actualités sont en cours de chargement…</div>
             </div>
-            <p class="rss-footer">Sources : CERT-FR, BleepingComputer et The Hacker News. Les articles restent la propriété de leurs éditeurs.</p>
-          </section>
-
-          <h4 class="rss-category-title" style="color:#b7dff5;margin:36px 0 12px" data-rss-heading="stocks"><i class="bi bi-graph-up-arrow"></i> Marchés financiers</h4>
-          <section id="flux-rss-bourse" class="rss-panel" data-aos="fade-up" aria-labelledby="rss-stocks-title">
-            <div class="veille-kicker"><i class="bi bi-graph-up-arrow"></i> Flux 02 · Marchés financiers</div>
-            <h3 id="rss-stocks-title">Veille boursière — Entreprises &amp; actions</h3>
-            <p class="rss-lead">
-              Actualités concernant NVIDIA, Oracle et d’autres entreprises suivies. Cette rubrique présente des articles de presse, pas les cours boursiers en temps réel ni des conseils d’investissement.
-            </p>
-            <div class="rss-toolbar">
-              <span id="rss-stocks-status" class="rss-status" role="status" aria-live="polite">Chargement des actualités boursières…</span>
-              <button id="rss-stocks-refresh" class="rss-refresh" type="button"><i class="bi bi-arrow-clockwise"></i> Actualiser</button>
-            </div>
-            <div id="rss-stocks-articles" class="rss-grid">
-              <div class="rss-empty">Les actualités boursières sont en cours de chargement…</div>
-            </div>
-            <p class="rss-footer">Sources d’actualités : Google Actualités. Les articles présentés concernent les quatre entreprises suivies et ne constituent pas des cours boursiers en temps réel ni des conseils d’investissement.</p>
+            <p class="rss-footer">Sources : CERT-FR, The Hacker News, BleepingComputer et Google Actualités. Les articles sont publiés par leurs éditeurs et ne constituent pas des cours boursiers en temps réel ni des conseils d’investissement.</p>
           </section>
 
           <div class="veille-sources" data-aos="fade-up">
@@ -1002,26 +1006,28 @@
 
   <script>
     (() => {
+      const rssNavLink = document.querySelector('.navmenu a.rss-nav-link');
+      const syncRssNav = () => {
+        if (!rssNavLink) return;
+        const isRss = window.location.hash === '#flux-rss';
+        rssNavLink.classList.toggle('active', isRss);
+        const veilleLink = document.querySelector('.navmenu a[href="veille.html"]:not(.rss-nav-link)');
+        if (veilleLink) veilleLink.classList.toggle('active', !isRss);
+      };
+      window.addEventListener('hashchange', syncRssNav);
+      syncRssNav();
       const proxy = "https://api.rss2json.com/v1/api.json?rss_url=";
       const groups = [
         {
-          containerId: "rss-it-articles",
-          statusId: "rss-it-status",
-          refreshId: "rss-it-refresh",
-          fallback: '<a href="https://www.cert.ssi.gouv.fr/" target="_blank" rel="noopener noreferrer">CERT-FR</a>, <a href="https://www.bleepingcomputer.com/" target="_blank" rel="noopener noreferrer">BleepingComputer</a> et <a href="https://thehackernews.com/" target="_blank" rel="noopener noreferrer">The Hacker News</a>',
+          containerId: "rss-all-articles",
+          statusId: "rss-all-status",
+          refreshId: "rss-all-refresh",
+          fallback: '<a href="https://news.google.com/" target="_blank" rel="noopener noreferrer">Google Actualités</a>, <a href="https://www.cert.ssi.gouv.fr/" target="_blank" rel="noopener noreferrer">CERT-FR</a>',
           feeds: [
             { name: "Google Actualités · Interfaces cerveau-machine", category: "it", url: "https://news.google.com/rss/search?q=%22brain-computer+interface%22+OR+%22brain-machine+interface%22+OR+%22interface+cerveau-machine%22&hl=fr&gl=FR&ceid=FR:fr" },
             { name: "CERT-FR · Alertes cybersécurité", category: "it", url: "https://www.cert.ssi.gouv.fr/feed/" },
-            { name: "The Hacker News · Cybersécurité", category: "it", url: "https://feeds.feedburner.com/TheHackersNews" },
-            { name: "BleepingComputer · Sécurité informatique", category: "it", url: "https://www.bleepingcomputer.com/feed/" }
-          ]
-        },
-        {
-          containerId: "rss-stocks-articles",
-          statusId: "rss-stocks-status",
-          refreshId: "rss-stocks-refresh",
-          fallback: '<a href="https://news.google.com/" target="_blank" rel="noopener noreferrer">Google Actualités</a>',
-          feeds: [
+            { name: "The Hacker News · Cybersécurité", category: "it", url: "https://feeds.feedburner.com/TheHackerNews" },
+            { name: "BleepingComputer · Sécurité informatique", category: "it", url: "https://www.bleepingcomputer.com/feed/" },
             { name: "NVIDIA · NVDA", category: "nvidia", url: "https://news.google.com/rss/search?q=NVIDIA+OR+NVDA&hl=en-US&gl=US&ceid=US:en" },
             { name: "Oracle · ORCL", category: "oracle", url: "https://news.google.com/rss/search?q=%22Oracle+Corporation%22+OR+ORCL&hl=en-US&gl=US&ceid=US:en" },
             { name: "Scholar Rock · SRRK", category: "srrk", url: "https://news.google.com/rss/search?q=%22Scholar+Rock%22+OR+SRRK&hl=en-US&gl=US&ceid=US:en" },
@@ -1160,54 +1166,30 @@
         }
       }
 
-      const categoryForFilter = category => {
-        if (category === "it") return "it";
-        return category;
-      };
       const filterButtons = [...document.querySelectorAll("[data-rss-filter]")];
-      const rssPanels = [...document.querySelectorAll(".rss-panel")];
-      const rssHeadings = [...document.querySelectorAll("[data-rss-heading]")];
       function applyRssFilter(filter) {
         filterButtons.forEach(button => button.setAttribute("aria-pressed", String(button.dataset.rssFilter === filter)));
-        const showIT = filter === "all" || filter === "it";
-        const stocksCategories = ["nvidia", "oracle", "srrk", "sion"];
-        const showStocksPanel = filter === "all" || stocksCategories.includes(filter);
-        const showStocksHeading = showStocksPanel;
-        rssPanels.forEach(panel => {
-          if (panel.id === "flux-rss-informatique") panel.hidden = !showIT;
-          if (panel.id === "flux-rss-bourse") panel.hidden = !showStocksPanel;
+        const container = document.getElementById("rss-all-articles");
+        if (!container) return;
+        const items = [...container.querySelectorAll(".rss-item")];
+        let visible = 0;
+        items.forEach(item => {
+          const matches = filter === "all" || item.dataset.rssCategory === filter;
+          item.hidden = !matches;
+          if (matches) visible++;
         });
-        rssHeadings.forEach(heading => {
-          if (heading.dataset.rssHeading === "it") heading.hidden = !showIT;
-          if (heading.dataset.rssHeading === "stocks") heading.hidden = !showStocksHeading;
-        });
-        if (filter !== "all" && filter !== "it" && stocksCategories.includes(filter)) {
-          const panel = document.getElementById("flux-rss-bourse");
-          if (panel) {
-            panel.hidden = false;
-            panel.querySelectorAll(".rss-item").forEach(item => {
-              item.hidden = item.dataset.rssCategory !== filter;
-            });
-            const empty = panel.querySelector(".rss-empty");
-            if (empty) empty.hidden = false;
-            const status = document.getElementById("rss-stocks-status");
-            if (status && panel.querySelectorAll(".rss-item:not([hidden])").length) {
-              status.textContent = panel.querySelectorAll(".rss-item:not([hidden])").length + " article(s) pour cette catégorie";
-            }
-          }
-          // Cache temporairement les cartes d'autres catégories dans le bloc boursier.
-        } else {
-          const panel = document.getElementById("flux-rss-bourse");
-          if (panel) panel.querySelectorAll(".rss-item").forEach(item => { item.hidden = false; });
+        const empty = container.querySelector(".rss-empty");
+        if (empty) {
+          empty.hidden = items.length > 0;
         }
-        if (filter !== "all" && filter !== "it" && stocksCategories.includes(filter)) {
-          const status = document.getElementById("rss-it-status");
-          if (status) status.textContent = status.textContent;
+        const status = document.getElementById("rss-all-status");
+        if (status && items.length) {
+          status.textContent = filter === "all"
+            ? visible + " article(s) affiché(s)"
+            : visible + " article(s) dans cette catégorie";
         }
       }
       filterButtons.forEach(button => button.addEventListener("click", () => applyRssFilter(button.dataset.rssFilter)));
-      applyRssFilter("all");
-
       groups.forEach(group => {
         const button = document.getElementById(group.refreshId);
         if (button) button.addEventListener("click", () => loadGroup(group));
