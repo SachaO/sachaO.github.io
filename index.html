@@ -23,6 +23,703 @@
 
   <!-- Main CSS -->
   <link href="assets/css/main.css" rel="stylesheet">
+<style id="embedded-veille-styles">
+
+    /* La veille reprend volontairement la même ambiance que le reste du portfolio. */
+    #veille {
+      min-height:100vh;
+      background:#081321;
+    }
+
+    #veille .main {
+      background: transparent;
+      position: relative;
+      overflow: hidden;
+    }
+
+    #veille .main::before{
+      content:"";
+      position:absolute;
+      inset:0;
+      pointer-events:none;
+      opacity:.42;
+      background-image:
+        linear-gradient(rgba(20,157,221,.13) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(20,157,221,.13) 1px, transparent 1px);
+      background-size:70px 70px;
+      mask-image:linear-gradient(to bottom,black 0%,black 80%,transparent 100%);
+      animation:gridDrift 12s linear infinite;
+      z-index:0;
+    }
+
+    #veille .main::after{
+      content:"";
+      position:absolute;
+      width:520px;
+      height:520px;
+      top:8%;
+      right:-220px;
+      border-radius:50%;
+      background:radial-gradient(circle,rgba(20,157,221,.13),transparent 68%);
+      filter:blur(8px);
+      pointer-events:none;
+      animation:ambientGlow 8s ease-in-out infinite;
+    }
+
+    #veille .section{
+      position:relative;
+      z-index:1;
+    }
+
+    #veille .container{
+      position:relative;
+    }
+
+    #veille .main .container:first-child::before{
+      content:"01  /  NEURAL INTERFACE";
+      position:absolute;
+      left:-120px;
+      top:55px;
+      writing-mode:vertical-rl;
+      font:10px var(--nav-font);
+      letter-spacing:.28em;
+      color:rgba(120,201,243,.32);
+      border-right:1px solid rgba(20,157,221,.2);
+      padding:0 12px 0 0;
+      z-index:2;
+      animation:sidePulse 3s ease-in-out infinite;
+    }
+
+    #veille .main .container:first-child::after{
+      content:"SECURE DATA STREAM  •  2026  •  BCI";
+      position:absolute;
+      right:20px;
+      top:20px;
+      font:9px var(--nav-font);
+      letter-spacing:.22em;
+      color:rgba(120,201,243,.3);
+      z-index:2;
+    }
+
+    .veille-wrap{
+      position:relative;
+    }
+
+    .veille-wrap::before{
+      content:"";
+      position:absolute;
+      width:5px;
+      height:5px;
+      border-radius:50%;
+      background:#149ddd;
+      box-shadow:
+        0 0 0 6px rgba(20,157,221,.08),
+        0 0 22px rgba(20,157,221,.9);
+      right:-35px;
+      top:120px;
+      animation:dotFloat 4s ease-in-out infinite;
+    }
+
+    @keyframes sidePulse{
+      0%,100%{opacity:.3}
+      50%{opacity:.9}
+    }
+
+    @keyframes dotFloat{
+      0%,100%{transform:translateY(0)}
+      50%{transform:translateY(100px)}
+    }
+
+    #veille .section-title::after{
+      content:"NEURAL // DATA // SECURITY";
+      display:block;
+      margin:22px auto 0;
+      font-family:var(--nav-font);
+      font-size:10px;
+      letter-spacing:.32em;
+      color:rgba(120,201,243,.38);
+      animation:signalBlink 3s ease-in-out infinite;
+    }
+
+    @keyframes gridDrift{
+      from{background-position:0 0,0 0}
+      to{background-position:56px 56px,56px 56px}
+    }
+
+    @keyframes ambientGlow{
+      0%,100%{transform:translate3d(0,0,0) scale(1)}
+      50%{transform:translate3d(-80px,80px,0) scale(1.15)}
+    }
+
+    @keyframes signalBlink{
+      0%,100%{opacity:.3}
+      50%{opacity:.85}
+    }
+
+
+
+    #veille .section {
+      background: transparent;
+    }
+
+    #veille .section-title {
+      padding-bottom: 45px;
+    }
+
+    #veille .section-title h2 {
+      color: #fff;
+      font-size: clamp(34px, 4vw, 48px);
+      margin-bottom: 14px;
+    }
+
+    #veille .section-title p {
+      color: #cbd5e1;
+      font-size: 18px;
+    }
+
+    .veille-wrap {
+      max-width: 1050px;
+      margin: 0 auto;
+    }
+
+    .veille-hero-card {
+      position: relative;
+      overflow: hidden;
+      margin-bottom: 42px;
+      padding: 34px;
+      border-radius: 16px;
+      border: 1px solid rgba(20,157,221,.18);
+      
+      box-shadow: 0 18px 60px rgba(0,0,0,.18);
+    }
+
+    .veille-hero-card::after {
+      display:none;
+    }
+
+    .veille-kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 14px;
+      font-family: var(--nav-font);
+      font-size: 13px;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+      color: var(--accent-color);
+    }
+
+    .veille-heading-wrap{
+      position:relative;
+      min-height:260px;
+      padding-right:360px;
+      display:flex;
+      flex-direction:column;
+      justify-content:center;
+    }
+
+    .veille-brain{
+      position:absolute;
+      right:0;
+      top:50%;
+      transform:translateY(-50%);
+      width:330px;
+      height:240px;
+      border-radius:22px;
+      perspective:900px;
+      filter:drop-shadow(0 0 24px rgba(20,157,221,.28));
+      animation:brainFloat 5s ease-in-out infinite;
+    }
+
+    .veille-brain::before{
+      content:"";
+      position:absolute;
+      inset:10px;
+      border:1px solid rgba(20,157,221,.22);
+      border-radius:50%;
+      box-shadow:0 0 35px rgba(20,157,221,.12), inset 0 0 25px rgba(20,157,221,.06);
+      animation:brainOrbit 7s linear infinite;
+      pointer-events:none;
+      z-index:2;
+    }
+
+    .veille-brain::after{
+      content:"";
+      position:absolute;
+      left:8%;
+      right:8%;
+      top:50%;
+      height:2px;
+      background:linear-gradient(90deg,transparent,#7dd3fc,transparent);
+      box-shadow:0 0 12px #149ddd;
+      opacity:.75;
+      z-index:3;
+      animation:brainScanline 3.2s ease-in-out infinite;
+      pointer-events:none;
+    }
+
+    .veille-brain-video{
+      width:100%;
+      height:100%;
+      object-fit:contain;
+      display:block;
+      border-radius:18px;
+      mix-blend-mode:screen;
+      animation:brainTilt 6s ease-in-out infinite;
+    }
+
+    @keyframes brainFloat{
+      0%,100%{transform:translateY(-50%) translateY(0)}
+      50%{transform:translateY(-50%) translateY(-8px)}
+    }
+
+    @keyframes brainTilt{
+      0%,100%{transform:rotateY(-4deg) rotateX(1deg) scale(1)}
+      50%{transform:rotateY(4deg) rotateX(-1deg) scale(1.025)}
+    }
+
+    @keyframes brainOrbit{
+      0%{transform:rotate(0deg) scaleX(1)}
+      50%{transform:rotate(180deg) scaleX(.88)}
+      100%{transform:rotate(360deg) scaleX(1)}
+    }
+
+    @keyframes brainScanline{
+      0%{top:18%;opacity:0}
+      15%{opacity:.8}
+      50%{top:82%;opacity:.45}
+      85%{opacity:.8}
+      100%{top:18%;opacity:0}
+    }
+
+    .veille-hero-title {
+      margin: 0 0 12px;
+      color: #fff;
+      font-size: clamp(34px, 4.5vw, 54px);
+      line-height: 1.08;
+      font-weight: 700;
+    }
+
+    .veille-hero-subtitle {
+      margin: 0;
+      max-width: 760px;
+      color: #d1d5db;
+      font-size: 20px;
+      line-height: 1.6;
+    }
+
+    .veille-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 22px;
+    }
+
+    .veille-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 8px 12px;
+      border: 1px solid rgba(20,157,221,.18);
+      border-radius: 999px;
+      background: rgba(255,255,255,.03);
+      color: #cbd5e1;
+      font-size: 13px;
+      font-family: var(--nav-font);
+    }
+
+    .veille-intro-card,
+    .veille-card {
+      position:relative;
+      overflow:hidden;
+
+      margin-bottom: 34px;
+      padding: 30px;
+      border-radius: 14px;
+      border: 1px solid rgba(20,157,221,.16);
+      background:linear-gradient(135deg,rgba(12,30,48,.72),rgba(5,17,29,.54));
+      
+      box-shadow: 0 10px 35px rgba(0,0,0,.14);
+      backdrop-filter: blur(6px);
+    }
+
+    .veille-intro-card::before,
+    .veille-card::before{
+      content:"";
+      position:absolute;
+      left:0;
+      top:0;
+      width:3px;
+      height:100%;
+      background:linear-gradient(to bottom,transparent,#149ddd,transparent);
+      opacity:.45;
+      animation:cardScan 4s ease-in-out infinite;
+    }
+
+    .veille-intro-card::after,
+    .veille-card::after{
+      content:"";
+      position:absolute;
+      width:120px;
+      height:120px;
+      right:-70px;
+      bottom:-70px;
+      border:1px solid rgba(20,157,221,.12);
+      border-radius:50%;
+      box-shadow:0 0 25px rgba(20,157,221,.06);
+      pointer-events:none;
+    }
+
+    @keyframes cardScan{
+      0%,100%{transform:translateY(-30%);opacity:.15}
+      50%{transform:translateY(30%);opacity:.7}
+    }
+
+    .veille-card:hover,
+    .veille-intro-card:hover{
+      transform:translateY(-4px);
+      border-color:rgba(20,157,221,.22);
+      box-shadow:0 18px 45px rgba(0,0,0,.22),0 0 24px rgba(20,157,221,.06);
+    }
+
+
+
+    .veille-intro-card h3,
+    .veille-card h3,
+    .veille-sources h3 {
+      color: #fff;
+      margin-bottom: 16px;
+      font-size: 25px;
+    }
+
+    .veille-intro-card p,
+    .veille-card p,
+    .veille-event p {
+      color: #d1d5db;
+      line-height: 1.9;
+      font-size: 16px;
+    }
+
+    .veille-summary {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .veille-summary-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 13px;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,.08);
+      background: rgba(255,255,255,.025);
+      color: #e5e7eb;
+      font-size: 13px;
+    }
+
+    .veille-summary-item i,
+    .veille-source i {
+      color: var(--accent-color);
+    }
+
+    .veille-timeline {
+      position: relative;
+      margin: 48px 0 45px;
+      padding-left: 28px;
+    }
+
+    .veille-timeline::after{
+      content:"";
+      position:absolute;
+      left:0;
+      top:0;
+      bottom:0;
+      width:40px;
+      background:radial-gradient(circle at 8px 10px,rgba(20,157,221,.08),transparent 60%);
+      pointer-events:none;
+    }
+
+    .veille-timeline::before {
+      content: "";
+      position: absolute;
+      left: 8px;
+      top: 4px;
+      bottom: 8px;
+      width: 2px;
+      background: linear-gradient(
+        180deg,
+        rgba(20,157,221,.80),
+        rgba(20,157,221,.22)
+      );
+    }
+
+    .veille-event {
+      position: relative;
+      transition:transform .35s ease, opacity .35s ease;
+
+      margin-bottom: 34px;
+      padding: 0 0 28px 30px;
+      border-bottom: 1px solid rgba(255,255,255,.06);
+    }
+
+    .veille-event:hover{
+      transform:translateX(6px);
+    }
+
+    .veille-event:last-child {
+      margin-bottom: 0;
+      border-bottom: 0;
+    }
+
+    .veille-dot {
+      position: absolute;
+      left: -1px;
+      top: 7px;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #0e2438;
+      border: 3px solid var(--accent-color);
+      box-shadow: 0 0 0 5px rgba(20,157,221,.10);
+    }
+
+    .veille-date {
+      display: inline-block;
+      margin-bottom: 7px;
+      font-family: var(--nav-font);
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: .10em;
+      text-transform: uppercase;
+      color: var(--accent-color);
+    }
+
+    .veille-event h3 {
+      margin-bottom: 12px;
+      color: #fff;
+      font-size: 23px;
+    }
+
+    .veille-event p {
+      margin-bottom: 12px;
+    }
+
+    .veille-source {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      margin: 3px 16px 0 0;
+      color: #78c9f3;
+      font-size: 13px;
+      text-decoration: none;
+      opacity: .82;
+      transition: .2s ease;
+    }
+
+    .veille-source{
+      position:relative;
+    }
+
+    .veille-source::after{
+      content:"";
+      position:absolute;
+      left:0;
+      bottom:-3px;
+      width:0;
+      height:1px;
+      background:#149ddd;
+      transition:width .25s ease;
+    }
+
+    .veille-source:hover::after{
+      width:100%;
+    }
+
+    .veille-source:hover {
+      color: #fff;
+      opacity: 1;
+      transform: translateX(2px);
+    }
+
+    .veille-question {
+      border-left: 1px solid rgba(20,157,221,.16);
+      background:linear-gradient(135deg,rgba(12,30,48,.72),rgba(5,17,29,.54));
+    }
+
+    .veille-sources {
+      margin-top: 46px;
+      padding: 30px;
+      border-top: 1px solid rgba(255,255,255,.08);
+    }
+
+    .veille-source-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .veille-source-list li {
+      padding: 13px 0;
+      border-bottom: 1px solid rgba(255,255,255,.07);
+    }
+
+    .veille-source-list li:last-child {
+      border-bottom: 0;
+    }
+
+    .veille-source-list a {
+      color: #b7dff5;
+      text-decoration: none;
+      font-size: 14px;
+    }
+
+    .veille-source-list a:hover {
+      color: #fff;
+    }
+
+    @media (max-width: 767px) {
+      .veille-heading-wrap{padding-right:0;min-height:0}
+      .veille-brain{position:relative;right:auto;top:auto;transform:none;width:250px;height:190px;margin:20px auto 0}
+      .veille-intro-card,
+      .veille-card,
+      .veille-hero-card,
+      .veille-sources {
+        padding: 22px;
+      }
+
+      .veille-timeline {
+        padding-left: 22px;
+      }
+
+      .veille-event {
+        padding-left: 25px;
+      }
+    }
+    /* --- Décor immersif --- */
+    .neuro-decor{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:0}
+    .neuro-grid{position:absolute;inset:-10%;background:
+      linear-gradient(rgba(20,157,221,.07) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(20,157,221,.07) 1px,transparent 1px);
+      background-size:42px 42px;transform:perspective(500px) rotateX(58deg) scale(1.4) translateY(20%);
+      transform-origin:center bottom;opacity:.7;animation:gridMove 16s linear infinite}
+    .neuro-rings{position:absolute;width:700px;height:700px;left:-330px;top:18%;
+      border:1px solid rgba(20,157,221,.12);border-radius:50%;
+      box-shadow:0 0 0 70px rgba(20,157,221,.025),0 0 0 140px rgba(20,157,221,.018);
+      animation:ringSpin 24s linear infinite}
+    .neuro-rings::before,.neuro-rings::after{content:"";position:absolute;inset:90px;border:1px dashed rgba(125,211,252,.13);border-radius:50%}
+    .neuro-rings::after{inset:180px;border-style:solid;opacity:.55}
+    .neuro-lines{position:absolute;inset:0;opacity:.55}
+    .neuro-lines span{position:absolute;height:1px;background:linear-gradient(90deg,transparent,#149ddd,transparent);box-shadow:0 0 10px #149ddd}
+    .neuro-lines span:nth-child(1){width:35%;top:18%;left:-5%;transform:rotate(12deg);animation:linePulse 4s infinite}
+    .neuro-lines span:nth-child(2){width:25%;top:42%;right:-4%;transform:rotate(-18deg);animation:linePulse 5s 1s infinite}
+    .neuro-lines span:nth-child(3){width:42%;top:73%;left:-8%;transform:rotate(-7deg);animation:linePulse 6s 2s infinite}
+    .neuro-lines span:nth-child(4){width:28%;top:87%;right:-4%;transform:rotate(9deg);animation:linePulse 4.5s 1.5s infinite}
+    .neuro-node{position:absolute;width:7px;height:7px;border-radius:50%;background:#149ddd;box-shadow:0 0 0 7px rgba(20,157,221,.08),0 0 25px #149ddd;animation:nodePulse 2.5s ease-in-out infinite}
+    .neuro-node:nth-child(5){left:8%;top:24%}.neuro-node:nth-child(6){right:12%;top:36%}.neuro-node:nth-child(7){left:18%;top:64%}.neuro-node:nth-child(8){right:8%;top:78%}.neuro-node:nth-child(9){left:48%;top:91%}
+    .decor-label{position:absolute;font:9px var(--nav-font);letter-spacing:.3em;color:rgba(125,211,252,.3);white-space:nowrap}
+    .decor-label.a{top:11%;left:5%}.decor-label.b{top:58%;right:3%;transform:rotate(90deg)}.decor-label.c{bottom:4%;left:5%}
+    .hud-corner{position:absolute;width:70px;height:70px;border-color:rgba(20,157,221,.35);border-style:solid}
+    .hud-corner.tl{top:18px;left:18px;border-width:1px 0 0 1px}.hud-corner.tr{top:18px;right:18px;border-width:1px 1px 0 0}
+    .hud-corner.bl{bottom:18px;left:18px;border-width:0 0 1px 1px}.hud-corner.br{bottom:18px;right:18px;border-width:0 1px 1px 0}
+    .scan-beam{position:absolute;left:0;right:0;height:90px;background:linear-gradient(transparent,rgba(20,157,221,.055),transparent);filter:blur(2px);animation:scanPage 9s linear infinite}
+    #veille .main>.section{position:relative}
+    #veille .main>.section>*{position:relative}
+    @keyframes gridMove{from{background-position:0 0,0 0}to{background-position:42px 42px,42px 42px}}
+    @keyframes ringSpin{to{transform:rotate(360deg)}}
+    @keyframes linePulse{0%,100%{opacity:.15}50%{opacity:.9}}
+    @keyframes nodePulse{0%,100%{transform:scale(.7);opacity:.45}50%{transform:scale(1.5);opacity:1}}
+    @keyframes scanPage{0%{top:-10%}100%{top:105%}}
+    @media(max-width:767px){.neuro-grid{opacity:.35}.neuro-rings{width:420px;height:420px;left:-210px}.decor-label{display:none}.hud-corner{width:40px;height:40px}}
+  
+    /* Harmonise explicitement la zone RSS avec le thème sombre du portfolio. */
+    #veille #flux-rss,
+    #veille .rss-panel{
+      background-color:#081321!important;
+    }
+    #veille .rss-panel{
+      background:linear-gradient(135deg,rgba(12,30,48,.96),rgba(5,17,29,.94))!important;
+      border-color:rgba(20,157,221,.24);
+    }
+    #veille .rss-item{
+      background:rgba(255,255,255,.035)!important;
+      color:#e5edf5;
+    }
+    #veille .rss-empty{
+      background:rgba(5,17,29,.72)!important;
+      color:#cbd5e1;
+    }
+    /* Fond sombre explicite pour la rubrique RSS, même si le thème global définit des sections blanches. */
+    #veille #flux-rss,
+    #veille section#flux-rss.rss-panel{
+      background:#081321!important;
+      background-image:linear-gradient(135deg,rgba(12,30,48,.98),rgba(5,17,29,.96))!important;
+      color:#e5edf5!important;
+    }
+    #veille #flux-rss .rss-item{
+      background:rgba(255,255,255,.035)!important;
+      color:#e5edf5!important;
+    }
+    #veille #flux-rss .rss-empty{
+      background:rgba(5,17,29,.72)!important;
+      color:#cbd5e1!important;
+    }
+    #veille #flux-rss .rss-item[hidden]{display:none!important}
+    #veille #flux-rss .rss-filter[aria-pressed="true"]{
+      color:#fff!important;
+      background:rgba(20,157,221,.28)!important;
+      border-color:#149ddd!important;
+      box-shadow:0 0 0 1px rgba(20,157,221,.15);
+    }
+    #veille .navmenu a.rss-nav-link.active,
+    #veille .navmenu a.rss-nav-link.active:focus{
+      color:var(--contrast-color);
+      background:var(--nav-hover-color);
+    }
+    #veille .navmenu a.rss-nav-link.active .navicon{color:var(--accent-color)}
+    /* Navigation rapide vers les flux RSS */
+    .rss-nav-link{font-size:14px!important;padding-left:32px!important;opacity:.88}
+    .rss-nav-link .navicon{font-size:15px!important}
+    .rss-nav-link:hover{opacity:1}
+    /* Filtres des actualités : tous les flux restent sur une seule page. */
+    .rss-filters{display:flex;flex-wrap:wrap;gap:9px;margin:18px 0 22px}
+    .rss-filter{border:1px solid rgba(20,157,221,.28);background:rgba(255,255,255,.025);color:#cbd5e1;border-radius:999px;padding:8px 13px;font-size:13px;cursor:pointer;transition:background .2s,border-color .2s,color .2s}
+    .rss-filter:hover,.rss-filter[aria-pressed="true"]{border-color:rgba(20,157,221,.72);background:rgba(20,157,221,.16);color:#fff}
+    .rss-panel[hidden]{display:none!important}
+    .rss-section-heading{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:36px 0 12px;color:#fff}
+    .rss-section-heading i{color:#149ddd}
+        /* Lecteur de flux RSS */
+    .rss-panel{margin:44px 0 34px;padding:30px;border:1px solid rgba(20,157,221,.2);border-radius:16px;background:linear-gradient(135deg,rgba(12,30,48,.86),rgba(5,17,29,.76));box-shadow:0 14px 38px rgba(0,0,0,.18)}
+    .rss-panel h3{color:#fff;font-size:26px;margin:0 0 8px}
+    .rss-lead{color:#cbd5e1;line-height:1.7;margin-bottom:20px}
+    .rss-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:18px 0 20px}
+    .rss-status{font-size:13px;color:#9ca3af}
+    .rss-refresh{border:1px solid rgba(20,157,221,.5);background:rgba(20,157,221,.12);color:#cdeeff;border-radius:8px;padding:9px 14px;cursor:pointer;transition:background .2s}
+    .rss-refresh:hover{background:rgba(20,157,221,.24)}
+    .rss-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+    .rss-item{padding:18px;border:1px solid rgba(255,255,255,.09);border-radius:12px;background:rgba(255,255,255,.025);transition:transform .2s,border-color .2s}
+    .rss-item:hover{transform:translateY(-3px);border-color:rgba(20,157,221,.4)}
+    .rss-item-meta{display:flex;flex-wrap:wrap;gap:8px;align-items:center;color:#78c9f3;font-size:12px;margin-bottom:10px}
+    .rss-source{padding:3px 8px;border:1px solid rgba(20,157,221,.22);border-radius:999px;background:rgba(20,157,221,.07)}
+    .rss-item h4{font-size:17px;line-height:1.45;margin:0 0 9px;color:#fff}
+    .rss-item h4 a{color:inherit;text-decoration:none}
+    .rss-item h4 a:hover{color:#78c9f3}
+    .rss-item p{color:#cbd5e1;font-size:14px;line-height:1.7;margin:0}
+    .rss-empty{grid-column:1/-1;border:1px dashed rgba(20,157,221,.25);border-radius:10px;padding:18px;color:#cbd5e1;line-height:1.7}
+    .rss-footer{font-size:12px;color:#94a3b8;margin-top:16px;line-height:1.6}
+    @media(max-width:767px){.rss-panel{padding:22px 18px}.rss-grid{grid-template-columns:1fr}.rss-item{padding:16px}}
+
+  
+#veille{background:#081321!important;color:#e5edf5}
+#veille .rss-panel{background:linear-gradient(135deg,rgba(12,30,48,.96),rgba(5,17,29,.94))!important;color:#e5edf5!important}
+#veille .rss-item{background:rgba(255,255,255,.035)!important}
+#veille .rss-empty{background:rgba(5,17,29,.72)!important}
+#veille .rss-panel[hidden]{display:none!important}
+#veille .rss-filter[aria-pressed="true"]{color:#fff!important;background:rgba(20,157,221,.28)!important;border-color:#149ddd!important}
+#veille #flux-rss{margin-top:38px}
+
+</style>
 
 <style>
 /* --- V2 : interface HUD de l'accueil --- */
@@ -79,8 +776,8 @@
       <li><a href="#hero" class="active"><i class="bi bi-house navicon"></i>Accueil</a></li>
       <li><a href="#about"><i class="bi bi-person navicon"></i>À propos</a></li>
       <li><a href="#projects"><i class="bi bi-folder2-open navicon"></i>Projets</a></li>
-      <li><a href="veille.html"><i class="bi bi-activity navicon"></i>Veille informatique</a></li>
-      <li><a href="veille.html#flux-rss"><i class="bi bi-rss navicon"></i>Flux RSS</a></li>
+      <li><a href="#veille"><i class="bi bi-activity navicon"></i>Veille informatique</a></li>
+      <li><a href="#flux-rss"><i class="bi bi-rss navicon"></i>Flux RSS</a></li>
       <li><a href="#contact"><i class="bi bi-envelope navicon"></i>Contact</a></li>
     </ul>
   </nav>
@@ -235,6 +932,281 @@
   </div>
 </section>
 
+
+
+    <section id="veille" class="section veille-page">
+          <div class="neuro-decor" aria-hidden="true">
+      <div class="neuro-grid"></div>
+      <div class="neuro-rings"></div>
+      <div class="neuro-lines"><span></span><span></span><span></span><span></span></div>
+      <i class="neuro-node"></i><i class="neuro-node"></i><i class="neuro-node"></i><i class="neuro-node"></i><i class="neuro-node"></i>
+      <span class="decor-label a">NEURAL SYSTEM / ONLINE</span>
+      <span class="decor-label b">DATA STREAM 01 — ENCRYPTED</span>
+      <span class="decor-label c">BCI // CYBERSECURITY // 2026</span>
+      <span class="hud-corner tl"></span><span class="hud-corner tr"></span><span class="hud-corner bl"></span><span class="hud-corner br"></span>
+      <span class="scan-beam"></span>
+    </div>
+
+      <div class="container">
+            <section class="section">
+      <div class="container section-title" data-aos="fade-up">
+        <div class="veille-wrap veille-heading-wrap">
+          <div class="veille-kicker"><i class="bi bi-broadcast-pin"></i> Veille technologique</div>
+          <h2 class="veille-hero-title">Veille informatique</h2>
+          <p class="veille-hero-subtitle">Neurotechnologies, bio-informatique &amp; cybersécurité</p>
+          <div class="veille-brain" aria-label="Cerveau humain 3D en rotation">
+            <video class="veille-brain-video" autoplay muted loop playsinline preload="metadata"
+              poster="https://thumbs.wbm.im/pw/medium/4c5a8d2ee1244e35073445353d1168ec.jpg">
+              <source src="https://player.vimeo.com/progressive_redirect/playback/1160443661/rendition/240p/file.mp4%20%28240p%29.mp4?loc=external&amp;oauth2_token_id=1223210874&amp;signature=86f0f71ce876ec2a05512096784e1b8980364d2d42964c38885a683019acbdf8" type="video/mp4">
+            </video>
+          </div>
+        </div>
+      </div>
+
+      <div class="container">
+        <div class="veille-wrap">
+
+          <div class="veille-hero-card" data-aos="fade-up" data-aos-delay="100">
+            <div class="veille-kicker"><i class="bi bi-shield-lock"></i> Question centrale</div>
+            <h3 class="text-white mb-2">Quand l'informatique commence à communiquer avec le cerveau</h3>
+            <p class="veille-hero-subtitle">
+              L'intégration croissante de technologies numériques directement dans le corps humain
+              pourrait-elle créer de nouvelles menaces en matière de cybersécurité et de protection des données ?
+            </p>
+            <div class="veille-tags">
+              <span class="veille-tag"><i class="bi bi-cpu"></i> Neurotech</span>
+              <span class="veille-tag"><i class="bi bi-diagram-3"></i> BCI</span>
+              <span class="veille-tag"><i class="bi bi-shield-check"></i> Sécurité</span>
+              <span class="veille-tag"><i class="bi bi-database"></i> Données neuronales</span>
+            </div>
+          </div>
+
+          <div class="veille-intro-card" data-aos="fade-up">
+            <h3>Introduction</h3>
+            <p>
+              Depuis plusieurs décennies, les progrès de l'informatique et des neurosciences permettent progressivement de rapprocher l'être humain des machines. Cette évolution a notamment donné naissance aux interfaces cerveau-machine, ou BCI (<em>Brain-Computer Interfaces</em>). Leur principe est relativement simple à comprendre : récupérer des signaux provenant de l'activité cérébrale, les analyser à l'aide de systèmes informatiques puis les transformer en commandes permettant d'interagir avec un ordinateur ou un autre appareil.
+            </p>
+            <p>
+              L'idée peut sembler récente, notamment avec la médiatisation d'entreprises comme Neuralink, mais les premières recherches remontent à plusieurs décennies. Dès les années 1920, les scientifiques commencent à enregistrer l'activité électrique du cerveau grâce à l'électroencéphalographie (EEG). Dans les années 1970 et 1980, les recherches progressent jusqu'à permettre d'envisager une communication directe entre l'activité cérébrale et des systèmes électroniques. En 1978, une expérience menée par William Dobelle permettait déjà de stimuler le cortex visuel d'un patient à l'aide d'une matrice d'électrodes, produisant des perceptions lumineuses artificielles.
+            </p>
+            <p>
+              Durant les années 1990 et 2000, les interfaces cerveau-machine continuent de progresser. Les chercheurs développent notamment des systèmes capables d'interpréter certaines activités cérébrales afin de contrôler un curseur, communiquer ou commander des dispositifs mécaniques. En 2004, Matt Nagle devient notamment l'un des premiers patients à utiliser une interface cerveau-machine invasive pour contrôler un bras robotique.
+            </p>
+            <p>
+              L'objectif initial de ces technologies est principalement médical. Il s'agit notamment de permettre à des personnes souffrant de paralysie ou de troubles moteurs de retrouver certaines capacités d'interaction avec leur environnement. Le développement des capteurs, de l'intelligence artificielle et de la puissance de calcul permet cependant d'envisager progressivement des applications beaucoup plus larges.
+            </p>
+
+            <div class="veille-summary">
+              <span class="veille-summary-item"><i class="bi bi-clock-history"></i> Des années 1920 à aujourd'hui</span>
+              <span class="veille-summary-item"><i class="bi bi-heart-pulse"></i> Finalité médicale initiale</span>
+              <span class="veille-summary-item"><i class="bi bi-cpu"></i> Traitement informatique du signal</span>
+            </div>
+
+            <a class="veille-source" href="https://pmc.ncbi.nlm.nih.gov/articles/PMC13317701/" target="_blank" rel="noopener">
+              <i class="bi bi-journal-text"></i> Source scientifique · Histoire des BCI ↗
+            </a>
+            <a class="veille-source" href="https://pikwizard.com/video/rotating-neon-3d-brain-animation-with-glowing-synaptic-filaments-revealing-cerebellum/4c5a8d2ee1244e35073445353d1168ec/" target="_blank" rel="noopener">
+              <i class="bi bi-play-circle"></i> Animation 3D · PikWizard ↗
+            </a>
+          </div>
+
+          <div class="veille-timeline">
+            <article class="veille-event" data-aos="fade-up">
+              <span class="veille-dot"></span>
+              <div class="veille-date">Années 1920</div>
+              <h3>Les premières mesures de l'activité cérébrale</h3>
+              <p>
+                L'électroencéphalographie permet d'enregistrer l'activité électrique du cerveau. Cette technique devient l'une des bases historiques de l'étude des signaux neuronaux et, beaucoup plus tard, de certaines interfaces cerveau-machine.
+              </p>
+              <a class="veille-source" href="https://pmc.ncbi.nlm.nih.gov/articles/PMC13317701/" target="_blank" rel="noopener">
+                <i class="bi bi-arrow-up-right"></i> Source scientifique · Lire l'étude ↗
+              </a>
+            </article>
+
+            <article class="veille-event" data-aos="fade-up">
+              <span class="veille-dot"></span>
+              <div class="veille-date">1970–1980</div>
+              <h3>Les premières interactions cerveau–machine</h3>
+              <p>
+                Les recherches passent progressivement de la simple observation des signaux cérébraux à leur utilisation pour produire une interaction avec un système électronique. Les travaux de William Dobelle sur la stimulation du cortex visuel illustrent cette évolution.
+              </p>
+              <a class="veille-source" href="https://pmc.ncbi.nlm.nih.gov/articles/PMC13317701/" target="_blank" rel="noopener">
+                <i class="bi bi-file-earmark-text"></i> Document scientifique · Historique des neurotechnologies ↗
+              </a>
+            </article>
+
+            <article class="veille-event" data-aos="fade-up">
+              <span class="veille-dot"></span>
+              <div class="veille-date">2004</div>
+              <h3>Une BCI invasive utilisée pour contrôler un bras robotique</h3>
+              <p>
+                Les travaux menés avec Matt Nagle montrent concrètement qu'une interface implantée peut permettre à une personne paralysée de commander un dispositif externe à partir de signaux cérébraux. La finalité reste alors essentiellement médicale.
+              </p>
+              <a class="veille-source" href="https://pmc.ncbi.nlm.nih.gov/articles/PMC13317701/" target="_blank" rel="noopener">
+                <i class="bi bi-journal-text"></i> Source scientifique · Lire l'étude ↗
+              </a>
+            </article>
+
+            <article class="veille-event" data-aos="fade-up">
+              <span class="veille-dot"></span>
+              <div class="veille-date">2024</div>
+              <h3>Neuralink et le passage aux essais humains</h3>
+              <p>
+                L'année 2024 marque une étape importante dans la médiatisation des interfaces cerveau-machine avec Neuralink. L'entreprise commence ses essais humains et présente un système destiné notamment à permettre à une personne atteinte de paralysie d'interagir avec un ordinateur grâce à l'activité cérébrale.
+              </p>
+              <p>
+                Il est important de ne pas réduire les BCI à Neuralink : universités, laboratoires et autres entreprises travaillent depuis longtemps sur différentes formes d'interfaces invasives et non invasives. Cette étape rend toutefois plus concrète une question centrale pour ma veille : comment protéger une technologie capable de collecter des signaux issus de l'activité cérébrale lorsqu'elle devient connectée à des systèmes informatiques ?
+              </p>
+              <a class="veille-source" href="https://www.reuters.com/legal/litigation/elon-musks-neuralink-says-it-has-21-participants-enrolled-trials-2026-01-28/" target="_blank" rel="noopener">
+                <i class="bi bi-newspaper"></i> Document associé · Suivi des essais Neuralink ↗
+              </a>
+            </article>
+
+            <article class="veille-event" data-aos="fade-up">
+              <span class="veille-dot"></span>
+              <div class="veille-date">2025</div>
+              <h3>La question de la sécurité devient centrale</h3>
+              <p>
+                À mesure que les interfaces cerveau-machine progressent, les discussions ne concernent plus uniquement leurs performances médicales. Les chercheurs étudient également la confidentialité, la sécurité et la protection des données. Une BCI repose sur une chaîne composée de capteurs, systèmes électroniques, logiciels, algorithmes, communications et appareils connectés : autant d'éléments qui peuvent nécessiter des mesures de sécurité.
+              </p>
+              <p>
+                Les travaux sur la cybersécurité des interfaces neuronales étudient notamment la protection des données neuronales, l'authentification, les autorisations et la sécurité des modèles d'intelligence artificielle chargés d'interpréter les signaux.
+              </p>
+              <a class="veille-source" href="https://pubmed.ncbi.nlm.nih.gov/37883851/" target="_blank" rel="noopener">
+                <i class="bi bi-shield-lock"></i> Source scientifique · Sécurité des interfaces neuronales ↗
+              </a>
+            </article>
+
+            <article class="veille-event" data-aos="fade-up">
+              <span class="veille-dot"></span>
+              <div class="veille-date">2026</div>
+              <h3>Des applications médicales commencent à sortir du laboratoire</h3>
+              <p>
+                En janvier 2026, Neuralink indiquait avoir 21 participants inscrits dans ses essais humains à travers le monde. Les premiers utilisateurs ont notamment pu effectuer des tâches numériques avec leur implant, comme contrôler un curseur ou interagir avec un ordinateur.
+              </p>
+              <p>
+                En mars 2026, la Chine a annoncé l'autorisation de commercialisation d'un dispositif médical utilisant une interface cerveau-machine, destiné notamment à aider certaines personnes atteintes de tétraplégie à retrouver une capacité de préhension grâce à une interface implantée et à un gant contrôlé par les signaux cérébraux.
+              </p>
+              <p>
+                Ces évolutions montrent que les BCI commencent progressivement à passer d'une technologie principalement expérimentale à des applications médicales concrètes. Plus une technologie est déployée, plus les exigences de sécurité, de fiabilité et de protection des données deviennent importantes.
+              </p>
+              <a class="veille-source" href="https://www.reuters.com/legal/litigation/elon-musks-neuralink-says-it-has-21-participants-enrolled-trials-2026-01-28/" target="_blank" rel="noopener">
+                <i class="bi bi-newspaper"></i> Document associé · Neuralink, janvier 2026 ↗
+              </a>
+              <a class="veille-source" href="https://www.reuters.com/business/healthcare-pharmaceuticals/china-approves-market-launch-brain-computer-interface-medical-device-world-first-2026-03-13/" target="_blank" rel="noopener">
+                <i class="bi bi-newspaper"></i> Document associé · Chine, mars 2026 ↗
+              </a>
+            </article>
+          </div>
+
+          <div class="veille-card veille-question" data-aos="fade-up">
+            <h3>Le lien avec la cybersécurité</h3>
+            <p>
+              C'est à ce niveau que cette veille rejoint directement ma formation en BTS SIO, spécialité SISR. Une interface cerveau-machine peut être considérée comme une chaîne composée de plusieurs éléments informatiques : acquisition de données, traitement des signaux, logiciels, algorithmes, communications et appareils connectés. Chacun de ces éléments peut potentiellement constituer un point nécessitant une protection.
+            </p>
+            <p>
+              Il serait toutefois incorrect d'affirmer aujourd'hui qu'un pirate informatique peut simplement « pirater le cerveau » ou voler directement les pensées d'une personne équipée d'un implant. Ces scénarios appartiennent encore largement à la prospective. En revanche, les risques de cybersécurité associés aux systèmes BCI font déjà l'objet de recherches scientifiques.
+            </p>
+            <p>
+              On peut ainsi envisager plusieurs catégories de menaces futures : un accès non autorisé aux données produites par un dispositif, une compromission du logiciel chargé de traiter ces données, une attaque contre les communications entre l'implant et un appareil externe, ou encore une manipulation des algorithmes chargés d'interpréter les signaux. La problématique concerne alors la confidentialité, mais aussi l'intégrité et la disponibilité du système — trois notions directement liées aux principes fondamentaux de la cybersécurité.
+            </p>
+            <a class="veille-source" href="https://pubmed.ncbi.nlm.nih.gov/37883851/" target="_blank" rel="noopener">
+              <i class="bi bi-shield-check"></i> Source scientifique · Sécurisation des interfaces neuronales ↗
+            </a>
+          </div>
+
+          <div class="veille-card" data-aos="fade-up">
+            <h3>Vers une nouvelle catégorie de données ?</h3>
+            <p>
+              Une donnée bancaire peut révéler des informations financières, une donnée de localisation peut révéler nos déplacements et une donnée médicale peut révéler notre état de santé. Les données neuronales pourraient, selon les capacités futures des systèmes, fournir des informations extrêmement personnelles sur l'activité cérébrale d'un individu.
+            </p>
+            <p>
+              Une revue publiée en 2026 souligne que les interfaces cerveau-machine implantables produisent des signaux neuronaux à haute résolution et identifie plusieurs lacunes dans les mécanismes actuels de protection : contrôle individuel limité, consentement, réutilisation des données et questions de propriété. Les auteurs insistent aussi sur le fait que les risques dépendent fortement du type de signal collecté et de ce que les algorithmes peuvent effectivement en déduire.
+            </p>
+            <p>
+              La question devient donc à la fois technique, juridique et éthique : comment protéger ces informations, qui peut y accéder, pendant combien de temps peuvent-elles être conservées et dans quelles conditions peuvent-elles être utilisées ?
+            </p>
+            <a class="veille-source" href="https://www.nature.com/articles/s43856-026-01797-y" target="_blank" rel="noopener">
+              <i class="bi bi-database-lock"></i> Source scientifique · Protection des données iBCI ↗
+            </a>
+          </div>
+
+          <div class="veille-card" data-aos="fade-up">
+            <h3>Et après ?</h3>
+            <p>
+              L'évolution des interfaces cerveau-machine montre une tendance générale : les frontières entre informatique, biologie et humain deviennent progressivement moins nettes.
+            </p>
+            <p>
+              Il y a quelques décennies, un ordinateur était un appareil externe utilisé par une personne. Aujourd'hui, nous portons déjà des objets connectés capables de mesurer notre activité physique, notre sommeil ou différents paramètres biologiques. Les interfaces cerveau-machine représentent potentiellement une étape supplémentaire : au lieu de simplement utiliser un appareil avec nos mains ou notre voix, nous pourrions progressivement interagir avec lui à partir de signaux provenant directement de notre système nerveux.
+            </p>
+            <p>
+              Cette évolution pourrait apporter des avancées médicales considérables, notamment pour les personnes souffrant de handicaps moteurs ou neurologiques. Mais elle implique également de repenser certaines problématiques de cybersécurité.
+            </p>
+            <p>
+              La question qui guide donc ma veille n'est pas de savoir si une technologie comme Neuralink va nécessairement conduire à des « piratages de cerveau ». Il s'agit plutôt de comprendre comment la cybersécurité devra évoluer si des systèmes informatiques commencent à traiter directement des données provenant de notre cerveau et à interagir avec notre corps.
+            </p>
+            <p>
+              Aujourd'hui, ces technologies restent encore en développement et leurs usages sont principalement expérimentaux ou médicaux. Cependant, leur progression montre qu'il est pertinent de réfléchir dès maintenant aux mécanismes de sécurité qui devront accompagner leur développement. La cybersécurité pourrait ainsi devoir protéger non seulement nos fichiers, nos comptes et nos infrastructures, mais à terme également certaines des informations les plus personnelles qu'un système informatique puisse traiter : celles provenant directement de notre activité cérébrale.
+            </p>
+          </div>
+
+
+                    <section id="flux-rss" aria-labelledby="rss-heading">
+  <div class="rss-section-heading"><i class="bi bi-rss"></i><h3 id="rss-heading" style="margin:0">Flux RSS</h3></div>
+  <p class="rss-lead">Deux flux bien distincts, réunis sur cette même page : ta veille informatique et scientifique, puis tes recherches personnelles en Bourse. Tu peux tout parcourir en faisant défiler la page ou filtrer les actualités par sujet.</p>
+  <div class="rss-filters" role="group" aria-label="Filtrer les flux RSS">
+    <button class="rss-filter" type="button" data-rss-filter="all" aria-pressed="true">Les deux flux</button>
+    <button class="rss-filter" type="button" data-rss-filter="it" aria-pressed="false">Veille informatique</button>
+    <button class="rss-filter" type="button" data-rss-filter="nvidia" aria-pressed="false">NVIDIA</button>
+    <button class="rss-filter" type="button" data-rss-filter="oracle" aria-pressed="false">Oracle</button>
+    <button class="rss-filter" type="button" data-rss-filter="srrk" aria-pressed="false">Scholar Rock</button>
+    <button class="rss-filter" type="button" data-rss-filter="sion" aria-pressed="false">Sionna Therapeutics</button>
+  </div>
+</section>
+
+<section id="flux-rss-informatique" class="rss-panel" data-aos="fade-up" aria-labelledby="rss-it-title">
+  <div class="veille-kicker"><i class="bi bi-shield-lock"></i> Flux 01 · Veille technologique</div>
+  <h3 id="rss-it-title">Veille informatique &amp; scientifique</h3>
+  <p class="rss-lead">Actualités sur les interfaces cerveau-machine, les alertes de cybersécurité, les vulnérabilités, les systèmes et les réseaux pour alimenter ma veille BTS SIO SISR.</p>
+  <div class="rss-toolbar">
+    <span id="rss-it-status" class="rss-status" role="status" aria-live="polite">Chargement des actualités informatiques…</span>
+    <button id="rss-it-refresh" class="rss-refresh" type="button"><i class="bi bi-arrow-clockwise"></i> Actualiser</button>
+  </div>
+  <div id="rss-it-articles" class="rss-grid"><div class="rss-empty">Les actualités informatiques sont en cours de chargement…</div></div>
+  <p class="rss-footer">Sources : Google Actualités (interfaces cerveau-machine), CERT-FR, The Hacker News et BleepingComputer.</p>
+</section>
+
+<section id="flux-rss-bourse" class="rss-panel" data-aos="fade-up" aria-labelledby="rss-stocks-title">
+  <div class="veille-kicker"><i class="bi bi-graph-up-arrow"></i> Flux 02 · Recherches personnelles</div>
+  <h3 id="rss-stocks-title">Recherches personnelles · Bourse</h3>
+  <p class="rss-lead">Actualités concernant les quatre entreprises que je suis : NVIDIA, Oracle, Scholar Rock et Sionna Therapeutics. Ce sont des articles de presse, pas des cours en temps réel ni des conseils d’investissement.</p>
+  <div class="rss-toolbar">
+    <span id="rss-stocks-status" class="rss-status" role="status" aria-live="polite">Chargement des actualités boursières…</span>
+    <button id="rss-stocks-refresh" class="rss-refresh" type="button"><i class="bi bi-arrow-clockwise"></i> Actualiser</button>
+  </div>
+  <div id="rss-stocks-articles" class="rss-grid"><div class="rss-empty">Les actualités boursières sont en cours de chargement…</div></div>
+  <p class="rss-footer">Sources : Google Actualités. Articles publiés par leurs éditeurs.</p>
+</section>
+
+<div class="veille-sources" data-aos="fade-up">
+            <h3>Sources &amp; documents</h3>
+            <ul class="veille-source-list">
+              <li><a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC13317701/" target="_blank" rel="noopener">Revue scientifique · Histoire et évolution des interfaces cerveau-machine ↗</a></li>
+              <li><a href="https://pubmed.ncbi.nlm.nih.gov/37883851/" target="_blank" rel="noopener">PubMed · Travaux sur la sécurité des interfaces neuronales ↗</a></li>
+              <li><a href="https://www.nature.com/articles/s43856-026-01797-y" target="_blank" rel="noopener">Communications Medicine · Protection des données des iBCI, 2026 ↗</a></li>
+              <li><a href="https://www.reuters.com/legal/litigation/elon-musks-neuralink-says-it-has-21-participants-enrolled-trials-2026-01-28/" target="_blank" rel="noopener">Reuters · Neuralink et ses essais humains, janvier 2026 ↗</a></li>
+              <li><a href="https://www.reuters.com/business/healthcare-pharmaceuticals/china-approves-market-launch-brain-computer-interface-medical-device-world-first-2026-03-13/" target="_blank" rel="noopener">Reuters · Autorisation d'un dispositif BCI médical en Chine, mars 2026 ↗</a></li>
+              <li><a href="https://doi.org/10.1109/IoT69654.2025.11297585" target="_blank" rel="noopener">IEEE · Recherche sur les enjeux de cybersécurité des neurotechnologies ↗</a></li>
+              <li><a href="https://journals.sagepub.com/doi/10.1177/20552076251326123" target="_blank" rel="noopener">SAGE · Réflexions récentes sur les neurotechnologies et les données ↗</a></li>
+            </ul>
+          </div>
+
+        </div>
+      </div>
+    </section>
+  
+      </div>
+    </section>
 </main>
 
 <!-- Modals Projets -->
@@ -458,5 +1430,217 @@
 <script src="assets/js/main.js"></script>
 <script src="assets/js/cursor-glow.js"></script>
 
+<script id="embedded-veille-rss">
+(() => {
+  const links=[...document.querySelectorAll('#navmenu a')];
+  const setActive = href => links.forEach(link=>link.classList.toggle('active',link.getAttribute('href')===href));
+  const updateActive = () => {
+    const rssEls=['flux-rss','flux-rss-informatique','flux-rss-bourse'].map(id=>document.getElementById(id)).filter(Boolean);
+    const inRss=rssEls.some(el=>{const r=el.getBoundingClientRect();return r.top<window.innerHeight*.6&&r.bottom>window.innerHeight*.25;});
+    const veille=document.getElementById('veille')?.getBoundingClientRect();
+    if(inRss){setActive('#flux-rss');return;}
+    if(veille&&veille.top<window.innerHeight*.6&&veille.bottom>window.innerHeight*.25){setActive('#veille');return;}
+    const sections=['hero','about','projects','contact'].map(id=>document.getElementById(id)).filter(Boolean);
+    const current=sections.filter(el=>el.getBoundingClientRect().top<=window.innerHeight*.4).pop();
+    setActive(current?'#'+current.id:'#hero');
+  };
+  window.addEventListener('scroll',updateActive,{passive:true});
+  window.addEventListener('hashchange',updateActive);
+  updateActive();
+        const proxy = "https://api.rss2json.com/v1/api.json?rss_url=";
+      const groups = [
+        {
+          containerId: "rss-it-articles",
+          statusId: "rss-it-status",
+          refreshId: "rss-it-refresh",
+          fallback: '<a href="https://www.cert.ssi.gouv.fr/" target="_blank" rel="noopener noreferrer">CERT-FR</a>, <a href="https://www.bleepingcomputer.com/" target="_blank" rel="noopener noreferrer">BleepingComputer</a> et <a href="https://thehackernews.com/" target="_blank" rel="noopener noreferrer">The Hacker News</a>',
+          feeds: [
+            { name: "Google Actualités · Interfaces cerveau-machine", category: "it", url: "https://news.google.com/rss/search?q=%22brain-computer+interface%22+OR+%22brain-machine+interface%22+OR+%22interface+cerveau-machine%22&hl=fr&gl=FR&ceid=FR:fr" },
+            { name: "CERT-FR · Alertes cybersécurité", category: "it", url: "https://www.cert.ssi.gouv.fr/feed/" },
+            { name: "The Hacker News · Cybersécurité", category: "it", url: "https://feeds.feedburner.com/TheHackerNews" },
+            { name: "BleepingComputer · Sécurité informatique", category: "it", url: "https://www.bleepingcomputer.com/feed/" }
+          ]
+        },
+        {
+          containerId: "rss-stocks-articles",
+          statusId: "rss-stocks-status",
+          refreshId: "rss-stocks-refresh",
+          fallback: '<a href="https://news.google.com/" target="_blank" rel="noopener noreferrer">Google Actualités</a>',
+          feeds: [
+            { name: "NVIDIA · NVDA", category: "nvidia", url: "https://news.google.com/rss/search?q=NVIDIA+OR+NVDA&hl=en-US&gl=US&ceid=US:en" },
+            { name: "Oracle · ORCL", category: "oracle", url: "https://news.google.com/rss/search?q=%22Oracle+Corporation%22+OR+ORCL&hl=en-US&gl=US&ceid=US:en" },
+            { name: "Scholar Rock · SRRK", category: "srrk", url: "https://news.google.com/rss/search?q=%22Scholar+Rock%22+OR+SRRK&hl=en-US&gl=US&ceid=US:en" },
+            { name: "Sionna Therapeutics · SION", category: "sion", url: "https://news.google.com/rss/search?q=%22Sionna+Therapeutics%22+OR+SION&hl=en-US&gl=US&ceid=US:en" }
+          ]
+        }
+      ];
+
+      const escapeHtml = (value = "") => String(value).replace(/[&<>"']/g, ch => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+      })[ch]);
+      const cleanText = (html = "") => {
+        const doc = new DOMParser().parseFromString(String(html), "text/html");
+        return (doc.body.textContent || "").replace(/\s+/g, " ").trim();
+      };
+      const safeUrl = value => {
+        try {
+          const url = new URL(value);
+          return ["https:", "http:"].includes(url.protocol) ? url.href : "";
+        } catch { return ""; }
+      };
+      const formatDate = value => {
+        const date = new Date(value);
+        return Number.isNaN(date.getTime()) ? "" : new Intl.DateTimeFormat("fr-FR", {day:"2-digit",month:"short",year:"numeric"}).format(date);
+      };
+      const renderItem = item => {
+        const link = safeUrl(item.link);
+        if (!link) return "";
+        const title = cleanText(item.title || "Article sans titre");
+        const category = item._category || "it";
+        const description = cleanText(item.description || item.content || "");
+        const date = formatDate(item.pubDate || item.published || "");
+        return `<article class="rss-item" data-rss-category="${escapeHtml(category)}">
+          <div class="rss-item-meta"><span class="rss-source">${escapeHtml(item._source || "Flux RSS")}</span>${date ? `<time>${escapeHtml(date)}</time>` : ""}</div>
+          <h4><a href="${escapeHtml(link)}" target="_blank" rel="noopener noreferrer">${escapeHtml(title)}</a></h4>
+          <p>${escapeHtml(description.slice(0, 240))}${description.length > 240 ? "…" : ""}</p>
+        </article>`;
+      };
+
+      async function loadGroup(group) {
+        const container = document.getElementById(group.containerId);
+        const status = document.getElementById(group.statusId);
+        const refreshButton = document.getElementById(group.refreshId);
+        if (!container || !status || !refreshButton) return;
+
+        // Évite que deux actualisations simultanées se remplacent l'une l'autre.
+        group.requestId = (group.requestId || 0) + 1;
+        const requestId = group.requestId;
+        refreshButton.disabled = true;
+        status.textContent = "Récupération des derniers articles…";
+        // Conserve les articles déjà affichés pendant l'actualisation.
+        if (!container.children.length) {
+          container.innerHTML = '<div class="rss-empty">Chargement des actualités…</div>';
+        }
+
+        try {
+          const fetchFeed = async feed => {
+            const withTimeout = (promise, ms = 12000) => Promise.race([
+              promise,
+              new Promise((_, reject) => setTimeout(() => reject(new Error("Délai dépassé")), ms))
+            ]);
+
+            // Essai 1 : RSS2JSON.
+            try {
+              const response = await withTimeout(fetch(proxy + encodeURIComponent(feed.url), {
+                headers: { "Accept": "application/json" }
+              }));
+              if (!response.ok) throw new Error("RSS2JSON indisponible");
+              const data = await response.json();
+              if (data.status === "ok" && Array.isArray(data.items)) {
+                return data.items.slice(0, 5).map(item => ({...item, _source: feed.name, _category: feed.category || "it"}));
+              }
+            } catch (error) {
+              // Le service peut être indisponible ou avoir atteint sa limite : on essaie le repli.
+            }
+
+            // Essai 2 : récupérer le XML du flux et le lire directement.
+            const response = await withTimeout(fetch(
+              "https://api.allorigins.win/raw?url=" + encodeURIComponent(feed.url),
+              { headers: { "Accept": "application/xml,text/xml,*/*" } }
+            ));
+            if (!response.ok) throw new Error("Flux indisponible (HTTP " + response.status + ")");
+            const xmlText = await response.text();
+            const xml = new DOMParser().parseFromString(xmlText, "text/xml");
+            if (xml.querySelector("parsererror")) throw new Error("XML invalide");
+            return [...xml.querySelectorAll("item, entry")].slice(0, 5).map(item => {
+              const get = name => item.querySelector(name)?.textContent?.trim() || "";
+              const linkNode = item.querySelector("link");
+              const link = linkNode?.textContent?.trim() || linkNode?.getAttribute("href") || "";
+              return {
+                title: get("title"),
+                link,
+                description: get("description") || get("summary") || get("content"),
+                pubDate: get("pubDate") || get("published") || get("updated"),
+                _source: feed.name,
+                _category: feed.category || "it"
+              };
+            }).filter(item => item.title && item.link);
+          };
+          // Interroge les sources l'une après l'autre pour limiter les blocages
+          // et les limites de débit du service RSS.
+          const results = [];
+          for (const feed of group.feeds) {
+            try {
+              results.push({ status: "fulfilled", value: await fetchFeed(feed) });
+            } catch (reason) {
+              results.push({ status: "rejected", reason });
+            }
+            if (group.feeds.length > 1) {
+              await new Promise(resolve => setTimeout(resolve, 700));
+            }
+          }
+
+          // Si une actualisation plus récente a commencé, ignore les anciens résultats.
+          if (requestId !== group.requestId) return;
+
+          const articles = results.flatMap(result => result.status === "fulfilled" ? result.value : []);
+          const unique = [...new Map(articles.filter(item => safeUrl(item.link)).map(item => [item.link, item])).values()]
+            .sort((a, b) => new Date(b.pubDate || b.published || 0) - new Date(a.pubDate || a.published || 0))
+            .slice(0, 12);
+
+          if (unique.length) {
+            container.innerHTML = unique.map(renderItem).join("");
+            applyRssFilter(currentRssFilter);
+            const failedCount = results.filter(result => result.status === "rejected").length;
+            status.textContent = `${unique.length} article(s) affiché(s) · ${failedCount ? failedCount + " flux indisponible(s)" : "flux actualisés"}`;
+          } else {
+            container.innerHTML = '<div class="rss-empty">Impossible de récupérer les articles pour le moment. Le service de lecture RSS ou les sources peuvent être temporairement indisponibles. Sources à consulter : ' + group.fallback + '.</div>';
+            status.textContent = "Flux momentanément indisponibles";
+          }
+        } catch (error) {
+          if (requestId !== group.requestId) return;
+          container.innerHTML = '<div class="rss-empty">La récupération des actualités a échoué ou a expiré. Réessaie dans quelques instants. Sources à consulter : ' + group.fallback + '.</div>';
+          status.textContent = "Délai dépassé ou erreur de récupération";
+        } finally {
+          if (requestId === group.requestId) refreshButton.disabled = false;
+        }
+      }
+
+      const filterButtons = [...document.querySelectorAll("[data-rss-filter]")];
+      let currentRssFilter = "all";
+      function applyRssFilter(filter) {
+        currentRssFilter = filter;
+        filterButtons.forEach(button => button.setAttribute("aria-pressed", String(button.dataset.rssFilter === filter)));
+        const panelRules = [
+          { panelId: "flux-rss-informatique", containerId: "rss-it-articles", categories: ["all", "it"], statusId: "rss-it-status" },
+          { panelId: "flux-rss-bourse", containerId: "rss-stocks-articles", categories: ["all", "nvidia", "oracle", "srrk", "sion"], statusId: "rss-stocks-status" }
+        ];
+        panelRules.forEach(rule => {
+          const panel = document.getElementById(rule.panelId);
+          const container = document.getElementById(rule.containerId);
+          if (!panel || !container) return;
+          const visiblePanel = rule.categories.includes(filter);
+          panel.hidden = !visiblePanel;
+          const cards = [...container.querySelectorAll(".rss-item")];
+          cards.forEach(card => {
+            const category = card.dataset.rssCategory || "it";
+            card.hidden = !(filter === "all" || (filter === "it" && category === "it") || category === filter);
+          });
+          const status = document.getElementById(rule.statusId);
+          const visibleCount = cards.filter(card => !card.hidden).length;
+          if (status && cards.length && visiblePanel) {
+            status.textContent = filter === "all" ? visibleCount + " article(s) affiché(s)" : visibleCount + " article(s) dans cette catégorie";
+          }
+        });
+      }
+      filterButtons.forEach(button => button.addEventListener("click", () => applyRssFilter(button.dataset.rssFilter)));
+            groups.forEach(group => {
+        const button = document.getElementById(group.refreshId);
+        if (button) button.addEventListener("click", () => loadGroup(group));
+        loadGroup(group);
+      });
+
+})();
+</script>
 </body>
 </html>
