@@ -1453,6 +1453,7 @@
           statusId: "rss-it-status",
           refreshId: "rss-it-refresh",
           fallback: '<a href="https://www.cert.ssi.gouv.fr/" target="_blank" rel="noopener noreferrer">CERT-FR</a>, <a href="https://www.bleepingcomputer.com/" target="_blank" rel="noopener noreferrer">BleepingComputer</a> et <a href="https://thehackernews.com/" target="_blank" rel="noopener noreferrer">The Hacker News</a>',
+          backupFeed: { name: "Google Actualités · Veille informatique", category: "it", url: "https://news.google.com/rss/search?q=%22brain-computer+interface%22+OR+cybersecurity+OR+%22cyber+security%22+OR+%22cybers%C3%A9curit%C3%A9%22+OR+%22s%C3%A9curit%C3%A9+informatique%22&hl=fr&gl=FR&ceid=FR:fr" },
           feeds: [
             { name: "Google Actualités · Interfaces cerveau-machine", category: "it", url: "https://news.google.com/rss/search?q=%22brain-computer+interface%22+OR+%22brain-machine+interface%22+OR+%22interface+cerveau-machine%22&hl=fr&gl=FR&ceid=FR:fr" },
             { name: "CERT-FR · Alertes cybersécurité", category: "it", url: "https://www.cert.ssi.gouv.fr/feed/" },
@@ -1465,6 +1466,7 @@
           statusId: "rss-stocks-status",
           refreshId: "rss-stocks-refresh",
           fallback: '<a href="https://news.google.com/" target="_blank" rel="noopener noreferrer">Google Actualités</a>',
+          backupFeed: { name: "Google Actualités · Entreprises suivies", category: "stocks-auto", url: "https://news.google.com/rss/search?q=NVIDIA+OR+NVDA+OR+%22Oracle+Corporation%22+OR+ORCL+OR+%22Scholar+Rock%22+OR+SRRK+OR+%22Sionna+Therapeutics%22+OR+SION&hl=en-US&gl=US&ceid=US:en" },
           feeds: [
             { name: "NVIDIA · NVDA", category: "nvidia", url: "https://news.google.com/rss/search?q=NVIDIA+OR+NVDA&hl=en-US&gl=US&ceid=US:en" },
             { name: "Oracle · ORCL", category: "oracle", url: "https://news.google.com/rss/search?q=%22Oracle+Corporation%22+OR+ORCL&hl=en-US&gl=US&ceid=US:en" },
@@ -1515,78 +1517,118 @@
         group.requestId = (group.requestId || 0) + 1;
         const requestId = group.requestId;
         refreshButton.disabled = true;
-        status.textContent = "Récupération des derniers articles…";
-        // Conserve les articles déjà affichés pendant l'actualisation.
+        const cacheKey = "portfolio-rss-cache-v2-" + group.containerId;
+        const readCache = () => {
+          try {
+            const value = JSON.parse(localStorage.getItem(cacheKey) || "[]");
+            return Array.isArray(value) ? value.filter(item => item && safeUrl(item.link)) : [];
+          } catch (error) {
+            return [];
+          }
+        };
+        const cachedAtStart = readCache();
+        if (cachedAtStart.length && !container.querySelector(".rss-item")) {
+          container.innerHTML = cachedAtStart.map(renderItem).join("");
+          applyRssFilter(currentRssFilter);
+        }
+        status.textContent = cachedAtStart.length
+          ? "Dernières actualités enregistrées · vérification des mises à jour…"
+          : "Récupération des derniers articles…";
         if (!container.children.length) {
           container.innerHTML = '<div class="rss-empty">Chargement des actualités…</div>';
         }
 
         try {
           const fetchFeed = async feed => {
-            const withTimeout = (promise, ms = 11000) => Promise.race([
+            const withTimeout = (promise, ms = 10500) => Promise.race([
               promise,
               new Promise((_, reject) => setTimeout(() => reject(new Error("Délai dépassé")), ms))
             ]);
 
+            const categoryForItem = item => {
+              if (feed.category !== "stocks-auto") return feed.category || "it";
+              const text = cleanText([item.title, item.description, item.content].filter(Boolean).join(" ")).toLowerCase();
+              if (/nvidia|\\bnvda\\b/.test(text)) return "nvidia";
+              if (/scholar rock|\\bsrrk\\b/.test(text)) return "srrk";
+              if (/sionna therapeutics|\\bsion\\b/.test(text)) return "sion";
+              if (/oracle corporation|oracle|\\borcl\\b/.test(text)) return "oracle";
+              return "stock-other";
+            };
+
             const normalizeItems = items => items.slice(0, 5).map(item => ({
               ...item,
               _source: feed.name,
-              _category: feed.category || "it"
+              _category: item._category || categoryForItem(item)
             }));
 
-            // Essai 1 : RSS2JSON, puis repli si le service limite les requêtes.
-            try {
-              const response = await withTimeout(fetch(proxy + encodeURIComponent(feed.url), {
-                headers: { "Accept": "application/json" },
-                credentials: "omit"
-              }));
-              if (!response.ok) throw new Error("RSS2JSON indisponible");
-              const data = await response.json();
-              if (data.status === "ok" && Array.isArray(data.items) && data.items.length) {
-                return normalizeItems(data.items);
-              }
-            } catch (error) {
-              // Le service peut être indisponible ou avoir atteint sa limite.
-            }
+            const parseXml = xmlText => {
+              const xml = new DOMParser().parseFromString(xmlText, "text/xml");
+              if (xml.querySelector("parsererror")) throw new Error("Réponse XML invalide");
+              return [...xml.querySelectorAll("item, entry")].slice(0, 5).map(item => {
+                const get = name => item.querySelector(name)?.textContent?.trim() || "";
+                const linkNode = item.querySelector('link[rel="alternate"]') || item.querySelector("link");
+                const rawItem = {
+                  title: get("title"),
+                  link: linkNode?.getAttribute("href") || linkNode?.textContent?.trim() || "",
+                  description: get("description") || get("summary") || get("content"),
+                  pubDate: get("pubDate") || get("published") || get("updated")
+                };
+                return {
+                  ...rawItem,
+                  _source: feed.name,
+                  _category: categoryForItem(rawItem)
+                };
+              }).filter(item => item.title && item.link && safeUrl(item.link));
+            };
 
-            // Essais 2 et 3 : deux proxys CORS différents, car AllOrigins peut être intermittent.
-            const proxyUrls = [
-              "https://proxy.cors.dev/raw?url=" + encodeURIComponent(feed.url),
-              "https://api.allorigins.win/raw?url=" + encodeURIComponent(feed.url)
-            ];
-            let lastError = new Error("Aucun service de lecture RSS n'a répondu");
-            for (const proxyUrl of proxyUrls) {
-              try {
-                const response = await withTimeout(fetch(proxyUrl, {
+            // Le proxy CORS principal est appelé selon le format recommandé par son éditeur.
+            // Cela évite de dépendre en premier lieu du quota de RSS2JSON.
+            const attempts = [
+              async () => {
+                const response = await withTimeout(fetch("https://proxy.cors.dev/" + feed.url, {
                   headers: { "Accept": "application/xml,text/xml,*/*" },
                   credentials: "omit"
                 }));
-                if (!response.ok) throw new Error("Proxy RSS indisponible (HTTP " + response.status + ")");
-                const xmlText = await response.text();
-                const xml = new DOMParser().parseFromString(xmlText, "text/xml");
-                if (xml.querySelector("parsererror")) throw new Error("XML invalide");
+                if (!response.ok) {
+                  const code = response.headers.get("X-Cors-Error");
+                  throw new Error("Proxy CORS indisponible (" + (code || response.status) + ")");
+                }
+                const items = parseXml(await response.text());
+                if (!items.length) throw new Error("Le flux ne contient aucun article exploitable");
+                return items;
+              },
+              async () => {
+                const response = await withTimeout(fetch("https://api.allorigins.win/raw?url=" + encodeURIComponent(feed.url), {
+                  headers: { "Accept": "application/xml,text/xml,*/*" },
+                  credentials: "omit"
+                }));
+                if (!response.ok) throw new Error("AllOrigins indisponible (HTTP " + response.status + ")");
+                const items = parseXml(await response.text());
+                if (!items.length) throw new Error("AllOrigins n'a retourné aucun article");
+                return items;
+              },
+              async () => {
+                const response = await withTimeout(fetch(proxy + encodeURIComponent(feed.url), {
+                  headers: { "Accept": "application/json" },
+                  credentials: "omit"
+                }));
+                if (!response.ok) throw new Error("RSS2JSON indisponible (HTTP " + response.status + ")");
+                const data = await response.json();
+                if (data.status !== "ok" || !Array.isArray(data.items) || !data.items.length) {
+                  throw new Error(data.message || "RSS2JSON n'a retourné aucun article");
+                }
+                return normalizeItems(data.items);
+              }
+            ];
 
-                const items = [...xml.querySelectorAll("item, entry")].slice(0, 5).map(item => {
-                  const get = name => item.querySelector(name)?.textContent?.trim() || "";
-                  const linkNode = item.querySelector('link[rel="alternate"]') || item.querySelector("link");
-                  const link = linkNode?.getAttribute("href") || linkNode?.textContent?.trim() || "";
-                  return {
-                    title: get("title"),
-                    link,
-                    description: get("description") || get("summary") || get("content"),
-                    pubDate: get("pubDate") || get("published") || get("updated"),
-                    _source: feed.name,
-                    _category: feed.category || "it"
-                  };
-                }).filter(item => item.title && item.link && safeUrl(item.link));
-
-                if (items.length) return items;
-                throw new Error("Le flux ne contient aucun article exploitable");
+            let lastError = new Error("Aucun service de lecture RSS n'a répondu");
+            for (const attempt of attempts) {
+              try {
+                return await attempt();
               } catch (error) {
                 lastError = error;
               }
             }
-
             throw lastError;
           };
           // Interroge les sources l'une après l'autre pour limiter les blocages
@@ -1607,18 +1649,40 @@
           if (requestId !== group.requestId) return;
 
           const articles = results.flatMap(result => result.status === "fulfilled" ? result.value : []);
-          const unique = [...new Map(articles.filter(item => safeUrl(item.link)).map(item => [item.link, item])).values()]
+          let unique = [...new Map(articles.filter(item => safeUrl(item.link)).map(item => [item.link, item])).values()]
             .sort((a, b) => new Date(b.pubDate || b.published || 0) - new Date(a.pubDate || a.published || 0))
             .slice(0, 12);
 
+          // Repli consolidé : une seule recherche Google Actualités si toutes les sources individuelles échouent.
+          if (!unique.length && group.backupFeed) {
+            try {
+              const backupItems = await fetchFeed(group.backupFeed);
+              unique = [...new Map(backupItems.filter(item => safeUrl(item.link)).map(item => [item.link, item])).values()]
+                .sort((a, b) => new Date(b.pubDate || b.published || 0) - new Date(a.pubDate || a.published || 0))
+                .slice(0, 12);
+            } catch (backupError) {
+              // Si même le flux de secours échoue, on garde les derniers articles mis en cache.
+            }
+          }
+
+          if (requestId !== group.requestId) return;
+
           if (unique.length) {
             container.innerHTML = unique.map(renderItem).join("");
+            try { localStorage.setItem(cacheKey, JSON.stringify(unique)); } catch (error) {}
             applyRssFilter(currentRssFilter);
             const failedCount = results.filter(result => result.status === "rejected").length;
             status.textContent = `${unique.length} article(s) affiché(s) · ${failedCount ? failedCount + " flux indisponible(s)" : "flux actualisés"}`;
           } else {
-            container.innerHTML = '<div class="rss-empty">Impossible de récupérer les articles pour le moment. Le service de lecture RSS ou les sources peuvent être temporairement indisponibles. Sources à consulter : ' + group.fallback + '.</div>';
-            status.textContent = "Flux momentanément indisponibles";
+            const cached = readCache();
+            if (cached.length) {
+              container.innerHTML = cached.map(renderItem).join("");
+              applyRssFilter(currentRssFilter);
+              status.textContent = "Les services RSS ne répondent pas · dernières actualités enregistrées affichées";
+            } else {
+              container.innerHTML = '<div class="rss-empty">Les services de lecture RSS ne répondent pas pour le moment. Réessaie plus tard ou consulte directement : ' + group.fallback + '.</div>';
+              status.textContent = "Flux indisponibles · aucune actualité enregistrée sur cet appareil";
+            }
           }
         } catch (error) {
           if (requestId !== group.requestId) return;
