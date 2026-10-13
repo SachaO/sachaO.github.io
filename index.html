@@ -777,7 +777,6 @@
       <li><a href="#about"><i class="bi bi-person navicon"></i>À propos</a></li>
       <li><a href="#projects"><i class="bi bi-folder2-open navicon"></i>Projets</a></li>
       <li><a href="#veille"><i class="bi bi-activity navicon"></i>Veille informatique</a></li>
-      <li><a href="#flux-rss"><i class="bi bi-rss navicon"></i>Flux RSS</a></li>
       <li><a href="#contact"><i class="bi bi-envelope navicon"></i>Contact</a></li>
     </ul>
   </nav>
@@ -1438,7 +1437,7 @@
     const rssEls=['flux-rss','flux-rss-informatique','flux-rss-bourse'].map(id=>document.getElementById(id)).filter(Boolean);
     const inRss=rssEls.some(el=>{const r=el.getBoundingClientRect();return r.top<window.innerHeight*.6&&r.bottom>window.innerHeight*.25;});
     const veille=document.getElementById('veille')?.getBoundingClientRect();
-    if(inRss){setActive('#flux-rss');return;}
+    if(inRss){setActive('#veille');return;}
     if(veille&&veille.top<window.innerHeight*.6&&veille.bottom>window.innerHeight*.25){setActive('#veille');return;}
     const sections=['hero','about','projects','contact'].map(id=>document.getElementById(id)).filter(Boolean);
     const current=sections.filter(el=>el.getBoundingClientRect().top<=window.innerHeight*.4).pop();
