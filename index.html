@@ -1548,10 +1548,10 @@
             const categoryForItem = item => {
               if (feed.category !== "stocks-auto") return feed.category || "it";
               const text = cleanText([item.title, item.description, item.content].filter(Boolean).join(" ")).toLowerCase();
-              if (/nvidia|\\bnvda\\b/.test(text)) return "nvidia";
-              if (/scholar rock|\\bsrrk\\b/.test(text)) return "srrk";
-              if (/sionna therapeutics|\\bsion\\b/.test(text)) return "sion";
-              if (/oracle corporation|oracle|\\borcl\\b/.test(text)) return "oracle";
+              if (/nvidia|\bnvda\b/.test(text)) return "nvidia";
+              if (/scholar rock|\bsrrk\b/.test(text)) return "srrk";
+              if (/sionna therapeutics|\bsion\b/.test(text)) return "sion";
+              if (/oracle corporation|oracle|\borcl\b/.test(text)) return "oracle";
               return "stock-other";
             };
 
