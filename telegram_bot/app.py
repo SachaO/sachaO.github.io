@@ -44,6 +44,7 @@ def set_commands():
         {"command": "help", "description": "Afficher cette aide"},
         {"command": "news", "description": "Résumé des actualités financières"},
         {"command": "status", "description": "Vérifier le bot"},
+        {"command": "chatid", "description": "Afficher l’identifiant de la conversation"},
     ]
     response = requests.post(f"{API}/setMyCommands", json={"commands": commands}, timeout=15)
     response.raise_for_status()
@@ -311,6 +312,8 @@ def telegram_webhook():
     elif command == "/status":
         ai_state = "configurée" if AI_API_KEY and AI_MODEL else "non configurée (résumé de secours)"
         reply = f"✅ Le bot Telegram fonctionne. Analyse IA : {ai_state}."
+    elif command == "/chatid":
+        reply = f"🆔 Identifiant de cette conversation : {chat_id}"
     else:
         # Les messages libres sont envoyés au modèle IA comme une conversation.
         if not AI_API_KEY or not AI_MODEL:
