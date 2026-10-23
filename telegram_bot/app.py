@@ -230,7 +230,7 @@ def hourly_alerts():
         ("Innventure", "Innventure INV"),
         ("SpaceX", "SpaceX company"),
     ]
-    cutoff = datetime.now(timezone.utc) - timedelta(minutes=70)
+    cutoff = datetime.now(timezone.utc) - timedelta(minutes=55)
     fresh = []
     for name, query in assets:
         try:
@@ -257,7 +257,7 @@ def hourly_alerts():
             seen.add(article["link"])
             unique.append((name, article))
     if not unique:
-        send_message(TELEGRAM_CHAT_ID, "🔎 Veille horaire — " + datetime.now().strftime("%d/%m/%Y %H:%M") + "\\nAucune nouvelle actualité récente détectée pour tes valeurs suivies.")
+        logging.info("Hourly check completed: no recent headlines; no Telegram message sent.")
         return "no new headlines", 200
 
     lines = ["🚨 VEILLE BOURSIÈRE — " + datetime.now().strftime("%d/%m/%Y %H:%M"), "Nouvelles récentes détectées (fenêtre d'environ 70 min) :"]
