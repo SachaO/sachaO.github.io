@@ -1,0 +1,55 @@
+name: Trouver le chat ID Telegram
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  get-chat-id:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Lire les mises à jour Telegram
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          import urllib.error
+          import urllib.request
+
+          token = os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
+          if not token:
+              raise SystemExit("Secret TELEGRAM_BOT_TOKEN absent dans Settings > Secrets and variables > Actions.")
+
+          url = f"https://api.telegram.org/bot{token}/getUpdates"
+          try:
+              with urllib.request.urlopen(url, timeout=20) as response:
+                  data = json.load(response)
+          except urllib.error.HTTPError as exc:
+              if exc.code == 409:
+                  raise SystemExit("Telegram indique qu'un webhook est déjà configuré. Il faut vérifier la configuration du bot.")
+              raise SystemExit(f"Erreur HTTP Telegram : {exc.code}. Vérifie que le secret contient le token actuel.")
+          except Exception as exc:
+              raise SystemExit(f"Impossible de joindre Telegram : {type(exc).__name__}")
+
+          if not data.get("ok"):
+              raise SystemExit("Telegram n'a pas accepté la requête. Vérifie le token.")
+
+          chats = []
+          for update in data.get("result", []):
+              message = update.get("message") or update.get("edited_message")
+              if message and message.get("chat"):
+                  chat = message["chat"]
+                  chats.append((chat.get("id"), chat.get("type", "inconnu")))
+
+          if chats:
+              chat_id, chat_type = chats[-1]
+              print(f"Chat ID trouvé : {chat_id}")
+              print(f"Type de conversation : {chat_type}")
+          else:
+              print("Aucun message reçu par le bot.")
+              print("Ouvre le bot Telegram et envoie-lui /start, puis relance ce workflow.")
+          PY
