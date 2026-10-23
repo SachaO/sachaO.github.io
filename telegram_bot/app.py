@@ -84,20 +84,19 @@ def format_ai_html(text):
     """Convert a small safe subset of Markdown to Telegram HTML."""
     import re
 
-    text = (text or "").replace("\\r\\n", "\\n").replace("\\n", "\\n")
+    text = (text or "").replace("\r\n", "\n").replace("\r", "\n")
     # Escape first so model output cannot inject arbitrary Telegram HTML.
     text = html.escape(text, quote=False)
     # Convert Markdown links only when the URL is a normal HTTP(S) URL.
     text = re.sub(
-        r"\\[([^\\]]+)\\]\\((https?://[^ )]+)\\)",
+        r"\[([^\]]+)\]\((https?://[^ )]+)\)",
         lambda m: '<a href="' + html.escape(m.group(2), quote=True) + '">' + m.group(1) + '</a>',
         text,
     )
-    text = re.sub(r"\\*\\*(.+?)\\*\\*", r"<b>\\1</b>", text)
-    text = re.sub(r"(?<!\\*)\\*([^*\\n]+)\\*(?!\\*)", r"<i>\\1</i>", text)
-    text = re.sub(r"(?m)^#{1,3}\\s+(.+)$", r"<b>\\1</b>", text)
-    return text.replace("\\n", "<br>")
-
+    text = re.sub(r"\*\*(.+?)\*\*", r"<b>\1</b>", text)
+    text = re.sub(r"(?<!\*)\*([^*\n]+)\*(?!\*)", r"<i>\1</i>", text)
+    text = re.sub(r"(?m)^#{1,3}\s+(.+)$", r"<b>\1</b>", text)
+    return text.replace("\n", "<br>")
 
 def search_rss_news(topic=""):
     """Fetch current financial headlines from Google News RSS search results."""
