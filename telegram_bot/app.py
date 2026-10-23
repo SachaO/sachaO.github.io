@@ -33,6 +33,7 @@ def set_commands():
     ]
     response = requests.post(f"{API}/setMyCommands", json={"commands": commands}, timeout=15)
     response.raise_for_status()
+    logging.info("Telegram bot commands configured successfully.")
 
 
 def configure_telegram():
@@ -42,11 +43,13 @@ def configure_telegram():
     if not PUBLIC_URL:
         logging.warning("PUBLIC_URL is not configured; Telegram webhook setup skipped.")
         return
+    webhook_url = f"{PUBLIC_URL}/telegram-webhook"
+    logging.info("Configuring Telegram webhook for public service URL: %s", PUBLIC_URL)
     set_commands()
     response = requests.post(
         f"{API}/setWebhook",
         json={
-            "url": f"{PUBLIC_URL}/telegram-webhook",
+            "url": webhook_url,
             "secret_token": WEBHOOK_SECRET,
             "allowed_updates": ["message"],
         },
@@ -55,6 +58,7 @@ def configure_telegram():
     if not response.ok:
         logging.error("Telegram setWebhook rejected request (HTTP %s): %s", response.status_code, response.text)
         response.raise_for_status()
+    logging.info("Telegram webhook configured successfully.")
     _setup_done = True
 
 
@@ -70,17 +74,21 @@ def health():
 
 @app.post("/telegram-webhook")
 def telegram_webhook():
+    logging.info("Incoming Telegram webhook request received.")
     if request.headers.get("X-Telegram-Bot-Api-Secret-Token") != WEBHOOK_SECRET:
+        logging.warning("Telegram webhook rejected: secret token header did not match.")
         abort(403)
 
     update = request.get_json(silent=True) or {}
     message = update.get("message") or update.get("edited_message")
     if not message or not message.get("chat"):
+        logging.info("Telegram webhook received an update without a chat message.")
         return "ok", 200
 
     chat_id = message["chat"]["id"]
     text = (message.get("text") or "").strip()
     command = text.split()[0].split("@")[0].lower() if text else ""
+    logging.info("Telegram message received; command=%s", command or "(no text)")
 
     if command == "/start":
         reply = (
