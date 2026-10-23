@@ -9,7 +9,9 @@ app = Flask(__name__)
 BOT_TOKEN = os.environ["TELEGRAM_BOT_TOKEN"].strip()
 WEBHOOK_SECRET = os.environ["TELEGRAM_WEBHOOK_SECRET"].strip()
 SITE_URL = os.environ.get("SITE_URL", "https://sachao.github.io/sachaO.github.io/bourse.html").strip()
+PUBLIC_URL = os.environ.get("PUBLIC_URL", "").strip().rstrip("/")
 API = f"https://api.telegram.org/bot{BOT_TOKEN}"
+_setup_done = False
 
 
 def send_message(chat_id, text):
@@ -31,6 +33,32 @@ def set_commands():
     ]
     response = requests.post(f"{API}/setMyCommands", json={"commands": commands}, timeout=15)
     response.raise_for_status()
+
+
+def configure_telegram():
+    global _setup_done
+    if _setup_done:
+        return
+    if not PUBLIC_URL:
+        logging.warning("PUBLIC_URL is not configured; Telegram webhook setup skipped.")
+        return
+    set_commands()
+    response = requests.post(
+        f"{API}/setWebhook",
+        json={
+            "url": f"{PUBLIC_URL}/telegram-webhook",
+            "secret_token": WEBHOOK_SECRET,
+            "allowed_updates": ["message"],
+        },
+        timeout=15,
+    )
+    response.raise_for_status()
+    _setup_done = True
+
+
+@app.before_request
+def ensure_telegram_configured():
+    configure_telegram()
 
 
 @app.get("/")
