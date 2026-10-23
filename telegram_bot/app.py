@@ -8,7 +8,6 @@ app = Flask(__name__)
 
 BOT_TOKEN = os.environ["TELEGRAM_BOT_TOKEN"].strip()
 WEBHOOK_SECRET = os.environ["TELEGRAM_WEBHOOK_SECRET"].strip()
-SITE_URL = os.environ.get("SITE_URL", "https://sachao.github.io/sachaO.github.io/bourse.html").strip()
 PUBLIC_URL = os.environ.get("PUBLIC_URL", "").strip().rstrip("/")
 API = f"https://api.telegram.org/bot{BOT_TOKEN}"
 _setup_done = False
@@ -27,8 +26,7 @@ def set_commands():
     commands = [
         {"command": "start", "description": "Démarrer le bot"},
         {"command": "help", "description": "Afficher les commandes"},
-        {"command": "portfolio", "description": "Voir les valeurs suivies"},
-        {"command": "news", "description": "Ouvrir la veille boursière"},
+        {"command": "news", "description": "Actualités financières et boursières"},
         {"command": "status", "description": "Vérifier le bot"},
     ]
     response = requests.post(f"{API}/setMyCommands", json={"commands": commands}, timeout=15)
@@ -93,30 +91,25 @@ def telegram_webhook():
     if command == "/start":
         reply = (
             "Bienvenue sur TRADING_AI_ALERTES 📈\n\n"
-            "Je suis connecté. Utilise /help pour voir les commandes disponibles.\n"
-            "Les alertes automatiques d'actualités seront ajoutées dans une prochaine étape."
+            "Ce bot est dédié à l'argent, aux marchés financiers et aux actions en Bourse.\n"
+            "Utilise /help pour découvrir les commandes.\n"
+            "Les actualités boursières automatiques seront ajoutées dans une prochaine étape."
         )
     elif command == "/help":
         reply = (
             "Commandes disponibles :\n"
-            "/start — démarrer le bot\n"
+            "/start — présentation du bot\n"
             "/help — afficher cette aide\n"
-            "/portfolio — valeurs suivies\n"
-            "/news — ouvrir la veille boursière\n"
-            "/status — vérifier que le bot répond"
-        )
-    elif command == "/portfolio":
-        reply = (
-            "📊 Valeurs suivies dans la veille :\n"
-            "• Oracle (ORCL)\n"
-            "• Innventure (INV)\n"
-            "• SpaceX (entreprise non cotée)\n"
-            "• Sionna Therapeutics (SION)\n"
-            "• Scholar Rock (SRRK)\n\n"
-            "Cette liste correspond aux valeurs surveillées, pas à une confirmation de tes positions actuelles."
+            "/news — actualités financières et boursières\n"
+            "/status — vérifier que le bot répond\n\n"
+            "Ce bot est indépendant de tout portfolio ou site scolaire."
         )
     elif command == "/news":
-        reply = f"📰 Consulte la veille boursière ici : {SITE_URL}\n\nLes actualités ne sont pas encore récupérées automatiquement par cette commande."
+        reply = (
+            "📰 La rubrique actualités financières est prévue.\n"
+            "La récupération automatique des nouvelles de marché n'est pas encore configurée. "
+            "Aucun site de portfolio scolaire n'est lié à cette commande."
+        )
     elif command == "/status":
         reply = "✅ Le bot Telegram fonctionne et répond aux commandes."
     else:
