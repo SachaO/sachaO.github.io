@@ -80,6 +80,25 @@ def configure_telegram():
     _setup_done = True
 
 
+def format_ai_html(text):
+    """Convert a small safe subset of Markdown to Telegram HTML."""
+    import re
+
+    text = (text or "").replace("\\r\\n", "\\n").replace("\\n", "\\n")
+    # Escape first so model output cannot inject arbitrary Telegram HTML.
+    text = html.escape(text, quote=False)
+    # Convert Markdown links only when the URL is a normal HTTP(S) URL.
+    text = re.sub(
+        r"\\[([^\\]]+)\\]\\((https?://[^ )]+)\\)",
+        lambda m: '<a href="' + html.escape(m.group(2), quote=True) + '">' + m.group(1) + '</a>',
+        text,
+    )
+    text = re.sub(r"\\*\\*(.+?)\\*\\*", r"<b>\\1</b>", text)
+    text = re.sub(r"(?<!\\*)\\*([^*\\n]+)\\*(?!\\*)", r"<i>\\1</i>", text)
+    text = re.sub(r"(?m)^#{1,3}\\s+(.+)$", r"<b>\\1</b>", text)
+    return text.replace("\\n", "<br>")
+
+
 def search_rss_news(topic=""):
     """Fetch current financial headlines from Google News RSS search results."""
     topic = topic.strip()
@@ -205,7 +224,7 @@ def format_news_message(topic=""):
 
     # Liens compacts et cliquables : évite d'afficher les longues URL Google News.
     safe_heading = html.escape(heading.strip())
-    safe_synthesis = html.escape(synthesis).replace("\\n", "<br>").replace("\n", "<br>")
+    safe_synthesis = format_ai_html(synthesis)
     lines = [f"<b>{safe_heading}</b>", "", safe_synthesis, "", "<b>🔎 Sources</b>"]
     for index, article in enumerate(articles[:5], start=1):
         title = html.escape(article["title"])
