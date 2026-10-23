@@ -28,11 +28,14 @@ TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "").strip()
 ALERTS_CRON_SECRET = os.environ.get("ALERTS_CRON_SECRET", "").strip()
 
 
-def send_message(chat_id, text):
+def send_message(chat_id, text, parse_mode=None):
     # Telegram messages are limited; keep each response comfortably below the limit.
+    payload = {"chat_id": chat_id, "text": text[:3900], "disable_web_page_preview": True}
+    if parse_mode:
+        payload["parse_mode"] = parse_mode
     response = requests.post(
         f"{API}/sendMessage",
-        json={"chat_id": chat_id, "text": text[:3900], "disable_web_page_preview": True},
+        json=payload,
         timeout=15,
     )
     response.raise_for_status()
@@ -81,17 +84,17 @@ def search_rss_news(topic=""):
     """Fetch current financial headlines from Google News RSS search results."""
     topic = topic.strip()
     if topic:
-        query = f'"{topic}" finance OR stock OR market OR company'
+        query = f'"{topic}" finance OR stock OR market OR company when:7d'
     else:
         query = (
-            '"stock market" OR stocks OR earnings OR inflation OR '
-            '"central bank" OR economy OR investing'
+            '("stock market" OR stocks OR earnings OR inflation OR '
+            '"central bank" OR economy OR investing) when:2d'
         )
     params = urlencode({
         "q": query,
-        "hl": "en-US",
-        "gl": "US",
-        "ceid": "US:en",
+        "hl": "fr-FR",
+        "gl": "FR",
+        "ceid": "FR:fr",
     })
     feed_url = f"https://news.google.com/rss/search?{params}"
     response = requests.get(
@@ -200,10 +203,16 @@ def format_news_message(topic=""):
         logging.exception("AI synthesis failed; using title-based fallback.")
         synthesis = fallback_synthesis(articles, topic)
 
-    lines = [heading, synthesis, "", "🔎 Sources consultées :"]
-    for index, article in enumerate(articles, start=1):
-        lines.append(f"{index}. {article['title']}\n{article['source']} · {article['link']}")
-    lines.append("\nℹ️ Synthèse informative, pas un conseil d'investissement. Les sources originales doivent être consultées pour vérifier les détails.")
+    # Liens compacts et cliquables : évite d'afficher les longues URL Google News.
+    safe_heading = html.escape(heading.strip())
+    safe_synthesis = html.escape(synthesis).replace("\\n", "<br>").replace("\n", "<br>")
+    lines = [f"<b>{safe_heading}</b>", "", safe_synthesis, "", "<b>🔎 Sources</b>"]
+    for index, article in enumerate(articles[:5], start=1):
+        title = html.escape(article["title"])
+        source = html.escape(article["source"])
+        url = html.escape(article["link"], quote=True)
+        lines.append(f'{index}. <a href="{url}">{title}</a> <i>— {source}</i>')
+    lines.append("<i>Analyse informative, pas un conseil d'investissement. Consulte les articles originaux pour vérifier les détails.</i>")
     return "\n\n".join(lines)
 
 
@@ -353,7 +362,7 @@ def telegram_webhook():
                 reply = "Je n’arrive pas à joindre le modèle IA pour le moment. Réessaie dans quelques minutes."
 
     try:
-        send_message(chat_id, reply)
+        send_message(chat_id, reply, parse_mode="HTML" if command == "/news" else None)
     except requests.RequestException:
         logging.exception("Échec de l'envoi d'une réponse Telegram")
         return "telegram send failed", 500
