@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Veille boursière de Sacha Odin : actualités d'entreprises vérifiées, dates de publication et sources primaires.">
+  <title>Veille boursière – Sacha Odin</title>
+
+  <link href="assets/img/favicon.png" rel="icon">
+  <link href="https://fonts.googleapis.com" rel="preconnect">
+  <link href="https://fonts.gstatic.com" rel="preconnect" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto&family=Poppins&family=Raleway&display=swap" rel="stylesheet">
+  <link href="assets/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+  <link href="assets/vendor/bootstrap-icons/bootstrap-icons.css" rel="stylesheet">
+  <link href="assets/css/main.css" rel="stylesheet">
+
+  <style>
+    body.stock-watch-page { background:#081321; color:#e5edf5; }
+    .stock-main { min-height:100vh; background:radial-gradient(circle at 85% 5%,rgba(20,157,221,.12),transparent 28%),linear-gradient(160deg,#081321,#07101b 70%); }
+    .stock-section { padding:64px 0; }
+    .stock-wrap { max-width:1180px; }
+    .stock-hero { position:relative; overflow:hidden; padding:clamp(26px,4vw,46px); border:1px solid rgba(20,157,221,.24); border-radius:18px; background:linear-gradient(135deg,rgba(12,30,48,.96),rgba(5,17,29,.9)); box-shadow:0 18px 55px rgba(0,0,0,.22); margin-bottom:26px; }
+    .stock-kicker { display:inline-flex; align-items:center; gap:9px; color:#78c9f3; font:600 12px var(--nav-font); letter-spacing:.16em; text-transform:uppercase; margin-bottom:16px; }
+    .stock-hero h2 { color:#fff; font-size:clamp(34px,4vw,52px); font-weight:700; margin:0 0 14px; }
+    .stock-hero p { color:#cbd5e1; font-size:17px; line-height:1.8; max-width:850px; margin-bottom:0; }
+    .stock-meta-row { display:flex; flex-wrap:wrap; gap:10px; margin-top:24px; }
+    .stock-meta-pill { display:inline-flex; align-items:center; gap:8px; padding:8px 12px; border:1px solid rgba(20,157,221,.22); border-radius:999px; color:#dbeafe; background:rgba(20,157,221,.07); font-size:12px; }
+    .stock-notice { display:flex; align-items:flex-start; gap:12px; padding:16px 18px; margin:22px 0 32px; border:1px solid rgba(251,191,36,.25); border-radius:12px; background:rgba(120,75,10,.12); color:#f3e7c2; line-height:1.7; }
+    .stock-notice i { color:#fbbf24; font-size:19px; margin-top:2px; }
+    .stock-section-heading { display:flex; align-items:center; gap:12px; color:#fff; margin:34px 0 18px; font-size:24px; font-weight:700; }
+    .stock-section-heading i { color:#149ddd; }
+    .stock-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px; }
+    .stock-card { position:relative; min-width:0; padding:25px; border:1px solid rgba(20,157,221,.17); border-radius:15px; background:linear-gradient(145deg,rgba(12,30,48,.88),rgba(5,17,29,.82)); box-shadow:0 12px 32px rgba(0,0,0,.16); transition:transform .25s,border-color .25s,box-shadow .25s; }
+    .stock-card:hover { transform:translateY(-3px); border-color:rgba(20,157,221,.42); box-shadow:0 18px 38px rgba(0,0,0,.22); }
+    .stock-card-top { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:10px; margin-bottom:15px; }
+    .stock-company { color:#78c9f3; font:600 12px var(--nav-font); letter-spacing:.12em; text-transform:uppercase; }
+    .stock-ticker { display:inline-block; padding:4px 9px; border:1px solid rgba(20,157,221,.25); border-radius:999px; color:#dbeafe; font:600 12px var(--nav-font); }
+    .stock-card h3 { color:#fff; font-size:21px; line-height:1.4; margin:0 0 12px; }
+    .stock-card p { color:#cbd5e1; font-size:15px; line-height:1.8; margin:0 0 12px; }
+    .stock-dates { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; padding:12px 0; margin:14px 0; border-top:1px solid rgba(255,255,255,.07); border-bottom:1px solid rgba(255,255,255,.07); }
+    .stock-date-label { display:block; color:#94a3b8; font-size:11px; text-transform:uppercase; letter-spacing:.08em; margin-bottom:4px; }
+    .stock-date-value { color:#e5edf5; font-size:13px; }
+    .stock-reading { padding:13px 15px; border-left:3px solid #149ddd; border-radius:0 8px 8px 0; background:rgba(20,157,221,.07); color:#dbeafe; font-size:14px; line-height:1.7; margin:14px 0; }
+    .stock-reading strong { color:#fff; }
+    .stock-links { display:flex; flex-wrap:wrap; gap:10px; margin-top:17px; }
+    .stock-source-link { display:inline-flex; align-items:center; gap:7px; color:#78c9f3; font-size:13px; font-weight:600; }
+    .stock-source-link:hover { color:#fff; }
+    .stock-muted { color:#94a3b8; font-size:12px; line-height:1.7; }
+    .stock-method { margin-top:30px; padding:23px 25px; border:1px solid rgba(255,255,255,.09); border-radius:14px; background:rgba(255,255,255,.025); }
+    .stock-method h3 { color:#fff; font-size:19px; margin:0 0 10px; }
+    .stock-method p { color:#cbd5e1; font-size:14px; line-height:1.8; margin:0; }
+    .stock-footer { padding:24px 0 36px; color:#94a3b8; font-size:12px; line-height:1.7; border-top:1px solid rgba(255,255,255,.07); }
+    @media(max-width:767px) {
+      .stock-section { padding:36px 0; }
+      .stock-grid { grid-template-columns:1fr; }
+      .stock-card { padding:21px; }
+      .stock-dates { grid-template-columns:1fr; }
+    }
+    @media(prefers-reduced-motion:reduce) {
+      .stock-card { transition:none; }
+      .stock-card:hover { transform:none; }
+    }
+  </style>
+</head>
+
+<body class="stock-watch-page dark-background">
+  <header id="header" class="header dark-background d-flex flex-column">
+    <i class="header-toggle d-xl-none bi bi-list"></i>
+    <div class="profile-img">
+      <img src="assets/img/my-profile-img.jpg" alt="Sacha Odin" class="img-fluid rounded-circle">
+    </div>
+    <a href="index.html" class="logo d-flex align-items-center justify-content-center">
+      <h1 class="sitename">Sacha Odin</h1>
+    </a>
+    <nav id="navmenu" class="navmenu" aria-label="Navigation principale">
+      <ul>
+        <li><a href="index.html#hero"><i class="bi bi-house navicon"></i>Accueil</a></li>
+        <li><a href="index.html#about"><i class="bi bi-person navicon"></i>À propos</a></li>
+        <li><a href="index.html#projects"><i class="bi bi-folder2-open navicon"></i>Projets</a></li>
+        <li><a href="index.html#veille"><i class="bi bi-activity navicon"></i>Veille informatique</a></li>
+        <li><a href="bourse.html" class="active" aria-current="page"><i class="bi bi-graph-up-arrow navicon"></i>Veille boursière</a></li>
+        <li><a href="index.html#flux-rss-bourse"><i class="bi bi-rss navicon"></i>Flux RSS bourse</a></li>
+        <li><a href="index.html#contact"><i class="bi bi-envelope navicon"></i>Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="main stock-main">
+    <section class="section stock-section">
+      <div class="container stock-wrap">
+        <div class="stock-hero">
+          <div class="stock-kicker"><i class="bi bi-activity"></i> Veille financière · sources vérifiées</div>
+          <h2>Veille boursière</h2>
+          <p>Une sélection d’actualités d’entreprise susceptibles d’influencer les dossiers suivis, avec une lecture prudente des catalyseurs et des risques. Les informations ci-dessous sont des faits datés et sourcés, pas des prévisions de cours ni des recommandations d’achat ou de vente.</p>
+          <div class="stock-meta-row">
+            <span class="stock-meta-pill"><i class="bi bi-calendar3"></i> Mise à jour éditoriale : 23 octobre 2026</span>
+            <span class="stock-meta-pill"><i class="bi bi-check2-circle"></i> Sources vérifiées : 23 octobre 2026</span>
+            <span class="stock-meta-pill"><i class="bi bi-clock"></i> Horizon d’analyse : semaines à 3–4 mois</span>
+          </div>
+        </div>
+
+        <div class="stock-notice" role="note">
+          <i class="bi bi-shield-exclamation" aria-hidden="true"></i>
+          <div><strong>Limite des données :</strong> cette page ne publie aucun cours boursier en temps réel ni aucune valeur de portefeuille. Les chiffres ci-dessous sont uniquement ceux rapportés dans les sources citées, avec leur contexte et leur date. Une annonce d’entreprise ne garantit ni chiffre d’affaires futur ni hausse du titre.</div>
+        </div>
+
+        <h3 class="stock-section-heading"><i class="bi bi-newspaper"></i> Actualités vérifiées</h3>
+        <div class="stock-grid">
+          <article class="stock-card">
+            <div class="stock-card-top"><span class="stock-company">NVIDIA</span><span class="stock-ticker">NVDA</span></div>
+            <h3>Annonce de DSX POD pour accélérer le déploiement des infrastructures IA</h3>
+            <p>Le 21 octobre, NVIDIA a présenté DSX POD, une architecture de référence pour des usines d’IA Vera Rubin préassemblées par des partenaires. NVIDIA affirme que, sur un site déjà préparé, le déploiement pourrait passer d’environ six mois à 14 jours. Des livraisons par les partenaires sont annoncées pour début 2027.</p>
+            <div class="stock-reading"><strong>Lecture :</strong> catalyseur potentiel pour l’écosystème d’infrastructure IA. Il s’agit d’une annonce technologique ; l’adoption commerciale et son effet financier restent à démontrer.</div>
+            <div class="stock-dates">
+              <div><span class="stock-date-label">Publication</span><span class="stock-date-value">21 octobre 2026</span></div>
+              <div><span class="stock-date-label">Vérification</span><span class="stock-date-value">23 octobre 2026</span></div>
+            </div>
+            <div class="stock-links"><a class="stock-source-link" href="https://nvidianews.nvidia.com/news/nvidia-introduces-dsx-pod-ai-factories-to-accelerate-europes-infrastructure-deployment" target="_blank" rel="noopener noreferrer">Communiqué NVIDIA <i class="bi bi-box-arrow-up-right"></i></a></div>
+          </article>
+
+          <article class="stock-card">
+            <div class="stock-card-top"><span class="stock-company">Oracle</span><span class="stock-ticker">ORCL</span></div>
+            <h3>Partenariat exploratoire avec AstraZeneca autour de l’IA en recherche clinique</h3>
+            <p>Le 20 octobre, Oracle a annoncé un accord non contraignant avec AstraZeneca pour étudier comment l’IA, les données de santé et les outils cloud pourraient aider à identifier des patients admissibles à des essais cliniques et à accélérer la production de preuves médicales.</p>
+            <div class="stock-reading"><strong>Lecture :</strong> illustre le positionnement d’Oracle dans les données et l’IA appliquées à la santé. L’accord est exploratoire et non contraignant : aucun revenu supplémentaire n’est garanti par cette annonce.</div>
+            <div class="stock-dates">
+              <div><span class="stock-date-label">Publication</span><span class="stock-date-value">20 octobre 2026</span></div>
+              <div><span class="stock-date-label">Vérification</span><span class="stock-date-value">23 octobre 2026</span></div>
+            </div>
+            <div class="stock-links"><a class="stock-source-link" href="https://www.oracle.com/news/announcement/oracle-and-astrazeneca-partner-to-advance-ai-enabled-healthcare-2026-10-20/" target="_blank" rel="noopener noreferrer">Communiqué Oracle <i class="bi bi-box-arrow-up-right"></i></a></div>
+          </article>
+
+          <article class="stock-card">
+            <div class="stock-card-top"><span class="stock-company">SpaceX</span><span class="stock-ticker">SPCX</span></div>
+            <h3>Les résultats du troisième trimestre mettent en avant l’activité IA et Starlink</h3>
+            <p>Selon le compte rendu des résultats du 20 octobre, SpaceX a déclaré 14,6 milliards de dollars de revenus au troisième trimestre 2026, en hausse de 161 % sur un an. L’activité « Super Intelligence » représente 7,6 milliards de dollars de revenus déclarés ; la connectivité, qui comprend Starlink, 5,2 milliards. Ces chiffres proviennent du compte rendu des résultats, pas d’une cotation en temps réel.</p>
+            <div class="stock-reading"><strong>Lecture :</strong> la croissance rapportée est forte, mais la valorisation, les besoins d’investissement et la répartition des performances entre activités restent à examiner. Les résultats passés ne garantissent pas les résultats futurs.</div>
+            <div class="stock-dates">
+              <div><span class="stock-date-label">Publication</span><span class="stock-date-value">20 octobre 2026</span></div>
+              <div><span class="stock-date-label">Vérification</span><span class="stock-date-value">23 octobre 2026</span></div>
+            </div>
+            <div class="stock-links">
+              <a class="stock-source-link" href="https://ir.spacex.com/files/content_files/SpaceX-Reports-Third-Quarter-2026-Results.pdf" target="_blank" rel="noopener noreferrer">Résultats SpaceX (PDF) <i class="bi bi-box-arrow-up-right"></i></a>
+              <a class="stock-source-link" href="https://www.theverge.com/science/1014150/spacex-q3-2026-earnings" target="_blank" rel="noopener noreferrer">Compte rendu The Verge <i class="bi bi-box-arrow-up-right"></i></a>
+            </div>
+          </article>
+
+          <article class="stock-card">
+            <div class="stock-card-top"><span class="stock-company">Scholar Rock</span><span class="stock-ticker">SRRK</span></div>
+            <h3>Prochain rendez-vous financier fixé au 10 novembre</h3>
+            <p>Le 20 octobre, Scholar Rock a annoncé qu’elle publierait ses résultats du troisième trimestre 2026 le 10 novembre, avant l’ouverture des marchés. En parallèle, la société a indiqué le 8 octobre avoir resoumis à l’EMA son dossier européen d’autorisation d’apitegromab avec un site de fabrication alternatif ; elle anticipe un avis du CHMP au premier semestre 2027.</p>
+            <div class="stock-reading"><strong>Lecture :</strong> les résultats du 10 novembre et l’avancement réglementaire européen sont des dates à surveiller. L’échéance réglementaire reste une attente de l’entreprise, pas une décision acquise.</div>
+            <div class="stock-dates">
+              <div><span class="stock-date-label">Publication récente</span><span class="stock-date-value">20 octobre 2026</span></div>
+              <div><span class="stock-date-label">Vérification</span><span class="stock-date-value">23 octobre 2026</span></div>
+            </div>
+            <div class="stock-links">
+              <a class="stock-source-link" href="https://investors.scholarrock.com/news-releases/news-release-details/scholar-rock-report-third-quarter-2026-financial-results" target="_blank" rel="noopener noreferrer">Annonce des résultats <i class="bi bi-box-arrow-up-right"></i></a>
+              <a class="stock-source-link" href="https://investors.scholarrock.com/news-releases/news-release-details/scholar-rock-resubmits-apitegromab-marketing-authorisation" target="_blank" rel="noopener noreferrer">Dossier EMA <i class="bi bi-box-arrow-up-right"></i></a>
+            </div>
+          </article>
+
+          <article class="stock-card">
+            <div class="stock-card-top"><span class="stock-company">Sionna Therapeutics</span><span class="stock-ticker">SION</span></div>
+            <h3>Données présentées à la conférence nord-américaine sur la mucoviscidose</h3>
+            <p>Le communiqué du 8 octobre porte sur des données présentées à la conférence NACFC. Point de prudence important : l’essai de phase 2a de SION-719 n’a pas atteint son critère clé d’activité et la société ne poursuit pas ce candidat comme traitement additionnel aux soins standards. Sionna prévoit plutôt d’évaluer la combinaison SION-451 + SION-2222 dans un essai de phase 2a attendu au premier trimestre 2027.</p>
+            <div class="stock-reading"><strong>Lecture :</strong> dossier clinique à risque élevé. Les analyses post hoc et les données précliniques ne remplacent pas la réussite d’un essai clinique prospectif.</div>
+            <div class="stock-dates">
+              <div><span class="stock-date-label">Publication récente</span><span class="stock-date-value">8 octobre 2026</span></div>
+              <div><span class="stock-date-label">Vérification</span><span class="stock-date-value">23 octobre 2026</span></div>
+            </div>
+            <div class="stock-links">
+              <a class="stock-source-link" href="https://investors.sionnatx.com/news-releases/news-release-details/sionna-therapeutics-present-data-2026-north-american-cystic" target="_blank" rel="noopener noreferrer">Communiqué du 8 octobre <i class="bi bi-box-arrow-up-right"></i></a>
+              <a class="stock-source-link" href="https://investors.sionnatx.com/news-releases/news-release-details/sionna-therapeutics-announces-plans-advance-sion-451-sion-2222" target="_blank" rel="noopener noreferrer">Plan de phase 2a <i class="bi bi-box-arrow-up-right"></i></a>
+            </div>
+          </article>
+
+          <article class="stock-card">
+            <div class="stock-card-top"><span class="stock-company">Innventure</span><span class="stock-ticker">INV</span></div>
+            <h3>Programme de financement en actions pouvant atteindre 60 millions de dollars</h3>
+            <p>Le 8 octobre, Innventure a annoncé la mise en place d’un programme « at-the-market » d’un montant maximal de 60 millions de dollars et l’arrêt de son accord SEPA précédent. L’entreprise précise qu’elle n’est pas obligée de vendre des actions dans le cadre du programme et qu’elle décidera du calendrier et du volume selon ses besoins et les conditions de marché.</p>
+            <div class="stock-reading"><strong>Lecture :</strong> ce mécanisme donne de la flexibilité de financement, mais une émission d’actions pourrait diluer les actionnaires si elle est utilisée. Le plafond annoncé ne signifie pas que la totalité sera nécessairement émise.</div>
+            <div class="stock-dates">
+              <div><span class="stock-date-label">Publication</span><span class="stock-date-value">8 octobre 2026</span></div>
+              <div><span class="stock-date-label">Vérification</span><span class="stock-date-value">23 octobre 2026</span></div>
+            </div>
+            <div class="stock-links"><a class="stock-source-link" href="https://www.innventure.com/investor-news/innventure-announces-establishment-market-equity-program-discontinuation-sepa" target="_blank" rel="noopener noreferrer">Communiqué Innventure <i class="bi bi-box-arrow-up-right"></i></a></div>
+          </article>
+        </div>
+
+        <div class="stock-method">
+          <h3><i class="bi bi-journal-check" style="color:#149ddd"></i> Méthode et limites</h3>
+          <p>Les communiqués officiels sont privilégiés ; lorsqu’un compte rendu de presse est utilisé, il est identifié comme tel et rapproché de la source primaire disponible. Chaque fiche sépare le fait annoncé de sa lecture possible. Aucun cours, objectif de cours, rendement attendu ni montant de portefeuille n’est calculé ici. Les dates et attentes futures doivent être revérifiées avant toute décision ; cette veille ne constitue pas un conseil financier personnalisé.</p>
+        </div>
+
+        <div class="stock-footer">
+          <div>Dernière mise à jour de cette page : <strong>23 octobre 2026</strong> · Vérification des sources : <strong>23 octobre 2026</strong>.</div>
+          <div>Les chiffres financiers sont ceux rapportés dans les publications citées et ne représentent pas les données de ton portefeuille. Aucune transaction ni connexion à un compte de courtage n’est effectuée depuis cette page.</div>
+          <div class="mt-3"><a href="index.html#veille"><i class="bi bi-arrow-left"></i> Retour à la veille informatique</a> · <a href="index.html#flux-rss-bourse">Consulter le flux RSS boursier</a></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+  <script src="assets/js/main.js"></script>
+  <script src="assets/js/cursor-glow.js"></script>
+</body>
+</html>
