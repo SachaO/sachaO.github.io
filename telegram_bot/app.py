@@ -52,7 +52,9 @@ def configure_telegram():
         },
         timeout=15,
     )
-    response.raise_for_status()
+    if not response.ok:
+        logging.error("Telegram setWebhook rejected request (HTTP %s): %s", response.status_code, response.text)
+        response.raise_for_status()
     _setup_done = True
 
 
