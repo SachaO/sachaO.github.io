@@ -2,7 +2,8 @@ import os
 import logging
 import html
 from urllib.parse import urlencode
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
+from email.utils import parsedate_to_datetime
 
 import feedparser
 import requests
@@ -23,6 +24,8 @@ _setup_done = False
 RSS_TIMEOUT = 12
 MAX_NEWS_ITEMS = 6
 AI_TIMEOUT = 25
+TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "").strip()
+ALERTS_CRON_SECRET = os.environ.get("ALERTS_CRON_SECRET", "").strip()
 
 
 def send_message(chat_id, text):
@@ -208,6 +211,62 @@ def ensure_telegram_configured():
 @app.get("/")
 def health():
     return "Trading alerts bot is running.", 200
+
+
+@app.post("/hourly-alerts")
+def hourly_alerts():
+    # Endpoint déclenché par GitHub Actions une fois par heure.
+    if not ALERTS_CRON_SECRET or request.headers.get("X-Alert-Secret") != ALERTS_CRON_SECRET:
+        abort(403)
+    if not TELEGRAM_CHAT_ID:
+        logging.error("Hourly alerts skipped: TELEGRAM_CHAT_ID is not configured.")
+        return "chat id not configured", 500
+
+    assets = [
+        ("Oracle", "Oracle ORCL"),
+        ("NVIDIA", "NVIDIA NVDA"),
+        ("Scholar Rock", "Scholar Rock SRRK"),
+        ("Sionna Therapeutics", "Sionna Therapeutics SION"),
+        ("Innventure", "Innventure INV"),
+        ("SpaceX", "SpaceX company"),
+    ]
+    cutoff = datetime.now(timezone.utc) - timedelta(minutes=70)
+    fresh = []
+    for name, query in assets:
+        try:
+            articles = search_rss_news(query)
+            for article in articles:
+                published = article.get("published", "").strip()
+                try:
+                    published_at = parsedate_to_datetime(published)
+                    if published_at.tzinfo is None:
+                        published_at = published_at.replace(tzinfo=timezone.utc)
+                    published_at = published_at.astimezone(timezone.utc)
+                except (TypeError, ValueError, OverflowError):
+                    continue
+                if published_at >= cutoff:
+                    fresh.append((name, article))
+        except Exception:
+            logging.exception("Hourly news check failed for %s", name)
+
+    # Déduplique les liens dans cette exécution et limite la taille du message.
+    unique = []
+    seen = set()
+    for name, article in fresh:
+        if article["link"] not in seen:
+            seen.add(article["link"])
+            unique.append((name, article))
+    if not unique:
+        send_message(TELEGRAM_CHAT_ID, "🔎 Veille horaire — " + datetime.now().strftime("%d/%m/%Y %H:%M") + "\\nAucune nouvelle actualité récente détectée pour tes valeurs suivies.")
+        return "no new headlines", 200
+
+    lines = ["🚨 VEILLE BOURSIÈRE — " + datetime.now().strftime("%d/%m/%Y %H:%M"), "Nouvelles récentes détectées (fenêtre d'environ 70 min) :"]
+    for name, article in unique[:12]:
+        lines.append("\\n• " + name + " : " + article["title"] + "\\n" + article["source"] + " — " + article["link"])
+    lines.append("\\nℹ️ Les titres doivent être vérifiés dans les articles originaux. Ceci n'est pas un conseil d'investissement.")
+    send_message(TELEGRAM_CHAT_ID, "\\n".join(lines))
+    logging.info("Hourly alert sent with %s headlines.", len(unique[:12]))
+    return "alerts sent", 200
 
 
 @app.post("/telegram-webhook")
