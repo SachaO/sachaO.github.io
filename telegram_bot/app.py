@@ -253,7 +253,29 @@ def telegram_webhook():
         ai_state = "configurée" if AI_API_KEY and AI_MODEL else "non configurée (résumé de secours)"
         reply = f"✅ Le bot Telegram fonctionne. Analyse IA : {ai_state}."
     else:
-        reply = "Je n'ai pas reconnu cette commande. Envoie /help pour voir les commandes disponibles."
+        # Les messages libres sont envoyés au modèle IA comme une conversation.
+        if not AI_API_KEY or not AI_MODEL:
+            reply = "L’analyse IA n’est pas configurée. Vérifie AI_API_KEY et AI_MODEL dans Render."
+        else:
+            try:
+                found = []
+                lowered = text.lower()
+                assets = {"Oracle": ["oracle", "orcl"], "NVIDIA": ["nvidia", "nvda"], "Scholar Rock": ["scholar rock", "srrk"], "Sionna Therapeutics": ["sionna", "sion"], "Innventure": ["innventure"], "SpaceX": ["spacex"]}
+                for name, terms in assets.items():
+                    if any(term in lowered for term in terms):
+                        query = name + (" SRRK" if name == "Scholar Rock" else " SION" if name == "Sionna Therapeutics" else " INV" if name == "Innventure" else " ORCL" if name == "Oracle" else " NVDA" if name == "NVIDIA" else "")
+                        found.extend(search_rss_news(query)[:3])
+                context = "\\n".join("- " + a["title"] + " (" + a["source"] + "): " + a["link"] for a in found) or "Aucune actualité RSS spécifique récupérée."
+                system_prompt = "Tu es TRADING_AI_ALERTES, assistant conversationnel francophone. Portefeuille suivi : Oracle (ORCL), NVIDIA (NVDA), Scholar Rock (SRRK), Sionna Therapeutics (SION), Innventure (INV) et SpaceX (entreprise privée non cotée). Réponds naturellement. Pour les questions boursières, utilise les actualités fournies si disponibles, cite les liens, distingue faits et hypothèses, ne prétends pas avoir lu les articles complets, n’invente pas de cours en direct et ne donne pas de recommandation personnalisée d’achat ou de vente. Pour les questions générales, réponds normalement."
+                prompt = "Message utilisateur : " + text + "\\nActualités récentes récupérées :\\n" + context
+                response = requests.post(AI_BASE_URL + "/chat/completions", headers={"Authorization": "Bearer " + AI_API_KEY, "Content-Type": "application/json"}, json={"model": AI_MODEL, "messages": [{"role": "system", "content": system_prompt}, {"role": "user", "content": prompt}], "temperature": 0.3, "max_tokens": 750}, timeout=AI_TIMEOUT)
+                response.raise_for_status()
+                reply = response.json()["choices"][0]["message"]["content"].strip()
+                if found:
+                    reply += "\\n\\nSources :\\n" + "\\n".join("- " + a["title"] + " — " + a["link"] for a in found[:5])
+            except Exception:
+                logging.exception("Conversational AI request failed")
+                reply = "Je n’arrive pas à joindre le modèle IA pour le moment. Réessaie dans quelques minutes."
 
     try:
         send_message(chat_id, reply)
