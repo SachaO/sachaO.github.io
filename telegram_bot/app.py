@@ -160,10 +160,24 @@ def search_rss_news(topic=""):
 
 
 def get_market_snapshot(symbol):
-    """Build a compact technical snapshot from recent daily Yahoo Finance prices."""
+    """Combine the latest available intraday quote with daily technical indicators."""
     import yfinance as yf
 
     try:
+        # Intraday 1-minute data can provide a fresher quote during market hours,
+        # but Yahoo Finance may delay it and does not guarantee a real-time feed.
+        intraday = yf.download(symbol, period="1d", interval="1m", auto_adjust=True, progress=False, threads=False)
+        live_price = None
+        quote_time = None
+        if intraday is not None and not intraday.empty and "Close" in intraday:
+            intraday_close = intraday["Close"]
+            if hasattr(intraday_close, "columns"):
+                intraday_close = intraday_close.iloc[:, 0]
+            intraday_close = intraday_close.dropna()
+            if not intraday_close.empty:
+                live_price = float(intraday_close.iloc[-1])
+                quote_time = intraday_close.index[-1]
+
         frame = yf.download(symbol, period="6mo", interval="1d", auto_adjust=True, progress=False, threads=False)
         if frame is None or frame.empty or "Close" not in frame:
             return "Données de marché indisponibles pour le moment."
@@ -175,18 +189,25 @@ def get_market_snapshot(symbol):
         if len(close) < 50:
             return "Historique de prix trop court pour calculer des tendances fiables."
 
-        last = float(close.iloc[-1])
-        prev = float(close.iloc[-2])
-        ret_5d = (last / float(close.iloc[-6]) - 1) * 100 if len(close) >= 6 else None
-        ret_1m = (last / float(close.iloc[-22]) - 1) * 100 if len(close) >= 22 else None
-        ret_3m = (last / float(close.iloc[-64]) - 1) * 100 if len(close) >= 64 else None
+        last_close = float(close.iloc[-1])
+        prev_close = float(close.iloc[-2])
+        ret_5d = (last_close / float(close.iloc[-6]) - 1) * 100 if len(close) >= 6 else None
+        ret_1m = (last_close / float(close.iloc[-22]) - 1) * 100 if len(close) >= 22 else None
+        ret_3m = (last_close / float(close.iloc[-64]) - 1) * 100 if len(close) >= 64 else None
         sma20 = float(close.tail(20).mean())
         sma50 = float(close.tail(50).mean())
-        high_3m = float(close.tail(min(63, len(close))).max())
-        low_3m = float(close.tail(min(63, len(close))).min())
-        if last > sma20 > sma50:
+        recent = frame.tail(min(63, len(frame)))
+        high_col = recent["High"] if "High" in recent else close.tail(min(63, len(close)))
+        low_col = recent["Low"] if "Low" in recent else close.tail(min(63, len(close)))
+        if hasattr(high_col, "columns"):
+            high_col = high_col.iloc[:, 0]
+        if hasattr(low_col, "columns"):
+            low_col = low_col.iloc[:, 0]
+        high_3m = float(high_col.max())
+        low_3m = float(low_col.min())
+        if last_close > sma20 > sma50:
             trend = "haussière selon le cours et les moyennes mobiles 20/50 jours"
-        elif last < sma20 < sma50:
+        elif last_close < sma20 < sma50:
             trend = "baissière selon le cours et les moyennes mobiles 20/50 jours"
         else:
             trend = "mixte ou en consolidation selon les moyennes mobiles 20/50 jours"
@@ -194,17 +215,30 @@ def get_market_snapshot(symbol):
         def pct(value):
             return "indisponible" if value is None else "{:+.2f} %".format(value)
 
+        if live_price is not None:
+            timestamp = quote_time.strftime("%d/%m/%Y à %H:%M") if quote_time is not None else "heure non précisée"
+            intraday_text = (
+                "Dernier cours intrajournalier disponible : {:.2f} USD (horodatage fourni par la source : {}). "
+                "Ce cours peut être différé et n'est pas garanti en temps réel. "
+            ).format(live_price, timestamp)
+        else:
+            intraday_text = "Cours intrajournalier indisponible ; dernière clôture quotidienne : {:.2f} USD. ".format(last_close)
+
         return (
-            "Indicateurs calculés à partir des dernières clôtures quotidiennes disponibles (Yahoo Finance ; "
-            "données potentiellement différées). Dernière clôture : {:.2f} USD. "
-            "Variation quotidienne : {:+.2f} %. Variation 5 séances : {}. Variation environ 1 mois : {}. "
-            "Variation environ 3 mois : {}. Moyenne mobile 20 séances : {:.2f} USD ; "
-            "moyenne mobile 50 séances : {:.2f} USD. Plus haut/bas environ 3 mois : {:.2f}/{:.2f} USD. "
+            "Source : Yahoo Finance. " + intraday_text +
+            "Indicateurs calculés à partir des dernières clôtures quotidiennes disponibles. "
+            "Variation depuis la clôture précédente : {:+.2f} %. Variation 5 séances : {}. "
+            "Variation environ 1 mois : {}. Variation environ 3 mois : {}. "
+            "Moyenne mobile 20 séances : {:.2f} USD ; moyenne mobile 50 séances : {:.2f} USD. "
+            "Plus haut/bas intrajournalier sur environ 3 mois : {:.2f}/{:.2f} USD. "
             "Lecture technique indicative : tendance {}."
-        ).format(last, (last / prev - 1) * 100 if prev else 0, pct(ret_5d), pct(ret_1m), pct(ret_3m), sma20, sma50, high_3m, low_3m, trend)
+        ).format(
+            last_close, (last_close / prev_close - 1) * 100 if prev_close else 0,
+            pct(ret_5d), pct(ret_1m), pct(ret_3m), sma20, sma50, high_3m, low_3m, trend
+        )
     except Exception:
         logging.exception("Market data lookup failed for %s", symbol)
-        return "Impossible de récupérer les indicateurs de marché à cet instant."
+        return "Impossible de récupérer les cours et indicateurs de marché à cet instant."
 
 
 def market_symbols_for_text(text):
@@ -477,12 +511,12 @@ def telegram_webhook():
                     "Ne révèle jamais ton raisonnement interne, tes étapes de réflexion, un plan d'analyse, des consignes, ni du texte de type 'Analyze the Request', 'Drafting the Response', 'step-by-step', 'SVG' ou une sortie technique. Donne uniquement la réponse finale destinée à l'utilisateur. "
                     "Style : naturel, comme un analyste qui explique à un client. Utilise 2 à 5 petits paragraphes lisibles, des phrases complètes et des transitions. Pas de lignes de commande, pas de pseudo-code, pas de listes interminables ni de jargon brut. Évite le Markdown : aucun astérisque pour le gras ou l'italique, aucun titre avec #, aucun bloc de code. Utilise une mise en forme simple et des retours à la ligne normaux. "
                     "Valeurs suivies : Oracle (ORCL), NVIDIA (NVDA), Scholar Rock (SRRK), Sionna Therapeutics (SION), Innventure (INV) et SpaceX, entreprise privée non cotée. "
-                    "Pour une question boursière, réponds précisément à la question posée. Si 'rentrer sur le marché' est ambigu, demande si la personne parle de l'introduction en Bourse historique ou du moment où acheter l'action. "
+                    "Pour une question boursière, réponds précisément à la question posée. Si l’utilisateur emploie un terme incorrect, imprécis ou ambigu, corrige-le avec tact en une phrase simple, explique le terme correct et réponds ensuite à son intention sans le rabaisser. Exemple : si la personne dit « entrer sur le marché » pour parler du fait de commencer à acheter des actions, précise que « commencer à investir en Bourse », « ouvrir une position » ou « entrer sur une action » est plus précis selon le contexte ; « entrée en Bourse » désigne généralement l’introduction en Bourse d’une entreprise. Ne demande une clarification que si le sens reste réellement incertain. "
                     "Utilise les actualités fournies uniquement pour éclairer la réponse. Ne recopie jamais les URL brutes, les liens Google News/RSS ou les balises Markdown. Si une source est utile, cite seulement le nom du média et le titre de l’article, sans URL. Précise quand tu ne disposes que des titres ou extraits. "
                     "N'invente jamais de cours en direct, de chiffres, de sources ou de probabilités. Pour une prévision, donne si utile des scénarios baissier, central et haussier avec un horizon temporel clair. Les probabilités chiffrées doivent être présentées comme des estimations très approximatives, avec hypothèses explicites ; si les données sont insuffisantes, refuse d'inventer un pourcentage. "
                     "Une analyse peut aider à décider mais ne garantit pas un résultat. Ne prétends pas connaître la situation financière ou la tolérance au risque de l'utilisateur et ne présente pas une estimation comme un conseil personnalisé certain. Pour les questions générales, réponds naturellement en français."
                 )
-                prompt = "Réponds exclusivement en français naturel, avec des phrases complètes et 2 à 5 paragraphes courts. Ne renvoie jamais de liens bruts, d’URL, de flux RSS, de Markdown ni de texte technique. Si les actualités ci-dessous sont en anglais, résume-les et explique-les en français au lieu de les recopier.\n\nMessage utilisateur : " + text + "\n\nActualités récentes récupérées :\n" + context
+                prompt = "Réponds exclusivement en français naturel, avec des phrases complètes et 2 à 5 paragraphes courts. Corrige avec tact les termes financiers mal employés ou ambigus : explique brièvement le terme juste, puis réponds à la demande réelle sans humilier l’utilisateur. Ne renvoie jamais de liens bruts, d’URL, de flux RSS, de Markdown ni de texte technique. Si les actualités ci-dessous sont en anglais, résume-les et explique-les en français au lieu de les recopier.\n\nMessage utilisateur : " + text + "\n\nActualités récentes récupérées :\n" + context
                 response = requests.post(AI_BASE_URL + "/chat/completions", headers={"Authorization": "Bearer " + AI_API_KEY, "Content-Type": "application/json"}, json={"model": AI_MODEL, "messages": [{"role": "system", "content": system_prompt}, {"role": "user", "content": prompt}], "temperature": 0.2, "max_tokens": 650}, timeout=AI_TIMEOUT)
                 response.raise_for_status()
                 reply = clean_ai_text(response.json()["choices"][0]["message"]["content"])
