@@ -26,49 +26,33 @@ def connect():
     with db.cursor() as cur:
         cur.execute("""
         CREATE TABLE IF NOT EXISTS atlas_account (
-            id INTEGER PRIMARY KEY CHECK (id=1),
-            cash DOUBLE PRECISION NOT NULL,
+            id INTEGER PRIMARY KEY CHECK (id=1), cash DOUBLE PRECISION NOT NULL,
             created_at TEXT NOT NULL
         );
         CREATE TABLE IF NOT EXISTS atlas_positions (
-            symbol TEXT PRIMARY KEY,
-            quantity DOUBLE PRECISION NOT NULL,
+            symbol TEXT PRIMARY KEY, quantity DOUBLE PRECISION NOT NULL,
             avg_cost DOUBLE PRECISION NOT NULL
         );
         CREATE TABLE IF NOT EXISTS atlas_prices (
-            symbol TEXT PRIMARY KEY,
-            price DOUBLE PRECISION NOT NULL,
-            as_of TEXT NOT NULL
+            symbol TEXT PRIMARY KEY, price DOUBLE PRECISION NOT NULL, as_of TEXT NOT NULL
         );
         CREATE TABLE IF NOT EXISTS atlas_trades (
-            id BIGSERIAL PRIMARY KEY,
-            at TEXT NOT NULL,
-            symbol TEXT NOT NULL,
-            side TEXT NOT NULL,
-            quantity DOUBLE PRECISION NOT NULL,
-            price DOUBLE PRECISION NOT NULL,
-            fee DOUBLE PRECISION NOT NULL,
-            reason TEXT NOT NULL,
-            strategy TEXT NOT NULL
+            id BIGSERIAL PRIMARY KEY, at TEXT NOT NULL, symbol TEXT NOT NULL,
+            side TEXT NOT NULL, quantity DOUBLE PRECISION NOT NULL, price DOUBLE PRECISION NOT NULL,
+            fee DOUBLE PRECISION NOT NULL, reason TEXT NOT NULL, strategy TEXT NOT NULL
         );
         CREATE TABLE IF NOT EXISTS atlas_cycles (
-            id BIGSERIAL PRIMARY KEY,
-            at TEXT NOT NULL,
-            status TEXT NOT NULL,
-            summary TEXT NOT NULL
+            id BIGSERIAL PRIMARY KEY, at TEXT NOT NULL, status TEXT NOT NULL, summary TEXT NOT NULL
         );
         CREATE TABLE IF NOT EXISTS atlas_signals (
-            id BIGSERIAL PRIMARY KEY,
-            at TEXT NOT NULL,
-            symbol TEXT NOT NULL,
-            price DOUBLE PRECISION NOT NULL,
-            score INTEGER NOT NULL,
-            momentum5 DOUBLE PRECISION NOT NULL,
-            momentum20 DOUBLE PRECISION NOT NULL,
-            rsi DOUBLE PRECISION NOT NULL,
-            volatility20 DOUBLE PRECISION NOT NULL
+            id BIGSERIAL PRIMARY KEY, at TEXT NOT NULL, symbol TEXT NOT NULL,
+            as_of TEXT NOT NULL, price DOUBLE PRECISION NOT NULL, score INTEGER NOT NULL,
+            momentum5 DOUBLE PRECISION NOT NULL, momentum20 DOUBLE PRECISION NOT NULL,
+            rsi DOUBLE PRECISION NOT NULL, volatility20 DOUBLE PRECISION NOT NULL,
+            UNIQUE(symbol, as_of)
         );
-        CREATE INDEX IF NOT EXISTS atlas_signals_symbol_at_idx ON atlas_signals(symbol, at);
+        ALTER TABLE atlas_signals ADD COLUMN IF NOT EXISTS as_of TEXT;
+        CREATE UNIQUE INDEX IF NOT EXISTS atlas_signals_symbol_asof_idx ON atlas_signals(symbol, as_of);
         """)
         cur.execute(
             "INSERT INTO atlas_account(id,cash,created_at) VALUES(1,%s,%s) ON CONFLICT(id) DO NOTHING",
@@ -126,14 +110,14 @@ def record_price(symbol, price, as_of=None):
         db.close()
 
 
-def record_signal(symbol, signal):
-    """Persist signals so later evaluation can measure which signals worked."""
+def record_signal(symbol, signal, as_of):
+    """Store one observation per market bar for later out-of-sample evaluation."""
     db=connect()
     try:
         with db.cursor() as cur:
             cur.execute(
-                "INSERT INTO atlas_signals(at,symbol,price,score,momentum5,momentum20,rsi,volatility20) VALUES(%s,%s,%s,%s,%s,%s,%s,%s)",
-                (now(), symbol, float(signal["price"]), int(signal["score"]),
+                "INSERT INTO atlas_signals(at,symbol,as_of,price,score,momentum5,momentum20,rsi,volatility20) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s) ON CONFLICT(symbol,as_of) DO NOTHING",
+                (now(), symbol, str(as_of), float(signal["price"]), int(signal["score"]),
                  float(signal["momentum5"]), float(signal["momentum20"]),
                  float(signal["rsi"]), float(signal["volatility20"])),
             )
