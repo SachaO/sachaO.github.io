@@ -8,7 +8,7 @@ from email.utils import parsedate_to_datetime
 import feedparser
 import requests
 from flask import Flask, request, abort
-from atlas.paper_trading import format_snapshot, snapshot
+from atlas.paper_trading import format_snapshot, snapshot, signal_performance
 from atlas.engine import run_cycle
 
 logging.basicConfig(level=logging.INFO)
@@ -53,6 +53,7 @@ def set_commands():
         {"command": "atlas", "description": "Voir le portefeuille fictif ATLAS"},
         {"command": "positions", "description": "Voir les positions simulées"},
         {"command": "trades", "description": "Voir les dernières opérations simulées"},
+        {"command": "atlasstats", "description": "Évaluer les signaux ATLAS sur 1, 3 et 7 jours"},
     ]
     response = requests.post(f"{API}/setMyCommands", json={"commands": commands}, timeout=15)
     response.raise_for_status()
@@ -496,7 +497,8 @@ def telegram_webhook():
             "/status — vérifier que le bot répond\n"
             "/atlas — portefeuille fictif et résultat\n"
             "/positions — positions simulées\n"
-            "/trades — dernières opérations fictives\n\n"
+            "/trades — dernières opérations fictives\n"
+            "/atlasstats — évaluer les signaux sur 1, 3 et 7 jours\n\n"
             "La synthèse IA nécessite la configuration d'un fournisseur compatible. Sans clé, le bot propose un digest transparent basé sur les titres."
         )
     elif command == "/atlas":
@@ -507,6 +509,20 @@ def telegram_webhook():
     elif command == "/trades":
         state = snapshot()
         reply = "Aucune opération fictive enregistrée." if not state["trades"] else "🧾 DERNIÈRES OPÉRATIONS ATLAS\n" + "\n".join("{} {} {:.6g} {} à {:.4f} USD — {}".format(t["at"][:16].replace("T", " "), t["side"], t["quantity"], t["symbol"], t["price"], t["reason"]) for t in state["trades"][:8])
+    elif command == "/atlasstats":
+        stats = signal_performance()
+        lines = ["📈 ATLAS · ÉVALUATION DES SIGNAUX", "", "Les rendements comparent le prix au moment du signal avec le dernier cours disponible après l'horizon indiqué.", ""]
+        for horizon in (1, 3, 7):
+            item = stats[horizon]
+            if item["count"]:
+                lines.append("{} jour(s) : {} observations évaluées · rendement moyen {:+.2f} % · {} % positives".format(
+                    horizon, item["count"], item["avg_return"],
+                    round(item["positive"] / item["count"] * 100)
+                ))
+            else:
+                lines.append("{} jour(s) : en attente de données suffisantes.".format(horizon))
+        lines.extend(["", "⚠️ Historique encore limité : ces chiffres ne prouvent pas une capacité prédictive et ne sont pas une garantie de performance.", "🧪 Simulation uniquement."])
+        reply = "\n".join(lines)
     elif command == "/news":
         reply = format_news_message(topic)
     elif command == "/status":
