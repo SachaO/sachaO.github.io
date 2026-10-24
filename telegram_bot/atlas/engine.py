@@ -27,6 +27,13 @@ COUNCIL_ROLES = (
 def council_vote(symbol, name, signal, held):
     """Ask five separately prompted reviewers; unavailable/unclear votes count as WAIT."""
     if not AI_API_KEY or not AI_MODEL:
+        missing = []
+        if not AI_API_KEY:
+            missing.append("AI_API_KEY")
+        if not AI_MODEL:
+            missing.append("AI_MODEL")
+        log.warning("ATLAS council unavailable for %s: missing configuration %s",
+                    symbol, ",".join(missing))
         return {"buy": 0, "sell": 0, "wait": 5, "available": False}
     context = (
         f"Actif: {name} ({symbol}); cours journalier: {signal['price']:.8g} USD; "
@@ -54,14 +61,21 @@ def council_vote(symbol, name, signal, held):
             response.raise_for_status()
             answer = response.json()["choices"][0]["message"]["content"].strip().upper()
             first_word = answer.split()[0] if answer.split() else ""
-            return first_word if first_word in ("BUY", "SELL", "WAIT") else "WAIT"
+            vote = first_word if first_word in ("BUY", "SELL", "WAIT") else "WAIT"
+            log.info("ATLAS council vote symbol=%s role=%s vote=%s", symbol, role_name, vote)
+            return vote
         except Exception:
-            log.exception("ATLAS council reviewer failed: %s", role_name)
+            log.exception("ATLAS council reviewer failed: symbol=%s role=%s", symbol, role_name)
             return "WAIT"
+    log.info("ATLAS council started symbol=%s model=%s reviewers=%s",
+             symbol, AI_MODEL, len(COUNCIL_ROLES))
     with concurrent.futures.ThreadPoolExecutor(max_workers=5) as pool:
         votes = list(pool.map(ask, COUNCIL_ROLES))
-    return {"buy": votes.count("BUY"), "sell": votes.count("SELL"),
-            "wait": votes.count("WAIT"), "available": True}
+    result = {"buy": votes.count("BUY"), "sell": votes.count("SELL"),
+              "wait": votes.count("WAIT"), "available": True}
+    log.info("ATLAS council summary symbol=%s BUY=%s SELL=%s WAIT=%s",
+             symbol, result["buy"], result["sell"], result["wait"])
+    return result
 
 
 from .paper_trading import (
@@ -181,7 +195,14 @@ def run_cycle():
             stop_hit = held > 1e-8 and avg_cost > 0 and price <= avg_cost * (1 - STOP_LOSS_FRACTION)
             wants_sell = held > 1e-8 and score <= SELL_SCORE and not stop_hit
             wants_buy = held <= 1e-8 and score >= MIN_BUY_SCORE and state["cash"] > 10
-            council = council_vote(symbol, name, signal, held > 1e-8) if (wants_sell or wants_buy) else None
+            if wants_sell or wants_buy:
+                log.info("ATLAS council trigger symbol=%s reason=%s score=%s held=%s",
+                         symbol, "BUY candidate" if wants_buy else "SELL candidate", score, held > 1e-8)
+                council = council_vote(symbol, name, signal, held > 1e-8)
+            else:
+                council = None
+                log.info("ATLAS council skipped symbol=%s score=%s held=%s stop_hit=%s reason=no eligible normal BUY/SELL signal",
+                         symbol, score, held > 1e-8, stop_hit)
 
             if held > 1e-8 and (stop_hit or (wants_sell and council and council["sell"] >= 3)):
                 reason = (
