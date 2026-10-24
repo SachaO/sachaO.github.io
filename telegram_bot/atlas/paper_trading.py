@@ -1,11 +1,10 @@
-"""ATLAS paper-trading ledger. Simulated orders only; never connects to a broker."""
-import json
+"""ATLAS paper-trading ledger backed by PostgreSQL (Neon). Simulated orders only."""
 import os
-import sqlite3
 from datetime import datetime, timezone
-from pathlib import Path
+import psycopg
+from psycopg.rows import dict_row
 
-DB_PATH = os.getenv("ATLAS_DB_PATH", "/tmp/atlas.sqlite3")
+DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
 STARTING_CASH = float(os.getenv("ATLAS_STARTING_CASH", "10000"))
 WATCHLIST = {
     "ORCL": "Oracle", "NVDA": "NVIDIA", "SPY": "S&P 500 ETF",
@@ -20,45 +19,98 @@ def now():
 
 
 def connect():
-    Path(DB_PATH).parent.mkdir(parents=True, exist_ok=True)
-    db = sqlite3.connect(DB_PATH, timeout=15)
-    db.row_factory = sqlite3.Row
-    db.execute("PRAGMA journal_mode=WAL")
-    db.executescript("""
-    CREATE TABLE IF NOT EXISTS account (id INTEGER PRIMARY KEY CHECK(id=1), cash REAL NOT NULL, created_at TEXT NOT NULL);
-    CREATE TABLE IF NOT EXISTS positions (symbol TEXT PRIMARY KEY, quantity REAL NOT NULL, avg_cost REAL NOT NULL);
-    CREATE TABLE IF NOT EXISTS prices (symbol TEXT PRIMARY KEY, price REAL NOT NULL, as_of TEXT NOT NULL);
-    CREATE TABLE IF NOT EXISTS trades (id INTEGER PRIMARY KEY AUTOINCREMENT, at TEXT NOT NULL, symbol TEXT NOT NULL, side TEXT NOT NULL, quantity REAL NOT NULL, price REAL NOT NULL, fee REAL NOT NULL, reason TEXT NOT NULL, strategy TEXT NOT NULL);
-    CREATE TABLE IF NOT EXISTS cycles (id INTEGER PRIMARY KEY AUTOINCREMENT, at TEXT NOT NULL, status TEXT NOT NULL, summary TEXT NOT NULL);
-    """)
-    db.execute("INSERT OR IGNORE INTO account(id,cash,created_at) VALUES(1,?,?)", (STARTING_CASH, now()))
+    if not DATABASE_URL:
+        raise RuntimeError("DATABASE_URL n'est pas configurée sur Render.")
+    db = psycopg.connect(DATABASE_URL, row_factory=dict_row, connect_timeout=10)
+    with db.cursor() as cur:
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS atlas_account (
+            id INTEGER PRIMARY KEY CHECK (id=1),
+            cash DOUBLE PRECISION NOT NULL,
+            created_at TEXT NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS atlas_positions (
+            symbol TEXT PRIMARY KEY,
+            quantity DOUBLE PRECISION NOT NULL,
+            avg_cost DOUBLE PRECISION NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS atlas_prices (
+            symbol TEXT PRIMARY KEY,
+            price DOUBLE PRECISION NOT NULL,
+            as_of TEXT NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS atlas_trades (
+            id BIGSERIAL PRIMARY KEY,
+            at TEXT NOT NULL,
+            symbol TEXT NOT NULL,
+            side TEXT NOT NULL,
+            quantity DOUBLE PRECISION NOT NULL,
+            price DOUBLE PRECISION NOT NULL,
+            fee DOUBLE PRECISION NOT NULL,
+            reason TEXT NOT NULL,
+            strategy TEXT NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS atlas_cycles (
+            id BIGSERIAL PRIMARY KEY,
+            at TEXT NOT NULL,
+            status TEXT NOT NULL,
+            summary TEXT NOT NULL
+        );
+        """)
+        cur.execute(
+            "INSERT INTO atlas_account(id,cash,created_at) VALUES(1,%s,%s) ON CONFLICT(id) DO NOTHING",
+            (STARTING_CASH, now()),
+        )
     db.commit()
     return db
 
 
 def snapshot():
     db = connect()
-    account = db.execute("SELECT cash,created_at FROM account WHERE id=1").fetchone()
-    positions = []
-    value = float(account["cash"])
-    for p in db.execute("SELECT symbol,quantity,avg_cost FROM positions WHERE quantity > 0.00000001"):
-        price = db.execute("SELECT price,as_of FROM prices WHERE symbol=?", (p["symbol"],)).fetchone()
-        current = float(price["price"]) if price else float(p["avg_cost"])
-        market_value = p["quantity"] * current
-        value += market_value
-        positions.append({"symbol":p["symbol"],"name":WATCHLIST.get(p["symbol"],p["symbol"]),"quantity":p["quantity"],"avg_cost":p["avg_cost"],"price":current,"market_value":market_value,"pnl":market_value-p["quantity"]*p["avg_cost"],"as_of":price["as_of"] if price else "prix indisponible"})
-    trades = db.execute("SELECT * FROM trades ORDER BY id DESC LIMIT 10").fetchall()
-    result = {"cash":float(account["cash"]),"equity":value,"pnl":value-STARTING_CASH,"return_pct":(value/STARTING_CASH-1)*100 if STARTING_CASH else 0,"positions":positions,"trades":[dict(t) for t in trades],"starting_cash":STARTING_CASH}
-    db.close()
-    return result
+    try:
+        with db.cursor() as cur:
+            cur.execute("SELECT cash,created_at FROM atlas_account WHERE id=1")
+            account = cur.fetchone()
+            cur.execute("SELECT symbol,quantity,avg_cost FROM atlas_positions WHERE quantity > 0.00000001")
+            raw_positions = cur.fetchall()
+            positions = []
+            value = float(account["cash"])
+            for p in raw_positions:
+                cur.execute("SELECT price,as_of FROM atlas_prices WHERE symbol=%s", (p["symbol"],))
+                price = cur.fetchone()
+                current = float(price["price"]) if price else float(p["avg_cost"])
+                market_value = p["quantity"] * current
+                value += market_value
+                positions.append({
+                    "symbol":p["symbol"],"name":WATCHLIST.get(p["symbol"],p["symbol"]),
+                    "quantity":p["quantity"],"avg_cost":p["avg_cost"],"price":current,
+                    "market_value":market_value,"pnl":market_value-p["quantity"]*p["avg_cost"],
+                    "as_of":price["as_of"] if price else "prix indisponible"
+                })
+            cur.execute("SELECT id,at,symbol,side,quantity,price,fee,reason,strategy FROM atlas_trades ORDER BY id DESC LIMIT 10")
+            trades = cur.fetchall()
+        return {
+            "cash":float(account["cash"]),"equity":value,"pnl":value-STARTING_CASH,
+            "return_pct":(value/STARTING_CASH-1)*100 if STARTING_CASH else 0,
+            "positions":positions,"trades":trades,"starting_cash":STARTING_CASH,
+        }
+    finally:
+        db.close()
 
 
 def record_price(symbol, price, as_of=None):
     if price <= 0:
         raise ValueError("Prix invalide")
     db=connect()
-    db.execute("INSERT INTO prices(symbol,price,as_of) VALUES(?,?,?) ON CONFLICT(symbol) DO UPDATE SET price=excluded.price,as_of=excluded.as_of",(symbol,float(price),as_of or now()))
-    db.commit(); db.close()
+    try:
+        with db.cursor() as cur:
+            cur.execute(
+                "INSERT INTO atlas_prices(symbol,price,as_of) VALUES(%s,%s,%s) ON CONFLICT(symbol) DO UPDATE SET price=EXCLUDED.price,as_of=EXCLUDED.as_of",
+                (symbol,float(price),as_of or now()),
+            )
+        db.commit()
+    finally:
+        db.close()
 
 
 def paper_order(symbol, side, quantity, price, reason, fee_rate=0.001):
@@ -68,37 +120,52 @@ def paper_order(symbol, side, quantity, price, reason, fee_rate=0.001):
         raise ValueError("Ordre invalide")
     db=connect()
     try:
-        db.execute("BEGIN IMMEDIATE")
-        cash=float(db.execute("SELECT cash FROM account WHERE id=1").fetchone()["cash"])
-        pos=db.execute("SELECT quantity,avg_cost FROM positions WHERE symbol=?",(symbol,)).fetchone()
-        held=float(pos["quantity"]) if pos else 0.0
-        avg=float(pos["avg_cost"]) if pos else 0.0
-        gross=quantity*price; fee=gross*fee_rate
-        if side=="BUY":
-            if gross+fee>cash: raise ValueError("Liquidités insuffisantes")
-            if (held+quantity)*price > STARTING_CASH*MAX_POSITION_FRACTION: raise ValueError("Limite de taille de position atteinte")
-            new_qty=held+quantity
-            new_avg=((held*avg)+(quantity*price))/new_qty
-            cash-=gross+fee
-        else:
-            if quantity>held+1e-9: raise ValueError("Vente supérieure à la position détenue")
-            new_qty=held-quantity; new_avg=avg if new_qty>1e-9 else 0.0
-            cash+=gross-fee
-        db.execute("UPDATE account SET cash=? WHERE id=1",(cash,))
-        db.execute("INSERT INTO positions(symbol,quantity,avg_cost) VALUES(?,?,?) ON CONFLICT(symbol) DO UPDATE SET quantity=excluded.quantity,avg_cost=excluded.avg_cost",(symbol,new_qty,new_avg))
-        db.execute("INSERT INTO prices(symbol,price,as_of) VALUES(?,?,?) ON CONFLICT(symbol) DO UPDATE SET price=excluded.price,as_of=excluded.as_of",(symbol,price,now()))
-        db.execute("INSERT INTO trades(at,symbol,side,quantity,price,fee,reason,strategy) VALUES(?,?,?,?,?,?,?,?)",(now(),symbol,side,quantity,price,fee,reason,"ATLAS-baseline-v1"))
-        db.commit()
-    except Exception:
-        db.rollback()
-        raise
-    finally: db.close()
+        with db.transaction():
+            with db.cursor() as cur:
+                cur.execute("SELECT cash FROM atlas_account WHERE id=1 FOR UPDATE")
+                cash=float(cur.fetchone()["cash"])
+                cur.execute("SELECT quantity,avg_cost FROM atlas_positions WHERE symbol=%s FOR UPDATE",(symbol,))
+                pos=cur.fetchone()
+                held=float(pos["quantity"]) if pos else 0.0
+                avg=float(pos["avg_cost"]) if pos else 0.0
+                gross=quantity*price
+                fee=gross*fee_rate
+                if side=="BUY":
+                    if gross+fee>cash: raise ValueError("Liquidités insuffisantes")
+                    if (held+quantity)*price > STARTING_CASH*MAX_POSITION_FRACTION: raise ValueError("Limite de taille de position atteinte")
+                    new_qty=held+quantity
+                    new_avg=((held*avg)+(quantity*price))/new_qty
+                    cash-=gross+fee
+                else:
+                    if quantity>held+1e-9: raise ValueError("Vente supérieure à la position détenue")
+                    new_qty=held-quantity
+                    new_avg=avg if new_qty>1e-9 else 0.0
+                    cash+=gross-fee
+                cur.execute("UPDATE atlas_account SET cash=%s WHERE id=1",(cash,))
+                cur.execute(
+                    "INSERT INTO atlas_positions(symbol,quantity,avg_cost) VALUES(%s,%s,%s) ON CONFLICT(symbol) DO UPDATE SET quantity=EXCLUDED.quantity,avg_cost=EXCLUDED.avg_cost",
+                    (symbol,new_qty,new_avg),
+                )
+                cur.execute(
+                    "INSERT INTO atlas_prices(symbol,price,as_of) VALUES(%s,%s,%s) ON CONFLICT(symbol) DO UPDATE SET price=EXCLUDED.price,as_of=EXCLUDED.as_of",
+                    (symbol,price,now()),
+                )
+                cur.execute(
+                    "INSERT INTO atlas_trades(at,symbol,side,quantity,price,fee,reason,strategy) VALUES(%s,%s,%s,%s,%s,%s,%s,%s)",
+                    (now(),symbol,side,quantity,price,fee,reason,"ATLAS-baseline-v1"),
+                )
+    finally:
+        db.close()
 
 
 def cycle_record(status, summary):
     db=connect()
-    db.execute("INSERT INTO cycles(at,status,summary) VALUES(?,?,?)",(now(),status,summary))
-    db.commit(); db.close()
+    try:
+        with db.cursor() as cur:
+            cur.execute("INSERT INTO atlas_cycles(at,status,summary) VALUES(%s,%s,%s)",(now(),status,summary))
+        db.commit()
+    finally:
+        db.close()
 
 
 def format_snapshot():
