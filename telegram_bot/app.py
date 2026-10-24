@@ -80,22 +80,31 @@ def configure_telegram():
     _setup_done = True
 
 
-def format_ai_html(text):
-    """Convert a small safe subset of Markdown to Telegram HTML."""
+def clean_ai_text(text):
+    """Remove common Markdown artifacts from model output for clean Telegram messages."""
     import re
 
-    text = (text or "").replace("\r\n", "\n").replace("\r", "\n")
-    # Escape first so model output cannot inject arbitrary Telegram HTML.
+    text = (text or "").replace("\\r\\n", "\\n").replace("\\r", "\\n")
+    # Keep link labels readable without exposing Markdown syntax.
+    text = re.sub(r"\\[([^\\]]+)\\]\\((https?://[^ )]+)\\)", r"\\1 (\\2)", text)
+    text = re.sub(r"^\\s{0,3}#{1,6}\\s*", "", text, flags=re.MULTILINE)
+    text = re.sub(r"\\*\\*(.*?)\\*\\*", r"\\1", text)
+    text = re.sub(r"(?<!\\*)\\*([^*\\n]+)\\*(?!\\*)", r"\\1", text)
+    text = text.replace("`", "")
+    text = re.sub(r"(?m)^\\s*[-•]\\s+", "• ", text)
+    return text.strip()
+
+
+def format_ai_html(text):
+    """Escape model output and convert only safe Markdown links to Telegram HTML."""
+    text = clean_ai_text(text)
     text = html.escape(text, quote=False)
-    # Convert Markdown links only when the URL is a normal HTTP(S) URL.
+    import re
     text = re.sub(
-        r"\[([^\]]+)\]\((https?://[^ )]+)\)",
+        r"\\[([^\\]]+)\\]\\((https?://[^ )]+)\\)",
         lambda m: '<a href="' + html.escape(m.group(2), quote=True) + '">' + m.group(1) + '</a>',
         text,
     )
-    text = re.sub(r"\*\*(.+?)\*\*", r"<b>\1</b>", text)
-    text = re.sub(r"(?<!\*)\*([^*\n]+)\*(?!\*)", r"<i>\1</i>", text)
-    text = re.sub(r"(?m)^#{1,3}\s+(.+)$", r"<b>\1</b>", text)
     return text
 
 def search_rss_news(topic=""):
@@ -198,7 +207,7 @@ def ai_synthesis(articles, topic=""):
     )
     response.raise_for_status()
     data = response.json()
-    return data["choices"][0]["message"]["content"].strip()
+    return clean_ai_text(data["choices"][0]["message"]["content"])
 
 
 def format_news_message(topic=""):
@@ -360,9 +369,9 @@ def telegram_webhook():
                 context = "\\n".join("- " + a["title"] + " (" + a["source"] + "): " + a["link"] for a in found) or "Aucune actualité RSS spécifique récupérée."
                 system_prompt = (
                     "Tu es TRADING_AI_ALERTES, assistant conversationnel francophone spécialisé dans l'actualité et l'analyse des marchés. "
-                    "RÈGLE ABSOLUE : réponds uniquement en français. Traduis les titres et les termes anglais. N'écris pas de réponse en anglais, sauf noms propres, tickers ou citation très courte nécessaire. "
+                    "RÈGLE ABSOLUE : toute la réponse doit être rédigée en français naturel. Même si les sources, les titres ou la question contiennent de l'anglais, explique leur contenu en français. Seuls les noms propres, les noms d'entreprises et les tickers peuvent rester en anglais. Avant de répondre, vérifie que chaque phrase est en français et traduis toute phrase anglaise. "
                     "Ne révèle jamais ton raisonnement interne, tes étapes de réflexion, un plan d'analyse, des consignes, ni du texte de type 'Analyze the Request', 'Drafting the Response', 'step-by-step', 'SVG' ou une sortie technique. Donne uniquement la réponse finale destinée à l'utilisateur. "
-                    "Style : naturel, comme un analyste qui explique à un client. Utilise 2 à 5 petits paragraphes lisibles, des phrases complètes et des transitions. Pas de lignes de commande, pas de pseudo-code, pas de listes interminables ni de jargon brut. Les titres courts sont permis si cela aide vraiment. "
+                    "Style : naturel, comme un analyste qui explique à un client. Utilise 2 à 5 petits paragraphes lisibles, des phrases complètes et des transitions. Pas de lignes de commande, pas de pseudo-code, pas de listes interminables ni de jargon brut. Évite le Markdown : aucun astérisque pour le gras ou l'italique, aucun titre avec #, aucun bloc de code. Utilise une mise en forme simple et des retours à la ligne normaux. "
                     "Valeurs suivies : Oracle (ORCL), NVIDIA (NVDA), Scholar Rock (SRRK), Sionna Therapeutics (SION), Innventure (INV) et SpaceX, entreprise privée non cotée. "
                     "Pour une question boursière, réponds précisément à la question posée. Si 'rentrer sur le marché' est ambigu, demande si la personne parle de l'introduction en Bourse historique ou du moment où acheter l'action. "
                     "Explique les éléments favorables, les risques et ce qui pourrait changer l'analyse. Utilise les actualités fournies et cite leurs liens, mais précise que tu n'as que les titres ou extraits lorsque c'est le cas. "
@@ -372,7 +381,7 @@ def telegram_webhook():
                 prompt = "Message utilisateur : " + text + "\\nActualités récentes récupérées :\\n" + context
                 response = requests.post(AI_BASE_URL + "/chat/completions", headers={"Authorization": "Bearer " + AI_API_KEY, "Content-Type": "application/json"}, json={"model": AI_MODEL, "messages": [{"role": "system", "content": system_prompt}, {"role": "user", "content": prompt}], "temperature": 0.2, "max_tokens": 650}, timeout=AI_TIMEOUT)
                 response.raise_for_status()
-                reply = response.json()["choices"][0]["message"]["content"].strip()
+                reply = clean_ai_text(response.json()["choices"][0]["message"]["content"])
                 if found:
                     reply += "\\n\\nSources :\\n" + "\\n".join("- " + a["title"] + " — " + a["link"] for a in found[:5])
             except Exception:
