@@ -2,7 +2,7 @@ name: ATLAS paper trading cycle
 
 on:
   schedule:
-    - cron: "23 */6 * * *"
+    - cron: "23 * * * *"
   workflow_dispatch:
 
 jobs:
