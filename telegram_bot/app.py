@@ -91,7 +91,7 @@ def clean_ai_text(text):
 
     text = (text or "").replace("\\r\\n", "\\n").replace("\\r", "\\n")
     # Keep link labels readable without exposing Markdown syntax.
-    text = re.sub(r"\\[([^\\]]+)\\]\\((https?://[^ )]+)\\)", r"\\1 (\\2)", text)
+    text = re.sub(r"\[([^\]]+)\]\((https?://[^ )]+)\)", r"\1 (\2)", text)
     text = re.sub(r"^\\s{0,3}#{1,6}\\s*", "", text, flags=re.MULTILINE)
     text = re.sub(r"\\*\\*(.*?)\\*\\*", r"\\1", text)
     text = re.sub(r"(?<!\\*)\\*([^*\\n]+)\\*(?!\\*)", r"\\1", text)
