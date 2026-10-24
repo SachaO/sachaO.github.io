@@ -8,6 +8,8 @@ from email.utils import parsedate_to_datetime
 import feedparser
 import requests
 from flask import Flask, request, abort
+from atlas.paper_trading import format_snapshot, snapshot
+from atlas.engine import run_cycle
 
 logging.basicConfig(level=logging.INFO)
 app = Flask(__name__)
@@ -48,6 +50,9 @@ def set_commands():
         {"command": "news", "description": "Résumé des actualités financières"},
         {"command": "status", "description": "Vérifier le bot"},
         {"command": "chatid", "description": "Afficher l’identifiant de la conversation"},
+        {"command": "atlas", "description": "Voir le portefeuille fictif ATLAS"},
+        {"command": "positions", "description": "Voir les positions simulées"},
+        {"command": "trades", "description": "Voir les dernières opérations simulées"},
     ]
     response = requests.post(f"{API}/setMyCommands", json={"commands": commands}, timeout=15)
     response.raise_for_status()
@@ -309,6 +314,22 @@ def hourly_alerts():
     return "alerts sent", 200
 
 
+@app.post("/atlas-cycle")
+def atlas_cycle_endpoint():
+    if not ALERTS_CRON_SECRET or request.headers.get("X-Alert-Secret") != ALERTS_CRON_SECRET:
+        abort(403)
+    result = run_cycle()
+    if TELEGRAM_CHAT_ID:
+        lines = ["🤖 ATLAS — cycle terminé", "Cours actualisés : {}".format(result["updated"])]
+        lines.extend(result["decisions"][:8])
+        if result["errors"]:
+            lines.append("Erreurs : " + "; ".join(result["errors"][:4]))
+        state = result["portfolio"]
+        lines.append("Portefeuille fictif : {:.2f} € ({:+.2f} € / {:+.2f} %)".format(state["equity"], state["pnl"], state["return_pct"]))
+        send_message(TELEGRAM_CHAT_ID, "\n".join(lines))
+    return {"status": "ok", "updated": result["updated"], "decisions": len(result["decisions"]), "errors": result["errors"]}, 200
+
+
 @app.post("/telegram-webhook")
 def telegram_webhook():
     logging.info("Incoming Telegram webhook request received.")
@@ -334,7 +355,7 @@ def telegram_webhook():
             "Bienvenue sur TRADING_AI_ALERTES 📈\n\n"
             "Ce bot collecte des titres financiers via RSS et peut les synthétiser avec une IA si un fournisseur est configuré.\n"
             "Utilise /news pour obtenir une synthèse des dernières nouvelles.\n"
-            "La collecte planifiée en arrière-plan sera ajoutée dans une prochaine étape."
+            "ATLAS gère un portefeuille fictif consultable avec /atlas, /positions et /trades."
         )
     elif command == "/help":
         reply = (
@@ -343,9 +364,20 @@ def telegram_webhook():
             "/help — afficher cette aide\n"
             "/news — synthèse des actualités financières\n"
             "/news Oracle — recherche ciblée\n"
-            "/status — vérifier que le bot répond\n\n"
+            "/status — vérifier que le bot répond\n"
+            "/atlas — portefeuille fictif et résultat\n"
+            "/positions — positions simulées\n"
+            "/trades — dernières opérations fictives\n\n"
             "La synthèse IA nécessite la configuration d'un fournisseur compatible. Sans clé, le bot propose un digest transparent basé sur les titres."
         )
+    elif command == "/atlas":
+        reply = format_snapshot()
+    elif command == "/positions":
+        state = snapshot()
+        reply = "Aucune position fictive pour le moment." if not state["positions"] else "📊 POSITIONS ATLAS (simulation)\n" + "\n".join("{} : {:.6g} unité(s), valeur {:.2f} €, résultat latent {:+.2f} €".format(p["symbol"], p["quantity"], p["market_value"], p["pnl"]) for p in state["positions"])
+    elif command == "/trades":
+        state = snapshot()
+        reply = "Aucune opération fictive enregistrée." if not state["trades"] else "🧾 DERNIÈRES OPÉRATIONS ATLAS\n" + "\n".join("{} {} {:.6g} {} à {:.2f} € — {}".format(t["at"][:16].replace("T", " "), t["side"], t["quantity"], t["symbol"], t["price"], t["reason"]) for t in state["trades"][:8])
     elif command == "/news":
         reply = format_news_message(topic)
     elif command == "/status":
