@@ -52,6 +52,9 @@ def connect():
             UNIQUE(symbol, as_of)
         );
         ALTER TABLE atlas_signals ADD COLUMN IF NOT EXISTS as_of TEXT;
+        ALTER TABLE atlas_signals ADD COLUMN IF NOT EXISTS return_1d DOUBLE PRECISION;
+        ALTER TABLE atlas_signals ADD COLUMN IF NOT EXISTS return_3d DOUBLE PRECISION;
+        ALTER TABLE atlas_signals ADD COLUMN IF NOT EXISTS return_7d DOUBLE PRECISION;
         CREATE UNIQUE INDEX IF NOT EXISTS atlas_signals_symbol_asof_idx ON atlas_signals(symbol, as_of);
         """)
         cur.execute(
@@ -111,17 +114,78 @@ def record_price(symbol, price, as_of=None):
 
 
 def record_signal(symbol, signal, as_of):
-    """Store one observation per market bar for later out-of-sample evaluation."""
-    db=connect()
+    """Store one observation per market bar and score matured 1/3/7-day outcomes."""
+    db = connect()
     try:
         with db.cursor() as cur:
+            current_price = float(signal["price"])
+            current_date = str(as_of)
             cur.execute(
-                "INSERT INTO atlas_signals(at,symbol,as_of,price,score,momentum5,momentum20,rsi,volatility20) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s) ON CONFLICT(symbol,as_of) DO NOTHING",
-                (now(), symbol, str(as_of), float(signal["price"]), int(signal["score"]),
+                "INSERT INTO atlas_signals(at,symbol,as_of,price,score,momentum5,momentum20,rsi,volatility20) "
+                "VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s) ON CONFLICT(symbol,as_of) DO NOTHING",
+                (now(), symbol, current_date, current_price, int(signal["score"]),
                  float(signal["momentum5"]), float(signal["momentum20"]),
                  float(signal["rsi"]), float(signal["volatility20"])),
             )
+            cur.execute(
+                "SELECT id, as_of, price, return_1d, return_3d, return_7d "
+                "FROM atlas_signals WHERE symbol=%s AND "
+                "(return_1d IS NULL OR return_3d IS NULL OR return_7d IS NULL)",
+                (symbol,),
+            )
+            pending = cur.fetchall()
+            try:
+                current_dt = datetime.fromisoformat(current_date.replace("Z", "+00:00"))
+                if current_dt.tzinfo is None:
+                    current_dt = current_dt.replace(tzinfo=timezone.utc)
+            except ValueError:
+                current_dt = datetime.now(timezone.utc)
+            for row in pending:
+                try:
+                    signal_dt = datetime.fromisoformat(str(row["as_of"]).replace("Z", "+00:00"))
+                    if signal_dt.tzinfo is None:
+                        signal_dt = signal_dt.replace(tzinfo=timezone.utc)
+                    age_days = (current_dt - signal_dt).total_seconds() / 86400
+                except ValueError:
+                    continue
+                if age_days < 0:
+                    continue
+                values = {}
+                for horizon in (1, 3, 7):
+                    column = "return_{}d".format(horizon)
+                    if age_days >= horizon and row[column] is None:
+                        values[column] = (current_price / float(row["price"]) - 1.0) * 100.0
+                if values:
+                    assignments = ", ".join("{}=%s".format(col) for col in values)
+                    cur.execute(
+                        "UPDATE atlas_signals SET {} WHERE id=%s".format(assignments),
+                        tuple(values.values()) + (row["id"],),
+                    )
         db.commit()
+    finally:
+        db.close()
+
+
+def signal_performance():
+    """Return historical signal outcome summaries by horizon."""
+    db = connect()
+    try:
+        result = {}
+        with db.cursor() as cur:
+            for horizon in (1, 3, 7):
+                column = "return_{}d".format(horizon)
+                cur.execute(
+                    "SELECT COUNT(*) AS n, AVG({0}) AS avg_return, "
+                    "SUM(CASE WHEN {0} > 0 THEN 1 ELSE 0 END) AS positive "
+                    "FROM atlas_signals WHERE {0} IS NOT NULL".format(column)
+                )
+                row = cur.fetchone()
+                result[horizon] = {
+                    "count": int(row["n"] or 0),
+                    "avg_return": float(row["avg_return"] or 0.0),
+                    "positive": int(row["positive"] or 0),
+                }
+        return result
     finally:
         db.close()
 
