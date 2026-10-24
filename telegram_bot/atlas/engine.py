@@ -10,7 +10,6 @@ import yfinance as yf
 
 import concurrent.futures
 import os
-import re
 import requests
 
 AI_API_KEY = os.getenv("AI_API_KEY", "").strip()
@@ -54,8 +53,8 @@ def council_vote(symbol, name, signal, held):
             )
             response.raise_for_status()
             answer = response.json()["choices"][0]["message"]["content"].strip().upper()
-            match = re.match(r"^\s*(BUY|SELL|WAIT)\b", answer)
-            return match.group(1) if match else "WAIT"
+            first_word = answer.split()[0] if answer.split() else ""
+            return first_word if first_word in ("BUY", "SELL", "WAIT") else "WAIT"
         except Exception:
             log.exception("ATLAS council reviewer failed: %s", role_name)
             return "WAIT"
