@@ -406,16 +406,16 @@ def telegram_webhook():
                     "Style : naturel, comme un analyste qui explique à un client. Utilise 2 à 5 petits paragraphes lisibles, des phrases complètes et des transitions. Pas de lignes de commande, pas de pseudo-code, pas de listes interminables ni de jargon brut. Évite le Markdown : aucun astérisque pour le gras ou l'italique, aucun titre avec #, aucun bloc de code. Utilise une mise en forme simple et des retours à la ligne normaux. "
                     "Valeurs suivies : Oracle (ORCL), NVIDIA (NVDA), Scholar Rock (SRRK), Sionna Therapeutics (SION), Innventure (INV) et SpaceX, entreprise privée non cotée. "
                     "Pour une question boursière, réponds précisément à la question posée. Si 'rentrer sur le marché' est ambigu, demande si la personne parle de l'introduction en Bourse historique ou du moment où acheter l'action. "
-                    "Explique les éléments favorables, les risques et ce qui pourrait changer l'analyse. Utilise les actualités fournies et cite leurs liens, mais précise que tu n'as que les titres ou extraits lorsque c'est le cas. "
+                    "Utilise les actualités fournies uniquement pour éclairer la réponse. Ne recopie jamais les URL brutes, les liens Google News/RSS ou les balises Markdown. Si une source est utile, cite seulement le nom du média et le titre de l’article, sans URL. Précise quand tu ne disposes que des titres ou extraits. "
                     "N'invente jamais de cours en direct, de chiffres, de sources ou de probabilités. Pour une prévision, donne si utile des scénarios baissier, central et haussier avec un horizon temporel clair. Les probabilités chiffrées doivent être présentées comme des estimations très approximatives, avec hypothèses explicites ; si les données sont insuffisantes, refuse d'inventer un pourcentage. "
                     "Une analyse peut aider à décider mais ne garantit pas un résultat. Ne prétends pas connaître la situation financière ou la tolérance au risque de l'utilisateur et ne présente pas une estimation comme un conseil personnalisé certain. Pour les questions générales, réponds naturellement en français."
                 )
-                prompt = "Message utilisateur : " + text + "\\nActualités récentes récupérées :\\n" + context
+                prompt = "Réponds exclusivement en français naturel, avec des phrases complètes et 2 à 5 paragraphes courts. Ne renvoie jamais de liens bruts, d’URL, de flux RSS, de Markdown ni de texte technique. Si les actualités ci-dessous sont en anglais, résume-les et explique-les en français au lieu de les recopier.\n\nMessage utilisateur : " + text + "\n\nActualités récentes récupérées :\n" + context
                 response = requests.post(AI_BASE_URL + "/chat/completions", headers={"Authorization": "Bearer " + AI_API_KEY, "Content-Type": "application/json"}, json={"model": AI_MODEL, "messages": [{"role": "system", "content": system_prompt}, {"role": "user", "content": prompt}], "temperature": 0.2, "max_tokens": 650}, timeout=AI_TIMEOUT)
                 response.raise_for_status()
                 reply = clean_ai_text(response.json()["choices"][0]["message"]["content"])
                 if found:
-                    reply += "\\n\\nSources :\\n" + "\\n".join("- " + a["title"] + " — " + a["link"] for a in found[:5])
+                    reply += "\n\nArticles consultés : " + " ; ".join(a["title"] + " (" + a["source"] + ")" for a in found[:3])
             except Exception:
                 logging.exception("Conversational AI request failed")
                 reply = "Je n’arrive pas à joindre le modèle IA pour le moment. Réessaie dans quelques minutes."
