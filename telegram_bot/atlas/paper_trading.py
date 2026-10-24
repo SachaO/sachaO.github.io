@@ -9,6 +9,7 @@ STARTING_CASH = float(os.getenv("ATLAS_STARTING_CASH", "10000"))
 WATCHLIST = {
     "ORCL": "Oracle", "NVDA": "NVIDIA", "SPY": "S&P 500 ETF",
     "QQQ": "Nasdaq-100 ETF", "BTC-USD": "Bitcoin", "ETH-USD": "Ethereum",
+    "SOL-USD": "Solana", "XRP-USD": "XRP",
 }
 MAX_POSITION_FRACTION = 0.15
 MAX_TRADE_FRACTION = 0.05
@@ -56,6 +57,18 @@ def connect():
             status TEXT NOT NULL,
             summary TEXT NOT NULL
         );
+        CREATE TABLE IF NOT EXISTS atlas_signals (
+            id BIGSERIAL PRIMARY KEY,
+            at TEXT NOT NULL,
+            symbol TEXT NOT NULL,
+            price DOUBLE PRECISION NOT NULL,
+            score INTEGER NOT NULL,
+            momentum5 DOUBLE PRECISION NOT NULL,
+            momentum20 DOUBLE PRECISION NOT NULL,
+            rsi DOUBLE PRECISION NOT NULL,
+            volatility20 DOUBLE PRECISION NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS atlas_signals_symbol_at_idx ON atlas_signals(symbol, at);
         """)
         cur.execute(
             "INSERT INTO atlas_account(id,cash,created_at) VALUES(1,%s,%s) ON CONFLICT(id) DO NOTHING",
@@ -107,6 +120,22 @@ def record_price(symbol, price, as_of=None):
             cur.execute(
                 "INSERT INTO atlas_prices(symbol,price,as_of) VALUES(%s,%s,%s) ON CONFLICT(symbol) DO UPDATE SET price=EXCLUDED.price,as_of=EXCLUDED.as_of",
                 (symbol,float(price),as_of or now()),
+            )
+        db.commit()
+    finally:
+        db.close()
+
+
+def record_signal(symbol, signal):
+    """Persist signals so later evaluation can measure which signals worked."""
+    db=connect()
+    try:
+        with db.cursor() as cur:
+            cur.execute(
+                "INSERT INTO atlas_signals(at,symbol,price,score,momentum5,momentum20,rsi,volatility20) VALUES(%s,%s,%s,%s,%s,%s,%s,%s)",
+                (now(), symbol, float(signal["price"]), int(signal["score"]),
+                 float(signal["momentum5"]), float(signal["momentum20"]),
+                 float(signal["rsi"]), float(signal["volatility20"])),
             )
         db.commit()
     finally:
