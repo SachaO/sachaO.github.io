@@ -1,0 +1,21 @@
+name: ATLAS paper trading cycle
+
+on:
+  schedule:
+    - cron: "23 */6 * * *"
+  workflow_dispatch:
+
+jobs:
+  run-atlas:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run one ATLAS paper-trading cycle
+        env:
+          PUBLIC_URL: ${{ secrets.TRADING_BOT_PUBLIC_URL }}
+          ALERTS_CRON_SECRET: ${{ secrets.ALERTS_CRON_SECRET }}
+        run: |
+          test -n "$PUBLIC_URL"
+          test -n "$ALERTS_CRON_SECRET"
+          curl --fail --silent --show-error --max-time 120 \
+            -X POST "${PUBLIC_URL%/}/atlas-cycle" \
+            -H "X-Alert-Secret: $ALERTS_CRON_SECRET"
