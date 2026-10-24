@@ -427,7 +427,7 @@ def atlas_cycle_endpoint():
         if result["errors"]:
             lines.append("Erreurs : " + "; ".join(result["errors"][:4]))
         state = result["portfolio"]
-        lines.append("Portefeuille fictif : {:.2f} € ({:+.2f} € / {:+.2f} %)".format(state["equity"], state["pnl"], state["return_pct"]))
+        lines.append("Portefeuille fictif : {:.2f} USD ({:+.2f} USD / {:+.2f} %)".format(state["equity"], state["pnl"], state["return_pct"]))
         send_message(TELEGRAM_CHAT_ID, "\n".join(lines))
     return {"status": "ok", "updated": result["updated"], "decisions": len(result["decisions"]), "errors": result["errors"]}, 200
 
@@ -476,10 +476,10 @@ def telegram_webhook():
         reply = format_snapshot()
     elif command == "/positions":
         state = snapshot()
-        reply = "Aucune position fictive pour le moment." if not state["positions"] else "📊 POSITIONS ATLAS (simulation)\n" + "\n".join("{} : {:.6g} unité(s), valeur {:.2f} €, résultat latent {:+.2f} €".format(p["symbol"], p["quantity"], p["market_value"], p["pnl"]) for p in state["positions"])
+        reply = "Aucune position fictive pour le moment." if not state["positions"] else "📊 POSITIONS ATLAS (simulation)\n" + "\n".join("{} : {:.6g} unité(s), valeur {:.2f} USD, résultat latent {:+.2f} USD".format(p["symbol"], p["quantity"], p["market_value"], p["pnl"]) for p in state["positions"])
     elif command == "/trades":
         state = snapshot()
-        reply = "Aucune opération fictive enregistrée." if not state["trades"] else "🧾 DERNIÈRES OPÉRATIONS ATLAS\n" + "\n".join("{} {} {:.6g} {} à {:.2f} € — {}".format(t["at"][:16].replace("T", " "), t["side"], t["quantity"], t["symbol"], t["price"], t["reason"]) for t in state["trades"][:8])
+        reply = "Aucune opération fictive enregistrée." if not state["trades"] else "🧾 DERNIÈRES OPÉRATIONS ATLAS\n" + "\n".join("{} {} {:.6g} {} à {:.4f} USD — {}".format(t["at"][:16].replace("T", " "), t["side"], t["quantity"], t["symbol"], t["price"], t["reason"]) for t in state["trades"][:8])
     elif command == "/news":
         reply = format_news_message(topic)
     elif command == "/status":
