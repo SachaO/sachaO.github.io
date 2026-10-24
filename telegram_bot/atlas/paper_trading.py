@@ -152,7 +152,7 @@ def paper_order(symbol, side, quantity, price, reason, fee_rate=0.001):
                 )
                 cur.execute(
                     "INSERT INTO atlas_trades(at,symbol,side,quantity,price,fee,reason,strategy) VALUES(%s,%s,%s,%s,%s,%s,%s,%s)",
-                    (now(),symbol,side,quantity,price,fee,reason,"ATLAS-baseline-v1"),
+                    (now(),symbol,side,quantity,price,fee,reason,"ATLAS-consensus-v2"),
                 )
     finally:
         db.close()
@@ -170,9 +170,9 @@ def cycle_record(status, summary):
 
 def format_snapshot():
     s=snapshot()
-    lines=["🤖 ATLAS — portefeuille fictif","Capital initial : {:.2f} €".format(s["starting_cash"]),"Valeur estimée : {:.2f} €".format(s["equity"]),"Résultat total : {:+.2f} € ({:+.2f} %)".format(s["pnl"],s["return_pct"]),"Liquidités : {:.2f} €".format(s["cash"]),"Positions :"]
+    lines=["🤖 ATLAS — portefeuille fictif","Capital initial : {:.2f} USD".format(s["starting_cash"]),"Valeur estimée : {:.2f} USD".format(s["equity"]),"Résultat total : {:+.2f} USD ({:+.2f} %)".format(s["pnl"],s["return_pct"]),"Liquidités : {:.2f} USD".format(s["cash"]),"Positions :"]
     if not s["positions"]: lines.append("Aucune position pour le moment.")
     for p in s["positions"]:
-        lines.append("{} : {:.6g} unité(s), valeur {:.2f} €, résultat latent {:+.2f} €".format(p["symbol"],p["quantity"],p["market_value"],p["pnl"]))
+        lines.append("{} : {:.6g} unité(s), valeur {:.2f} USD, résultat latent {:+.2f} USD".format(p["symbol"],p["quantity"],p["market_value"],p["pnl"]))
     lines.append("\nMode simulation uniquement : aucun ordre réel n'est envoyé.")
     return "\n".join(lines)
