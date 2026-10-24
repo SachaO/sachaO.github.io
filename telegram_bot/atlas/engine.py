@@ -1,7 +1,7 @@
 """ATLAS balanced multi-signal paper-trading strategy.
 
-All orders are simulated. Signals are deliberately explainable and are not
-trained or optimized on future data. Historical prices may be delayed.
+All orders are simulated. Signal observations are saved for later evaluation;
+this is not yet an online-learning model. Historical prices may be delayed.
 """
 import logging
 from datetime import datetime, timezone
@@ -10,7 +10,7 @@ import yfinance as yf
 
 from .paper_trading import (
     WATCHLIST, MAX_TRADE_FRACTION, MAX_POSITION_FRACTION,
-    snapshot, record_price, paper_order, cycle_record,
+    snapshot, record_price, record_signal, paper_order, cycle_record,
 )
 
 log = logging.getLogger(__name__)
@@ -48,7 +48,6 @@ def analyse_signal(close, volume=None):
     price = float(close.iloc[-1])
     sma20 = float(close.tail(20).mean())
     sma50 = float(close.tail(50).mean())
-    sma20_prev = float(close.iloc[-6:-1].mean())
     momentum5 = price / float(close.iloc[-6]) - 1
     momentum20 = price / float(close.iloc[-21]) - 1
     returns = close.pct_change().dropna()
@@ -95,7 +94,7 @@ def analyse_signal(close, volume=None):
 
 
 def run_cycle():
-    """Refresh all configured assets and execute balanced simulated orders."""
+    """Refresh configured assets, persist signals and execute simulated orders."""
     updates, decisions, errors = 0, [], []
     for symbol, name in WATCHLIST.items():
         try:
@@ -111,6 +110,7 @@ def run_cycle():
                 continue
             as_of = str(close.index[-1])
             record_price(symbol, price, as_of)
+            record_signal(symbol, signal, as_of)
             updates += 1
 
             state = snapshot()
@@ -121,7 +121,7 @@ def run_cycle():
             score = signal["score"]
             rationale = signal["rationale"]
 
-            # Hard risk exit: close a simulated position if it falls 8% below its average cost.
+            # The stop is checked against the latest available daily close, not intraday ticks.
             stop_hit = held > 1e-8 and avg_cost > 0 and price <= avg_cost * (1 - STOP_LOSS_FRACTION)
             if held > 1e-8 and (stop_hit or score <= SELL_SCORE):
                 reason = (
@@ -131,9 +131,8 @@ def run_cycle():
                 paper_order(symbol, "SELL", held, price, reason, FEE_RATE)
                 decisions.append("VENTE SIMULÉE {} : {:.6g} à {:.4f} USD — {}".format(symbol, held, price, reason))
             elif held <= 1e-8 and score >= MIN_BUY_SCORE and state["cash"] > 10:
-                # Each new position is small; the ledger independently enforces the hard cap.
+                # Crypto remains subject to smaller budgets when daily volatility is elevated.
                 budget = min(float(state["cash"]) * 0.20, equity * MAX_TRADE_FRACTION)
-                # Lower risk budget for unusually volatile assets, especially crypto.
                 if signal["volatility20"] > 0.05:
                     budget *= 0.5
                 remaining_capacity = max(0.0, equity * MAX_POSITION_FRACTION)
