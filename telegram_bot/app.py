@@ -96,7 +96,7 @@ def format_ai_html(text):
     text = re.sub(r"\*\*(.+?)\*\*", r"<b>\1</b>", text)
     text = re.sub(r"(?<!\*)\*([^*\n]+)\*(?!\*)", r"<i>\1</i>", text)
     text = re.sub(r"(?m)^#{1,3}\s+(.+)$", r"<b>\1</b>", text)
-    return text.replace("\n", "<br>")
+    return text
 
 def search_rss_news(topic=""):
     """Fetch current financial headlines from Google News RSS search results."""
