@@ -159,6 +159,74 @@ def search_rss_news(topic=""):
     return articles
 
 
+def get_market_snapshot(symbol):
+    """Build a compact technical snapshot from recent daily Yahoo Finance prices."""
+    import yfinance as yf
+
+    try:
+        frame = yf.download(symbol, period="6mo", interval="1d", auto_adjust=True, progress=False, threads=False)
+        if frame is None or frame.empty or "Close" not in frame:
+            return "Données de marché indisponibles pour le moment."
+
+        close = frame["Close"]
+        if hasattr(close, "columns"):
+            close = close.iloc[:, 0]
+        close = close.dropna()
+        if len(close) < 50:
+            return "Historique de prix trop court pour calculer des tendances fiables."
+
+        last = float(close.iloc[-1])
+        prev = float(close.iloc[-2])
+        ret_5d = (last / float(close.iloc[-6]) - 1) * 100 if len(close) >= 6 else None
+        ret_1m = (last / float(close.iloc[-22]) - 1) * 100 if len(close) >= 22 else None
+        ret_3m = (last / float(close.iloc[-64]) - 1) * 100 if len(close) >= 64 else None
+        sma20 = float(close.tail(20).mean())
+        sma50 = float(close.tail(50).mean())
+        high_3m = float(close.tail(min(63, len(close))).max())
+        low_3m = float(close.tail(min(63, len(close))).min())
+        if last > sma20 > sma50:
+            trend = "haussière selon le cours et les moyennes mobiles 20/50 jours"
+        elif last < sma20 < sma50:
+            trend = "baissière selon le cours et les moyennes mobiles 20/50 jours"
+        else:
+            trend = "mixte ou en consolidation selon les moyennes mobiles 20/50 jours"
+
+        def pct(value):
+            return "indisponible" if value is None else "{:+.2f} %".format(value)
+
+        return (
+            "Indicateurs calculés à partir des dernières clôtures quotidiennes disponibles (Yahoo Finance ; "
+            "données potentiellement différées). Dernière clôture : {:.2f} USD. "
+            "Variation quotidienne : {:+.2f} %. Variation 5 séances : {}. Variation environ 1 mois : {}. "
+            "Variation environ 3 mois : {}. Moyenne mobile 20 séances : {:.2f} USD ; "
+            "moyenne mobile 50 séances : {:.2f} USD. Plus haut/bas environ 3 mois : {:.2f}/{:.2f} USD. "
+            "Lecture technique indicative : tendance {}."
+        ).format(last, (last / prev - 1) * 100 if prev else 0, pct(ret_5d), pct(ret_1m), pct(ret_3m), sma20, sma50, high_3m, low_3m, trend)
+    except Exception:
+        logging.exception("Market data lookup failed for %s", symbol)
+        return "Impossible de récupérer les indicateurs de marché à cet instant."
+
+
+def market_symbols_for_text(text):
+    lowered = text.lower()
+    mapping = {
+        "Oracle": ("ORCL", ["oracle", "orcl"]),
+        "NVIDIA": ("NVDA", ["nvidia", "nvda"]),
+        "SPY (marché américain)": ("SPY", ["s&p 500", "s&p500", "spy", "marché américain", "marchés américains"]),
+        "Nasdaq 100 (QQQ)": ("QQQ", ["nasdaq", "qqq"]),
+        "Bitcoin": ("BTC-USD", ["bitcoin", "btc"]),
+        "Ethereum": ("ETH-USD", ["ethereum", "eth"]),
+        "Scholar Rock": ("SRRK", ["scholar rock", "srrk"]),
+        "Sionna Therapeutics": ("SION", ["sionna therapeutics", "sion"]),
+        "Innventure": ("INV", ["innventure", "inv"]),
+    }
+    found = []
+    for name, (symbol, terms) in mapping.items():
+        if any(term in lowered for term in terms):
+            found.append((name, symbol))
+    return found
+
+
 def fallback_synthesis(articles, topic=""):
     """A transparent title-based digest when no AI API key is configured."""
     if not articles:
@@ -398,7 +466,11 @@ def telegram_webhook():
                     if any(term in lowered for term in terms):
                         query = name + (" SRRK" if name == "Scholar Rock" else " SION" if name == "Sionna Therapeutics" else " INV" if name == "Innventure" else " ORCL" if name == "Oracle" else " NVDA" if name == "NVIDIA" else "")
                         found.extend(search_rss_news(query)[:3])
-                context = "\\n".join("- " + a["title"] + " (" + a["source"] + "): " + a["link"] for a in found) or "Aucune actualité RSS spécifique récupérée."
+                context = "\\n".join("- " + a["title"] + " (" + a["source"] + ", " + a["published"] + ")" for a in found) or "Aucune actualité RSS spécifique récupérée."
+                market_items = market_symbols_for_text(text)
+                market_context = "\\n".join(name + " (" + symbol + ") : " + get_market_snapshot(symbol) for name, symbol in market_items)
+                if market_context:
+                    context += "\\n\\nDONNÉES DE MARCHÉ :\\n" + market_context
                 system_prompt = (
                     "Tu es TRADING_AI_ALERTES, assistant conversationnel francophone spécialisé dans l'actualité et l'analyse des marchés. Par défaut, pour toute question liée à une entreprise ou à un actif financier, fournis spontanément une analyse financière développée en français, sans attendre que l'utilisateur précise le format. Organise la réponse en 5 à 7 paragraphes courts et lisibles, avec des phrases complètes et des transitions naturelles. Analyse le contexte général du marché et du secteur, la tendance du titre (haussière, baissière ou neutre/en consolidation), les actualités et catalyseurs importants, les facteurs favorables et défavorables, les risques majeurs, les perspectives à moyen terme avec scénarios haussier, central et baissier, puis les indicateurs ou événements à surveiller. Distingue le court terme du moyen terme lorsque les données le permettent et explique pourquoi les éléments cités pourraient influencer le cours. Distingue toujours les faits confirmés, les interprétations et les hypothèses. Ne qualifie jamais une tendance de haussière ou baissière sans données de marché suffisamment récentes : si tu ne disposes que de titres d'actualité, indique explicitement que tu ne peux pas confirmer la tendance du cours. N'invente ni cours en direct, ni performance, ni indicateur technique, ni chiffre, ni probabilité. Si tu ne disposes pas de données fiables sur les prix ou les graphiques, dis-le clairement et limite-toi à une analyse fondamentale des informations disponibles. Ne donne pas de recommandation d'achat ou de vente présentée comme certaine. Pour les questions qui ne concernent pas la finance, réponds normalement et directement. "
                     "RÈGLE ABSOLUE : toute la réponse doit être rédigée en français naturel. Même si les sources, les titres ou la question contiennent de l'anglais, explique leur contenu en français. Seuls les noms propres, les noms d'entreprises et les tickers peuvent rester en anglais. Avant de répondre, vérifie que chaque phrase est en français et traduis toute phrase anglaise. "
