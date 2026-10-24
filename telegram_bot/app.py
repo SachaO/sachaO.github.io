@@ -422,13 +422,40 @@ def atlas_cycle_endpoint():
         abort(403)
     result = run_cycle()
     if TELEGRAM_CHAT_ID:
-        lines = ["🤖 ATLAS — cycle terminé", "Cours actualisés : {}".format(result["updated"])]
-        lines.extend(result["decisions"][:8])
-        if result["errors"]:
-            lines.append("Erreurs : " + "; ".join(result["errors"][:4]))
         state = result["portfolio"]
-        lines.append("Portefeuille fictif : {:.2f} USD ({:+.2f} USD / {:+.2f} %)".format(state["equity"], state["pnl"], state["return_pct"]))
-        send_message(TELEGRAM_CHAT_ID, "\n".join(lines))
+        decisions = result["decisions"][:8]
+        lines = [
+            "🤖 <b>ATLAS · RAPPORT DE MARCHÉ</b>",
+            "━━━━━━━━━━━━━━━━━━",
+            "🔄 <b>Cours actualisés :</b> {}/{}".format(result["updated"], len(__import__("atlas.paper_trading", fromlist=["WATCHLIST"]).WATCHLIST)),
+            "💼 <b>Portefeuille fictif</b>",
+            "Valeur : <b>{:,.2f} USD</b>".format(state["equity"]).replace(",", " "),
+            "Résultat : <b>{:+,.2f} USD ({:+.2f} %)</b>".format(state["pnl"], state["return_pct"]).replace(",", " "),
+            "Liquidités : {:,.2f} USD".format(state["cash"]).replace(",", " "),
+            "",
+            "📊 <b>ANALYSE DES ACTIFS</b>",
+        ]
+        for decision in decisions:
+            safe = html.escape(decision, quote=False)
+            # Mettre le symbole ou le nom de l'actif en évidence, sans modifier la décision.
+            if " : " in decision:
+                label, detail = decision.split(" : ", 1)
+                safe = "<b>{}</b> · {}".format(html.escape(label, quote=False), html.escape(detail, quote=False))
+            elif " (" in decision:
+                label, detail = decision.split(" (", 1)
+                safe = "<b>{}</b> · {}".format(html.escape(label, quote=False), html.escape("(" + detail, quote=False))
+            if "ACHAT SIMULÉ" in decision:
+                safe = "🟢 " + safe
+            elif "VENTE SIMULÉE" in decision:
+                safe = "🔴 " + safe
+            elif "ATTENTE" in decision or "CONSERVATION" in decision:
+                safe = "⚪ " + safe
+            lines.append(safe)
+        if result["errors"]:
+            lines.extend(["", "⚠️ <b>À VÉRIFIER</b>"])
+            lines.extend("• " + html.escape(error, quote=False) for error in result["errors"][:4])
+        lines.extend(["", "━━━━━━━━━━━━━━━━━━", "🧪 <i>Simulation uniquement · Aucun ordre réel</i>"])
+        send_message(TELEGRAM_CHAT_ID, "\n".join(lines), parse_mode="HTML")
     return {"status": "ok", "updated": result["updated"], "decisions": len(result["decisions"]), "errors": result["errors"]}, 200
 
 
