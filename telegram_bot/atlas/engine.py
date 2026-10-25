@@ -51,7 +51,7 @@ def council_vote(symbol, name, signal, held):
             + ("RÈGLE ABSOLUE : aucune position n'est détenue, donc SELL est interdit ; choisis BUY ou WAIT. " if not held else "Une position est détenue : SELL est autorisé seulement si les éléments le justifient. ")
             + "Réponds en commençant par un seul mot parmi BUY, SELL, WAIT."
         )
-        for attempt in (1, 2):
+        for attempt in (1, 2, 3):
             try:
                 response = requests.post(
                     AI_BASE_URL + "/chat/completions",
@@ -78,16 +78,17 @@ def council_vote(symbol, name, signal, held):
                         "ATLAS council reviewer empty response: symbol=%s role=%s attempt=%s finish_reason=%s",
                         symbol, role_name, attempt, choice.get("finish_reason", "missing"),
                     )
-                    if attempt == 1:
+                    if attempt < 3:
                         continue
                     return ("WAIT", False)
-                first_word = answer.strip().upper().split()[0].strip(".,:;!?")
-                if first_word not in ("BUY", "SELL", "WAIT"):
+                tokens = [token.strip(".,:;!?()[]{}") for token in answer.strip().upper().split()]
+                first_word = next((token for token in tokens if token in ("BUY", "SELL", "WAIT")), "")
+                if not first_word:
                     log.warning(
                         "ATLAS council reviewer invalid vote: symbol=%s role=%s attempt=%s",
                         symbol, role_name, attempt,
                     )
-                    if attempt == 1:
+                    if attempt < 3:
                         continue
                     return ("WAIT", False)
                 if first_word == "SELL" and not held:
@@ -97,7 +98,7 @@ def council_vote(symbol, name, signal, held):
                 return (first_word, True)
             except Exception:
                 log.exception("ATLAS council reviewer failed: symbol=%s role=%s attempt=%s", symbol, role_name, attempt)
-                if attempt == 2:
+                if attempt == 3:
                     return ("WAIT", False)
         return ("WAIT", False)
     log.info("ATLAS council started symbol=%s model=%s reviewers=%s",
