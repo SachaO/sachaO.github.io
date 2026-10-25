@@ -259,15 +259,24 @@ def run_cycle():
     """Discover a bounded global candidate universe, then analyse and paper-trade only."""
     updates, decisions, errors = 0, [], []
     universe = dict(WATCHLIST)
+    discovered = []
     try:
         discovered = discover_assets()
+        candidates = []
         for asset in discovered:
             symbol = asset.get("symbol", "")
             name = asset.get("name") or symbol
-            if symbol and symbol not in universe:
-                universe[symbol] = name
-        log.info("ATLAS cycle universe: %s total assets (including %s discovered)",
-                 len(universe), len([a for a in discovered if a.get("symbol") not in WATCHLIST]))
+            if symbol and symbol not in WATCHLIST:
+                candidates.append((symbol, name))
+        # Rotate through candidates each scheduled cycle to limit provider requests.
+        batch_size = max(10, min(100, int(os.getenv("ATLAS_DISCOVERY_BATCH_SIZE", "30"))))
+        if candidates:
+            cycle_number = int(datetime.now(timezone.utc).timestamp() // 3600)
+            offset = (cycle_number * batch_size) % len(candidates)
+            rotated = candidates[offset:] + candidates[:offset]
+            universe.update(dict(rotated[:min(batch_size, len(candidates))]))
+        log.info("ATLAS discovery universe=%s candidates=%s scanned_this_cycle=%s",
+                 len(discovered), len(candidates), len(universe) - len(WATCHLIST))
     except Exception:
         log.exception("ATLAS discovery failed; using configured watchlist only")
     for symbol, name in universe.items():
@@ -346,5 +355,6 @@ def run_cycle():
     cycle_record("ok" if updates and not errors else "partial" if updates else "error", summary)
     return {
         "updated": updates, "decisions": decisions, "errors": errors,
+        "discovered_candidates": len(discovered), "scanned_assets": len(universe),
         "as_of": datetime.now(timezone.utc).isoformat(), "portfolio": snapshot(),
     }
