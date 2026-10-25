@@ -34,7 +34,7 @@ def _council_config(role_key):
 
 
 def council_vote(symbol, name, signal, held):
-    """Ask five separately configured model endpoints; failures never authorize orders."""
+    """Ask five role-specific AI votes; models may be shared across roles, and failures never authorize orders."""
     configs = {role[0]: _council_config(role[0]) for role in COUNCIL_ROLES}
     missing = []
     for role_key, role_name, _ in COUNCIL_ROLES:
@@ -45,9 +45,11 @@ def council_vote(symbol, name, signal, held):
             missing.append("ATLAS_AI_" + role_key + "_BASE_URL or AI_BASE_URL")
         if not model:
             missing.append("ATLAS_AI_" + role_key + "_MODEL")
-    models = [configs[role[0]][2] for role in COUNCIL_ROLES if configs[role[0]][2]]
-    if len(models) != len(COUNCIL_ROLES) or len(set(models)) != len(COUNCIL_ROLES):
-        missing.append("five distinct ATLAS_AI_<ROLE>_MODEL values")
+    # Different roles may intentionally use the same model: each receives a
+    # different role-specific prompt. Only missing model IDs should block the council.
+    for role_key, role_name, _ in COUNCIL_ROLES:
+        if not configs[role_key][2]:
+            missing.append("ATLAS_AI_" + role_key + "_MODEL")
     if missing:
         log.warning("ATLAS council unavailable for %s: missing/duplicate role configuration %s",
                     symbol, ",".join(missing))
