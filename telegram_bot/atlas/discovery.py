@@ -65,36 +65,43 @@ def discover_assets():
             log.warning("ATLAS discovery Yahoo screener unavailable (%s): %s", screen_id, str(exc)[:140])
 
     # CoinGecko IDs are used rather than ambiguous SYMBOL-USD tickers.
-    try:
-        response = requests.get(
-            "https://api.coingecko.com/api/v3/coins/markets",
-            params={"vs_currency": "usd", "order": "market_cap_desc", "per_page": 250, "page": crypto_page,
-                    "sparkline": "false"},
-            headers={"User-Agent": "ATLAS-paper-trading/1.0"}, timeout=TIMEOUT,
-        )
-        response.raise_for_status()
-        for coin in response.json():
-            coin_id = str(coin.get("id", "")).strip()
-            name = str(coin.get("name") or coin_id).strip()
-            market_cap = float(coin.get("market_cap") or 0)
-            volume = float(coin.get("total_volume") or 0)
-            if (coin_id and re.fullmatch(r"[a-z0-9-]{1,80}", coin_id)
-                    and market_cap >= CRYPTO_MARKET_CAP_MIN and volume >= CRYPTO_VOLUME_MIN):
-                symbol = "CG:" + coin_id
-                found.setdefault(symbol, {
-                    "symbol": symbol, "name": name, "kind": "crypto",
-                    "source": "CoinGecko", "market_cap_usd": market_cap, "volume_24h_usd": volume,
-                })
-    except Exception as exc:
-        log.warning("ATLAS discovery CoinGecko unavailable: %s", str(exc)[:160])
+    # Two pages expose up to 500 assets; thresholds include smaller but somewhat
+    # liquid projects, not every illiquid or newly created token.
+    for crypto_page in (1, 2):
+        try:
+            response = requests.get(
+                "https://api.coingecko.com/api/v3/coins/markets",
+                params={"vs_currency": "usd", "order": "market_cap_desc", "per_page": 250,
+                        "page": crypto_page, "sparkline": "false"},
+                headers={"User-Agent": "ATLAS-paper-trading/1.0"}, timeout=TIMEOUT,
+            )
+            response.raise_for_status()
+            for coin in response.json():
+                coin_id = str(coin.get("id", "")).strip()
+                name = str(coin.get("name") or coin_id).strip()
+                market_cap = float(coin.get("market_cap") or 0)
+                volume = float(coin.get("total_volume") or 0)
+                if (coin_id and re.fullmatch(r"[a-z0-9-]{1,80}", coin_id)
+                        and market_cap >= CRYPTO_MARKET_CAP_MIN and volume >= CRYPTO_VOLUME_MIN):
+                    symbol = "CG:" + coin_id
+                    found.setdefault(symbol, {
+                        "symbol": symbol, "name": name, "kind": "crypto",
+                        "source": "CoinGecko", "market_cap_usd": market_cap, "volume_24h_usd": volume,
+                    })
+        except Exception as exc:
+            log.warning("ATLAS discovery CoinGecko page %s unavailable: %s", crypto_page, str(exc)[:160])
 
     for symbol, name in FALLBACK_EQUITIES.items():
         found.setdefault(symbol, {"symbol": symbol, "name": name, "kind": "equity_or_etf", "source": "fallback universe"})
 
-    # Keep the first tranche from screeners and add a bounded number of crypto assets.
+    # Keep a broad candidate universe; engine.py rotates the scan batch each cycle.
     equities = [v for v in found.values() if v["kind"] == "equity_or_etf"]
-    cryptos = [v for v in found.values() if v["kind"] == "crypto"]
-    result = equities[:max(5, MAX_ASSETS // 2)] + cryptos[:max(3, MAX_ASSETS // 2)]
+    cryptos = sorted(
+        (v for v in found.values() if v["kind"] == "crypto"),
+        key=lambda asset: (asset.get("volume_24h_usd", 0), asset.get("market_cap_usd", 0)),
+        reverse=True,
+    )
+    result = equities[:MAX_ASSETS // 2] + cryptos[:MAX_ASSETS - min(len(equities), MAX_ASSETS // 2)]
     _CACHE.update({"at": now, "assets": result})
     log.info("ATLAS discovery completed: %s candidates (%s equity/ETF, %s crypto)",
              len(result), sum(a["kind"] == "equity_or_etf" for a in result),
