@@ -55,9 +55,11 @@ def council_vote(symbol, name, signal, held):
             response = requests.post(
                 AI_BASE_URL + "/chat/completions",
                 headers={"Authorization": "Bearer " + AI_API_KEY, "Content-Type": "application/json"},
-                json={"model": AI_MODEL, "messages": [{"role": "user", "content": prompt}],
-                      "temperature": 0.2, "max_tokens": 80},
-                timeout=12,
+                json={"model": AI_MODEL, "messages": [
+                          {"role": "system", "content": "Réponds uniquement par un seul mot : BUY, SELL ou WAIT. Aucune explication."},
+                          {"role": "user", "content": prompt},
+                      ], "temperature": 0.0, "max_tokens": 160},
+                timeout=20,
             )
             response.raise_for_status()
             payload = response.json()
