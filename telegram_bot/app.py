@@ -9,7 +9,7 @@ import feedparser
 import requests
 from flask import Flask, request, abort
 from atlas.paper_trading import format_snapshot, snapshot, signal_performance
-from atlas.engine import run_cycle
+from atlas.engine import run_cycle, get_history, analyse_signal, council_vote
 
 logging.basicConfig(level=logging.INFO)
 app = Flask(__name__)
@@ -54,6 +54,7 @@ def set_commands():
         {"command": "positions", "description": "Voir les positions simulées"},
         {"command": "trades", "description": "Voir les dernières opérations simulées"},
         {"command": "atlasstats", "description": "Évaluer les signaux ATLAS sur 1, 3 et 7 jours"},
+        {"command": "atlastest", "description": "Tester les cinq votes IA sans passer d’ordre"},
     ]
     response = requests.post(f"{API}/setMyCommands", json={"commands": commands}, timeout=15)
     response.raise_for_status()
@@ -498,7 +499,8 @@ def telegram_webhook():
             "/atlas — portefeuille fictif et résultat\n"
             "/positions — positions simulées\n"
             "/trades — dernières opérations fictives\n"
-            "/atlasstats — évaluer les signaux sur 1, 3 et 7 jours\n\n"
+            "/atlasstats — évaluer les signaux sur 1, 3 et 7 jours\n"
+            "/atlastest — tester les cinq votes IA sans ordre simulé\n\n"
             "La synthèse IA nécessite la configuration d'un fournisseur compatible. Sans clé, le bot propose un digest transparent basé sur les titres."
         )
     elif command == "/atlas":
@@ -509,6 +511,38 @@ def telegram_webhook():
     elif command == "/trades":
         state = snapshot()
         reply = "Aucune opération fictive enregistrée." if not state["trades"] else "🧾 DERNIÈRES OPÉRATIONS ATLAS\n" + "\n".join("{} {} {:.6g} {} à {:.4f} USD — {}".format(t["at"][:16].replace("T", " "), t["side"], t["quantity"], t["symbol"], t["price"], t["reason"]) for t in state["trades"][:8])
+    elif command == "/atlastest":
+        if TELEGRAM_CHAT_ID and str(chat_id) != str(TELEGRAM_CHAT_ID):
+            reply = "⛔ Cette commande de diagnostic est réservée à la conversation ATLAS configurée."
+        elif not AI_API_KEY or not AI_MODEL:
+            reply = "⚠️ Test IA impossible : vérifie AI_API_KEY et AI_MODEL dans Render. Aucune valeur de clé ne doit être envoyée dans Telegram."
+        else:
+            try:
+                # Diagnostic volontairement sans paper_order(): aucun ordre ni changement de portefeuille.
+                history = get_history("SPY")
+                if history is None:
+                    reply = "⚠️ Test IA non lancé : historique SPY indisponible. Aucun ordre n'a été passé."
+                else:
+                    close, volume = history
+                    signal = analyse_signal(close, volume)
+                    logging.info("ATLAS manual council diagnostic requested for SPY; no order will be placed.")
+                    votes = council_vote("SPY", "SPY (diagnostic)", signal, False)
+                    reply = (
+                        "🧪 ATLAS · TEST DU CONSEIL IA\n"
+                        "Actif de test : SPY\n"
+                        "Aucun ordre passé ; portefeuille inchangé.\n\n"
+                        "BUY : {buy}/5\nSELL : {sell}/5\nWAIT : {wait}/5\n\n"
+                        "Statut API : {status}\n"
+                        "Modèle configuré : {model}\n\n"
+                        "Les cinq rôles utilisent le même modèle avec des consignes différentes."
+                    ).format(
+                        buy=votes["buy"], sell=votes["sell"], wait=votes["wait"],
+                        status="réponses reçues" if votes["available"] else "configuration incomplète",
+                        model=AI_MODEL,
+                    )
+            except Exception:
+                logging.exception("ATLAS manual council diagnostic failed")
+                reply = "⚠️ Le test du conseil IA a échoué. Consulte les logs Render pour le détail. Aucun ordre n'a été passé."
     elif command == "/atlasstats":
         stats = signal_performance()
         lines = ["📈 ATLAS · ÉVALUATION DES SIGNAUX", "", "Les rendements comparent le prix au moment du signal avec le dernier cours disponible après l'horizon indiqué.", ""]
