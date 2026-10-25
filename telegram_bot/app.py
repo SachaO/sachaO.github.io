@@ -512,8 +512,8 @@ def telegram_webhook():
         state = snapshot()
         reply = "Aucune opération fictive enregistrée." if not state["trades"] else "🧾 DERNIÈRES OPÉRATIONS ATLAS\n" + "\n".join("{} {} {:.6g} {} à {:.4f} USD — {}".format(t["at"][:16].replace("T", " "), t["side"], t["quantity"], t["symbol"], t["price"], t["reason"]) for t in state["trades"][:8])
     elif command == "/atlastest":
-        if TELEGRAM_CHAT_ID and str(chat_id) != str(TELEGRAM_CHAT_ID):
-            reply = "⛔ Cette commande de diagnostic est réservée à la conversation ATLAS configurée."
+        if not TELEGRAM_CHAT_ID or str(chat_id) != str(TELEGRAM_CHAT_ID):
+            reply = "⛔ Test refusé : configure TELEGRAM_CHAT_ID dans Render avec l’identifiant de ta conversation privée, puis réessaie. Cela évite que d’autres personnes déclenchent des appels IA payants."
         elif not AI_API_KEY or not AI_MODEL:
             reply = "⚠️ Test IA impossible : vérifie AI_API_KEY et AI_MODEL dans Render. Aucune valeur de clé ne doit être envoyée dans Telegram."
         else:
