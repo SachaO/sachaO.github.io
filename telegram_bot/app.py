@@ -514,8 +514,6 @@ def telegram_webhook():
     elif command == "/atlastest":
         if not TELEGRAM_CHAT_ID or str(chat_id) != str(TELEGRAM_CHAT_ID):
             reply = "⛔ Test refusé : configure TELEGRAM_CHAT_ID dans Render avec l’identifiant de ta conversation privée, puis réessaie. Cela évite que d’autres personnes déclenchent des appels IA payants."
-        elif not AI_API_KEY or not AI_MODEL:
-            reply = "⚠️ Test IA impossible : vérifie AI_API_KEY et AI_MODEL dans Render. Aucune valeur de clé ne doit être envoyée dans Telegram."
         else:
             try:
                 # Diagnostic sans paper_order(): aucun ordre ni changement de portefeuille.
@@ -555,13 +553,16 @@ def telegram_webhook():
                     "BUY : {buy}/5\nSELL : {sell}/5\nWAIT : {wait}/5\n\n"
                     "Statut API : {status}\n"
                     "Modèle configuré : {model}\n\n"
-                    "Les cinq rôles utilisent le même modèle avec des consignes différentes. "
+                    "Chaque rôle doit avoir un modèle distinct configuré. "
                     "Ce test ne valide pas la disponibilité des cours."
                 ).format(
                     mode=diagnostic_mode,
                     buy=votes["buy"], sell=votes["sell"], wait=votes["wait"],
                     status="5/5 réponses valides" if votes["available"] else "{}/5 réponses valides — voir les logs Render".format(votes.get("successful", 0)),
-                    model=AI_MODEL,
+                    model="; ".join(
+                        role + "=" + (os.environ.get("ATLAS_AI_" + role + "_MODEL", "").strip() or "non configuré")
+                        for role in ("TREND", "RISK", "FUNDAMENTALS", "CONTRARIAN", "MARKET")
+                    ),
                 )
             except Exception:
                 logging.exception("ATLAS manual council diagnostic failed")
