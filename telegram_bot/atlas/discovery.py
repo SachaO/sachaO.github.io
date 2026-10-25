@@ -13,7 +13,7 @@ import requests
 
 log = logging.getLogger(__name__)
 TIMEOUT = 8
-MAX_ASSETS = max(8, min(40, int(os.getenv("ATLAS_DISCOVERY_MAX_ASSETS", "20"))))
+MAX_ASSETS = max(8, min(40, int(os.getenv("ATLAS_DISCOVERY_MAX_ASSETS", "12"))))
 CRYPTO_MARKET_CAP_MIN = float(os.getenv("ATLAS_CRYPTO_MIN_MARKET_CAP_USD", "20000000"))
 CRYPTO_VOLUME_MIN = float(os.getenv("ATLAS_CRYPTO_MIN_VOLUME_USD", "5000000"))
 _CACHE = {"at": 0.0, "assets": []}
