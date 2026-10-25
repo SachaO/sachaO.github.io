@@ -429,7 +429,8 @@ def atlas_cycle_endpoint():
         lines = [
             "🤖 <b>ATLAS · RAPPORT DE MARCHÉ</b>",
             "━━━━━━━━━━━━━━━━━━",
-            "🔄 <b>Cours actualisés :</b> {}/{}".format(result["updated"], len(__import__("atlas.paper_trading", fromlist=["WATCHLIST"]).WATCHLIST)),
+            "🔎 <b>Univers découvert :</b> {} actifs ; analysés ce cycle : {}".format(result.get("discovered_candidates", 0), result.get("scanned_assets", result["updated"])),
+            "🔄 <b>Cours actualisés :</b> {}".format(result["updated"]),
             "💼 <b>Portefeuille fictif</b>",
             "Valeur : <b>{:,.2f} USD</b>".format(state["equity"]).replace(",", " "),
             "Résultat : <b>{:+,.2f} USD ({:+.2f} %)</b>".format(state["pnl"], state["return_pct"]).replace(",", " "),
