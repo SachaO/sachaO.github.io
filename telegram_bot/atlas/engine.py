@@ -51,36 +51,55 @@ def council_vote(symbol, name, signal, held):
             + ("RÈGLE ABSOLUE : aucune position n'est détenue, donc SELL est interdit ; choisis BUY ou WAIT. " if not held else "Une position est détenue : SELL est autorisé seulement si les éléments le justifient. ")
             + "Réponds en commençant par un seul mot parmi BUY, SELL, WAIT."
         )
-        try:
-            response = requests.post(
-                AI_BASE_URL + "/chat/completions",
-                headers={"Authorization": "Bearer " + AI_API_KEY, "Content-Type": "application/json"},
-                json={"model": AI_MODEL, "messages": [
-                          {"role": "system", "content": "Réponds uniquement par un seul mot : BUY, SELL ou WAIT. Aucune explication."},
-                          {"role": "user", "content": prompt},
-                      ], "temperature": 0.0, "max_tokens": 160},
-                timeout=20,
-            )
-            response.raise_for_status()
-            payload = response.json()
-            choices = payload.get("choices") or []
-            message = choices[0].get("message") if choices and isinstance(choices[0], dict) else None
-            answer = message.get("content") if isinstance(message, dict) else None
-            if not isinstance(answer, str) or not answer.strip():
-                log.warning(
-                    "ATLAS council reviewer returned empty/non-text content: symbol=%s role=%s finish_reason=%s",
-                    symbol, role_name, choices[0].get("finish_reason") if choices and isinstance(choices[0], dict) else "missing",
+        for attempt in (1, 2):
+            try:
+                response = requests.post(
+                    AI_BASE_URL + "/chat/completions",
+                    headers={"Authorization": "Bearer " + AI_API_KEY, "Content-Type": "application/json"},
+                    json={"model": AI_MODEL, "messages": [
+                              {"role": "system", "content": "Output exactly one uppercase token: BUY, SELL, or WAIT. No reasoning, no punctuation."},
+                              {"role": "user", "content": prompt},
+                          ], "temperature": 0.0, "max_tokens": 512},
+                    timeout=25,
                 )
-                return ("WAIT", False)
-            first_word = answer.strip().upper().split()[0].strip(".,:;!?")
-            if first_word not in ("BUY", "SELL", "WAIT"):
-                log.warning("ATLAS council reviewer returned an invalid vote: symbol=%s role=%s", symbol, role_name)
-                return ("WAIT", False)
-            log.info("ATLAS council vote symbol=%s role=%s vote=%s", symbol, role_name, first_word)
-            return (first_word, True)
-        except Exception:
-            log.exception("ATLAS council reviewer failed: symbol=%s role=%s", symbol, role_name)
-            return ("WAIT", False)
+                response.raise_for_status()
+                payload = response.json()
+                choices = payload.get("choices") or []
+                choice = choices[0] if choices and isinstance(choices[0], dict) else {}
+                message = choice.get("message")
+                answer = message.get("content") if isinstance(message, dict) else None
+                if isinstance(answer, list):
+                    answer = " ".join(
+                        part.get("text", "") for part in answer
+                        if isinstance(part, dict) and isinstance(part.get("text"), str)
+                    )
+                if not isinstance(answer, str) or not answer.strip():
+                    log.warning(
+                        "ATLAS council reviewer empty response: symbol=%s role=%s attempt=%s finish_reason=%s",
+                        symbol, role_name, attempt, choice.get("finish_reason", "missing"),
+                    )
+                    if attempt == 1:
+                        continue
+                    return ("WAIT", False)
+                first_word = answer.strip().upper().split()[0].strip(".,:;!?")
+                if first_word not in ("BUY", "SELL", "WAIT"):
+                    log.warning(
+                        "ATLAS council reviewer invalid vote: symbol=%s role=%s attempt=%s",
+                        symbol, role_name, attempt,
+                    )
+                    if attempt == 1:
+                        continue
+                    return ("WAIT", False)
+                if first_word == "SELL" and not held:
+                    log.warning("ATLAS council rejected SELL vote without a held position: symbol=%s role=%s", symbol, role_name)
+                    first_word = "WAIT"
+                log.info("ATLAS council vote symbol=%s role=%s vote=%s", symbol, role_name, first_word)
+                return (first_word, True)
+            except Exception:
+                log.exception("ATLAS council reviewer failed: symbol=%s role=%s attempt=%s", symbol, role_name, attempt)
+                if attempt == 2:
+                    return ("WAIT", False)
+        return ("WAIT", False)
     log.info("ATLAS council started symbol=%s model=%s reviewers=%s",
              symbol, AI_MODEL, len(COUNCIL_ROLES))
     with concurrent.futures.ThreadPoolExecutor(max_workers=5) as pool:
