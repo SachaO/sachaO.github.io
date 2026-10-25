@@ -80,7 +80,17 @@ def council_vote(symbol, name, signal, held):
                           ], "temperature": 0.0, "max_tokens": 512},
                     timeout=25,
                 )
-                response.raise_for_status()
+                try:
+                    response.raise_for_status()
+                except requests.HTTPError:
+                    # OpenRouter returns the actionable cause in its JSON error body.
+                    # Log only the response body; never log request headers or API keys.
+                    log.error(
+                        "ATLAS OpenRouter HTTP error: symbol=%s role=%s model=%s status=%s body=%s",
+                        symbol, role_name, model, response.status_code,
+                        (response.text or "")[:1200],
+                    )
+                    raise
                 payload = response.json()
                 choices = payload.get("choices") or []
                 choice = choices[0] if choices and isinstance(choices[0], dict) else {}
