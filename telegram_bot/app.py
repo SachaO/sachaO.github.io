@@ -560,7 +560,7 @@ def telegram_webhook():
                 ).format(
                     mode=diagnostic_mode,
                     buy=votes["buy"], sell=votes["sell"], wait=votes["wait"],
-                    status="appels terminés (consulte les logs pour les erreurs éventuelles)" if votes["available"] else "configuration incomplète",
+                    status="5/5 réponses valides" if votes["available"] else "{}/5 réponses valides — voir les logs Render".format(votes.get("successful", 0)),
                     model=AI_MODEL,
                 )
             except Exception:
