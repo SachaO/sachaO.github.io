@@ -13,9 +13,9 @@ import requests
 
 log = logging.getLogger(__name__)
 TIMEOUT = 8
-MAX_ASSETS = max(8, min(40, int(os.getenv("ATLAS_DISCOVERY_MAX_ASSETS", "12"))))
-CRYPTO_MARKET_CAP_MIN = float(os.getenv("ATLAS_CRYPTO_MIN_MARKET_CAP_USD", "20000000"))
-CRYPTO_VOLUME_MIN = float(os.getenv("ATLAS_CRYPTO_MIN_VOLUME_USD", "5000000"))
+MAX_ASSETS = max(30, min(300, int(os.getenv("ATLAS_DISCOVERY_MAX_ASSETS", "180"))))
+CRYPTO_MARKET_CAP_MIN = float(os.getenv("ATLAS_CRYPTO_MIN_MARKET_CAP_USD", "2000000"))
+CRYPTO_VOLUME_MIN = float(os.getenv("ATLAS_CRYPTO_MIN_VOLUME_USD", "250000"))
 _CACHE = {"at": 0.0, "assets": []}
 CACHE_SECONDS = 1800
 
@@ -31,7 +31,7 @@ FALLBACK_EQUITIES = {
     "EEM": "Emerging Markets ETF", "IWM": "Russell 2000 ETF",
 }
 
-def _yahoo_screen(screen_id, count=12):
+def _yahoo_screen(screen_id, count=50):
     url = "https://query1.finance.yahoo.com/v1/finance/screener/predefined/saved"
     response = requests.get(
         url, params={"scrIds": screen_id, "count": count, "start": 0},
@@ -57,9 +57,9 @@ def discover_assets():
         return list(_CACHE["assets"])
     found = {}
     # Yahoo's public predefined screeners are best-effort and can be throttled.
-    for screen_id in ("most_actives", "day_gainers", "day_losers"):
+    for screen_id in ("most_actives", "day_gainers", "day_losers", "undervalued_growth_stocks", "small_cap_gainers"):
         try:
-            for symbol, name in _yahoo_screen(screen_id, count=12):
+            for symbol, name in _yahoo_screen(screen_id, count=50):
                 found.setdefault(symbol, {"symbol": symbol, "name": name, "kind": "equity_or_etf", "source": "Yahoo Finance screener"})
         except Exception as exc:
             log.warning("ATLAS discovery Yahoo screener unavailable (%s): %s", screen_id, str(exc)[:140])
@@ -68,7 +68,7 @@ def discover_assets():
     try:
         response = requests.get(
             "https://api.coingecko.com/api/v3/coins/markets",
-            params={"vs_currency": "usd", "order": "market_cap_desc", "per_page": 100, "page": 1,
+            params={"vs_currency": "usd", "order": "market_cap_desc", "per_page": 250, "page": crypto_page,
                     "sparkline": "false"},
             headers={"User-Agent": "ATLAS-paper-trading/1.0"}, timeout=TIMEOUT,
         )
