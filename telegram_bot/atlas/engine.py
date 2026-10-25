@@ -16,25 +16,42 @@ AI_API_KEY = os.getenv("AI_API_KEY", "").strip()
 AI_BASE_URL = os.getenv("AI_BASE_URL", "https://openrouter.ai/api/v1").strip().rstrip("/")
 AI_MODEL = os.getenv("AI_MODEL", "").strip()
 COUNCIL_ROLES = (
-    ("Tendance", "Examine les moyennes mobiles et le momentum."),
-    ("Risque", "Priorise la préservation du capital et les risques de perte."),
-    ("Fondamentaux", "Évalue les éléments fondamentaux disponibles, sans inventer de données."),
-    ("Contradicteur", "Cherche les raisons de ne pas suivre le signal dominant."),
-    ("Marché et crypto", "Examine le contexte de marché et la forte volatilité crypto."),
+    ("TREND", "Tendance", "Examine les moyennes mobiles, le momentum et la tendance technique."),
+    ("RISK", "Risque", "Priorise la préservation du capital, la taille de position et les pertes possibles."),
+    ("FUNDAMENTALS", "Fondamentaux", "Évalue les fondamentaux et actualités disponibles, sans inventer de données."),
+    ("CONTRARIAN", "Contradicteur", "Cherche les raisons de refuser le signal dominant et teste l'hypothèse opposée."),
+    ("MARKET", "Marché et crypto", "Examine le régime de marché, la liquidité et les spécificités des cryptoactifs."),
 )
 
 
+def _council_config(role_key):
+    """Resolve one role's API config without logging or exposing any secret."""
+    prefix = "ATLAS_AI_" + role_key
+    key = os.getenv(prefix + "_API_KEY", "").strip() or AI_API_KEY
+    base_url = os.getenv(prefix + "_BASE_URL", "").strip().rstrip("/") or AI_BASE_URL
+    model = os.getenv(prefix + "_MODEL", "").strip()
+    return key, base_url, model
+
+
 def council_vote(symbol, name, signal, held):
-    """Ask five separately prompted reviewers; unavailable/unclear votes count as WAIT."""
-    if not AI_API_KEY or not AI_MODEL:
-        missing = []
-        if not AI_API_KEY:
-            missing.append("AI_API_KEY")
-        if not AI_MODEL:
-            missing.append("AI_MODEL")
-        log.warning("ATLAS council unavailable for %s: missing configuration %s",
+    """Ask five separately configured model endpoints; failures never authorize orders."""
+    configs = {role[0]: _council_config(role[0]) for role in COUNCIL_ROLES}
+    missing = []
+    for role_key, role_name, _ in COUNCIL_ROLES:
+        key, base_url, model = configs[role_key]
+        if not key:
+            missing.append("ATLAS_AI_" + role_key + "_API_KEY or AI_API_KEY")
+        if not base_url:
+            missing.append("ATLAS_AI_" + role_key + "_BASE_URL or AI_BASE_URL")
+        if not model:
+            missing.append("ATLAS_AI_" + role_key + "_MODEL")
+    models = [configs[role[0]][2] for role in COUNCIL_ROLES if configs[role[0]][2]]
+    if len(models) != len(COUNCIL_ROLES) or len(set(models)) != len(COUNCIL_ROLES):
+        missing.append("five distinct ATLAS_AI_<ROLE>_MODEL values")
+    if missing:
+        log.warning("ATLAS council unavailable for %s: missing/duplicate role configuration %s",
                     symbol, ",".join(missing))
-        return {"buy": 0, "sell": 0, "wait": 5, "available": False}
+        return {"buy": 0, "sell": 0, "wait": 5, "successful": 0, "available": False}
     context = (
         f"Actif: {name} ({symbol}); cours journalier: {signal['price']:.8g} USD; "
         f"score technique: {signal['score']}/5; MM20: {signal['sma20']:.8g}; "
@@ -44,7 +61,8 @@ def council_vote(symbol, name, signal, held):
         "Données journalières potentiellement retardées; aucune actualité ni donnée intrajournalière fournie."
     )
     def ask(role):
-        role_name, focus = role
+        role_key, role_name, focus = role
+        api_key, base_url, model = configs[role_key]
         prompt = (
             "Tu votes pour un portefeuille EXCLUSIVEMENT fictif. Ton rôle: " + role_name + ". " + focus +
             "\n" + context + "\nChoisis BUY, SELL ou WAIT. N'invente rien. Si les données sont insuffisantes, WAIT. "
@@ -54,9 +72,9 @@ def council_vote(symbol, name, signal, held):
         for attempt in (1, 2, 3):
             try:
                 response = requests.post(
-                    AI_BASE_URL + "/chat/completions",
-                    headers={"Authorization": "Bearer " + AI_API_KEY, "Content-Type": "application/json"},
-                    json={"model": AI_MODEL, "messages": [
+                    base_url + "/chat/completions",
+                    headers={"Authorization": "Bearer " + api_key, "Content-Type": "application/json"},
+                    json={"model": model, "messages": [
                               {"role": "system", "content": "Output exactly one uppercase token: BUY, SELL, or WAIT. No reasoning, no punctuation."},
                               {"role": "user", "content": prompt},
                           ], "temperature": 0.0, "max_tokens": 512},
