@@ -59,20 +59,34 @@ def council_vote(symbol, name, signal, held):
                 timeout=12,
             )
             response.raise_for_status()
-            answer = response.json()["choices"][0]["message"]["content"].strip().upper()
-            first_word = answer.split()[0] if answer.split() else ""
-            vote = first_word if first_word in ("BUY", "SELL", "WAIT") else "WAIT"
-            log.info("ATLAS council vote symbol=%s role=%s vote=%s", symbol, role_name, vote)
-            return vote
+            payload = response.json()
+            choices = payload.get("choices") or []
+            message = choices[0].get("message") if choices and isinstance(choices[0], dict) else None
+            answer = message.get("content") if isinstance(message, dict) else None
+            if not isinstance(answer, str) or not answer.strip():
+                log.warning(
+                    "ATLAS council reviewer returned empty/non-text content: symbol=%s role=%s finish_reason=%s",
+                    symbol, role_name, choices[0].get("finish_reason") if choices and isinstance(choices[0], dict) else "missing",
+                )
+                return ("WAIT", False)
+            first_word = answer.strip().upper().split()[0].strip(".,:;!?")
+            if first_word not in ("BUY", "SELL", "WAIT"):
+                log.warning("ATLAS council reviewer returned an invalid vote: symbol=%s role=%s", symbol, role_name)
+                return ("WAIT", False)
+            log.info("ATLAS council vote symbol=%s role=%s vote=%s", symbol, role_name, first_word)
+            return (first_word, True)
         except Exception:
             log.exception("ATLAS council reviewer failed: symbol=%s role=%s", symbol, role_name)
-            return "WAIT"
+            return ("WAIT", False)
     log.info("ATLAS council started symbol=%s model=%s reviewers=%s",
              symbol, AI_MODEL, len(COUNCIL_ROLES))
     with concurrent.futures.ThreadPoolExecutor(max_workers=5) as pool:
-        votes = list(pool.map(ask, COUNCIL_ROLES))
+        outcomes = list(pool.map(ask, COUNCIL_ROLES))
+    votes = [vote for vote, success in outcomes]
+    successful = sum(1 for vote, success in outcomes if success)
     result = {"buy": votes.count("BUY"), "sell": votes.count("SELL"),
-              "wait": votes.count("WAIT"), "available": True}
+              "wait": votes.count("WAIT"), "successful": successful,
+              "available": successful == len(COUNCIL_ROLES)}
     log.info("ATLAS council summary symbol=%s BUY=%s SELL=%s WAIT=%s",
              symbol, result["buy"], result["sell"], result["wait"])
     return result
