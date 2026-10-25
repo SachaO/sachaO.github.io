@@ -48,7 +48,8 @@ def council_vote(symbol, name, signal, held):
         prompt = (
             "Tu votes pour un portefeuille EXCLUSIVEMENT fictif. Ton rôle: " + role_name + ". " + focus +
             "\n" + context + "\nChoisis BUY, SELL ou WAIT. N'invente rien. Si les données sont insuffisantes, WAIT. "
-            "Réponds en commençant par un seul mot parmi BUY, SELL, WAIT."
+            + ("RÈGLE ABSOLUE : aucune position n'est détenue, donc SELL est interdit ; choisis BUY ou WAIT. " if not held else "Une position est détenue : SELL est autorisé seulement si les éléments le justifient. ")
+            + "Réponds en commençant par un seul mot parmi BUY, SELL, WAIT."
         )
         try:
             response = requests.post(
