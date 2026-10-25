@@ -240,14 +240,14 @@ def run_cycle():
                 log.info("ATLAS council skipped symbol=%s score=%s held=%s stop_hit=%s reason=no eligible normal BUY/SELL signal",
                          symbol, score, held > 1e-8, stop_hit)
 
-            if held > 1e-8 and (stop_hit or (wants_sell and council and council["sell"] >= 3)):
+            if held > 1e-8 and (stop_hit or (wants_sell and council and council.get("available") and council["sell"] >= 3)):
                 reason = (
                     "Stop de protection atteint (-{:.1f}% depuis le coût moyen) ; ".format(STOP_LOSS_FRACTION * 100)
                     if stop_hit else "Conseil IA : au moins 3/5 votes SELL ; "
                 ) + rationale
                 paper_order(symbol, "SELL", held, price, reason, FEE_RATE)
                 decisions.append("VENTE SIMULÉE {} : {:.6g} à {:.4f} USD — {}".format(symbol, held, price, reason))
-            elif wants_buy and council and council["buy"] >= 3:
+            elif wants_buy and council and council.get("available") and council["buy"] >= 3:
                 # Reduce exposure further when volatility is elevated, especially for crypto.
                 budget = min(float(state["cash"]) * 0.20, equity * MAX_TRADE_FRACTION)
                 if signal["volatility20"] > 0.05:
