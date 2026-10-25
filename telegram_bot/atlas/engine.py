@@ -147,6 +147,7 @@ from .paper_trading import (
     WATCHLIST, MAX_TRADE_FRACTION, MAX_POSITION_FRACTION,
     snapshot, record_price, record_signal, paper_order, cycle_record,
 )
+from .discovery import discover_assets
 
 log = logging.getLogger(__name__)
 FEE_RATE = 0.001
@@ -164,7 +165,33 @@ def _series(frame, key):
 
 
 def get_history(symbol):
-    """Get six months of adjusted daily prices, including volume when available."""
+    """Get six months of daily history; CoinGecko IDs avoid ambiguous crypto tickers."""
+    if symbol.startswith("CG:"):
+        coin_id = symbol[3:]
+        response = requests.get(
+            "https://api.coingecko.com/api/v3/coins/" + coin_id + "/market_chart",
+            params={"vs_currency": "usd", "days": "180", "interval": "daily"},
+            headers={"User-Agent": "ATLAS-paper-trading/1.0"}, timeout=12,
+        )
+        response.raise_for_status()
+        payload = response.json()
+        prices = payload.get("prices") or []
+        if len(prices) < 60:
+            return None
+        import pandas as pd
+        close = pd.Series(
+            [float(point[1]) for point in prices],
+            index=pd.to_datetime([int(point[0]) for point in prices], unit="ms", utc=True),
+            name="Close",
+        ).dropna()
+        volumes = payload.get("total_volumes") or []
+        volume = pd.Series(
+            [float(point[1]) for point in volumes],
+            index=pd.to_datetime([int(point[0]) for point in volumes], unit="ms", utc=True),
+            name="Volume",
+        ).dropna() if volumes else None
+        return (close, volume) if len(close) >= 60 else None
+
     frame = yf.download(
         symbol, period="6mo", interval="1d", auto_adjust=True,
         progress=False, threads=False, timeout=12,
@@ -229,9 +256,21 @@ def analyse_signal(close, volume=None):
 
 
 def run_cycle():
-    """Refresh configured assets, persist signals and execute simulated orders."""
+    """Discover a bounded global candidate universe, then analyse and paper-trade only."""
     updates, decisions, errors = 0, [], []
-    for symbol, name in WATCHLIST.items():
+    universe = dict(WATCHLIST)
+    try:
+        discovered = discover_assets()
+        for asset in discovered:
+            symbol = asset.get("symbol", "")
+            name = asset.get("name") or symbol
+            if symbol and symbol not in universe:
+                universe[symbol] = name
+        log.info("ATLAS cycle universe: %s total assets (including %s discovered)",
+                 len(universe), len([a for a in discovered if a.get("symbol") not in WATCHLIST]))
+    except Exception:
+        log.exception("ATLAS discovery failed; using configured watchlist only")
+    for symbol, name in universe.items():
         try:
             history = get_history(symbol)
             if history is None:
