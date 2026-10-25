@@ -532,31 +532,37 @@ def telegram_webhook():
                         logging.warning("ATLAS manual council diagnostic: no usable history for %s", candidate)
                     except Exception:
                         logging.exception("ATLAS manual council diagnostic: history fetch failed for %s", candidate)
+                diagnostic_mode = "historique réel"
                 if history is None:
-                    reply = (
-                        "⚠️ Test IA non lancé : historique indisponible pour SPY, QQQ, NVDA, "
-                        "BTC-USD, ETH-USD et SOL-USD. Aucun ordre n'a été passé. "
-                        "Vérifie les logs Render (Yahoo Finance/réseau) et réessaie plus tard."
-                    )
+                    # Teste le canal IA avec un contexte neutre explicitement synthétique.
+                    # Cela ne sert jamais à prendre une décision de trading ni à créer un ordre.
+                    test_symbol = "TEST-SYNTHETIQUE"
+                    signal = {
+                        "price": 1.0, "score": 0, "sma20": 1.0, "sma50": 1.0,
+                        "momentum5": 0.0, "momentum20": 0.0, "rsi": 50.0,
+                        "volatility20": 0.0, "reason": "contexte synthétique neutre de diagnostic",
+                    }
+                    diagnostic_mode = "contexte synthétique neutre (Yahoo Finance indisponible)"
                 else:
                     close, volume = history
                     signal = analyse_signal(close, volume)
-                    logging.info("ATLAS manual council diagnostic requested for %s; no order will be placed.", test_symbol)
-                    votes = council_vote(test_symbol, test_symbol + " (diagnostic)", signal, False)
-                    reply = (
-                        "🧪 ATLAS · TEST DU CONSEIL IA\n"
-                        "Actif de test : {symbol}\n"
-                        "Aucun ordre passé ; portefeuille inchangé.\n\n"
-                        "BUY : {buy}/5\nSELL : {sell}/5\nWAIT : {wait}/5\n\n"
-                        "Statut API : {status}\n"
-                        "Modèle configuré : {model}\n\n"
-                        "Les cinq rôles utilisent le même modèle avec des consignes différentes."
-                    ).format(
-                        symbol=test_symbol,
-                        buy=votes["buy"], sell=votes["sell"], wait=votes["wait"],
-                        status="réponses reçues" if votes["available"] else "configuration incomplète",
-                        model=AI_MODEL,
-                    )
+                logging.info("ATLAS manual council diagnostic requested for %s mode=%s; no order will be placed.", test_symbol, diagnostic_mode)
+                votes = council_vote(test_symbol, test_symbol + " (diagnostic uniquement)", signal, False)
+                reply = (
+                    "🧪 ATLAS · TEST DU CONSEIL IA\n"
+                    "Contexte : {mode}\n"
+                    "Aucun ordre passé ; portefeuille inchangé.\n\n"
+                    "BUY : {buy}/5\nSELL : {sell}/5\nWAIT : {wait}/5\n\n"
+                    "Statut API : {status}\n"
+                    "Modèle configuré : {model}\n\n"
+                    "Les cinq rôles utilisent le même modèle avec des consignes différentes. "
+                    "Ce test ne valide pas la disponibilité des cours."
+                ).format(
+                    mode=diagnostic_mode,
+                    buy=votes["buy"], sell=votes["sell"], wait=votes["wait"],
+                    status="appels terminés (consulte les logs pour les erreurs éventuelles)" if votes["available"] else "configuration incomplète",
+                    model=AI_MODEL,
+                )
             except Exception:
                 logging.exception("ATLAS manual council diagnostic failed")
                 reply = "⚠️ Le test du conseil IA a échoué. Consulte les logs Render pour le détail. Aucun ordre n'a été passé."
