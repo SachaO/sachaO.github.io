@@ -518,24 +518,41 @@ def telegram_webhook():
             reply = "⚠️ Test IA impossible : vérifie AI_API_KEY et AI_MODEL dans Render. Aucune valeur de clé ne doit être envoyée dans Telegram."
         else:
             try:
-                # Diagnostic volontairement sans paper_order(): aucun ordre ni changement de portefeuille.
-                history = get_history("SPY")
+                # Diagnostic sans paper_order(): aucun ordre ni changement de portefeuille.
+                # Si Yahoo Finance ne renvoie pas SPY, essayer d'autres actifs de la watchlist.
+                history = None
+                test_symbol = None
+                for candidate in ("SPY", "QQQ", "NVDA", "BTC-USD", "ETH-USD", "SOL-USD"):
+                    try:
+                        candidate_history = get_history(candidate)
+                        if candidate_history is not None:
+                            history = candidate_history
+                            test_symbol = candidate
+                            break
+                        logging.warning("ATLAS manual council diagnostic: no usable history for %s", candidate)
+                    except Exception:
+                        logging.exception("ATLAS manual council diagnostic: history fetch failed for %s", candidate)
                 if history is None:
-                    reply = "⚠️ Test IA non lancé : historique SPY indisponible. Aucun ordre n'a été passé."
+                    reply = (
+                        "⚠️ Test IA non lancé : historique indisponible pour SPY, QQQ, NVDA, "
+                        "BTC-USD, ETH-USD et SOL-USD. Aucun ordre n'a été passé. "
+                        "Vérifie les logs Render (Yahoo Finance/réseau) et réessaie plus tard."
+                    )
                 else:
                     close, volume = history
                     signal = analyse_signal(close, volume)
-                    logging.info("ATLAS manual council diagnostic requested for SPY; no order will be placed.")
-                    votes = council_vote("SPY", "SPY (diagnostic)", signal, False)
+                    logging.info("ATLAS manual council diagnostic requested for %s; no order will be placed.", test_symbol)
+                    votes = council_vote(test_symbol, test_symbol + " (diagnostic)", signal, False)
                     reply = (
                         "🧪 ATLAS · TEST DU CONSEIL IA\n"
-                        "Actif de test : SPY\n"
+                        "Actif de test : {symbol}\n"
                         "Aucun ordre passé ; portefeuille inchangé.\n\n"
                         "BUY : {buy}/5\nSELL : {sell}/5\nWAIT : {wait}/5\n\n"
                         "Statut API : {status}\n"
                         "Modèle configuré : {model}\n\n"
                         "Les cinq rôles utilisent le même modèle avec des consignes différentes."
                     ).format(
+                        symbol=test_symbol,
                         buy=votes["buy"], sell=votes["sell"], wait=votes["wait"],
                         status="réponses reçues" if votes["available"] else "configuration incomplète",
                         model=AI_MODEL,
