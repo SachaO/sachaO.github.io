@@ -79,7 +79,7 @@ def council_vote(symbol, name, signal, held):
                     json={"model": model, "messages": [
                               {"role": "system", "content": "Output exactly one uppercase token: BUY, SELL, or WAIT. No reasoning, no punctuation."},
                               {"role": "user", "content": prompt},
-                          ], "temperature": 0.0, "max_tokens": 512},
+                          ], "temperature": 0.0, "max_tokens": 2048},
                     timeout=25,
                 )
                 try:
