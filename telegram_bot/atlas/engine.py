@@ -120,7 +120,7 @@ def council_vote(symbol, name, signal, held):
                     )
                     if attempt < 3:
                         continue
-                    return ("WAIT", False)
+                    return ("WAIT", False, "Aucune réponse exploitable après trois tentatives.")
                 if first_word == "SELL" and not held:
                     log.warning("ATLAS council rejected SELL vote without a held position: symbol=%s role=%s", symbol, role_name)
                     first_word = "WAIT"
@@ -129,8 +129,8 @@ def council_vote(symbol, name, signal, held):
             except Exception:
                 log.exception("ATLAS council reviewer failed: symbol=%s role=%s attempt=%s", symbol, role_name, attempt)
                 if attempt == 3:
-                    return ("WAIT", False)
-        return ("WAIT", False)
+                    return ("WAIT", False, "Aucune réponse exploitable après trois tentatives.")
+        return ("WAIT", False, "Aucune réponse exploitable après trois tentatives.")
     log.info("ATLAS council started symbol=%s model=%s reviewers=%s",
              symbol, AI_MODEL, len(COUNCIL_ROLES))
     with concurrent.futures.ThreadPoolExecutor(max_workers=5) as pool:
