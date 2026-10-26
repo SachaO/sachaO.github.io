@@ -114,6 +114,55 @@ def format_ai_html(text):
     )
     return text
 
+
+def explain_atlas_decision(decision):
+    """Turn compact indicator output into a readable French explanation without inventing data."""
+    import re
+
+    pattern = re.compile(
+        r"score (-?\d+)/5 ; MM20 ([0-9.]+), MM50 ([0-9.]+), momentum 5j ([+-]?[0-9.]+%), "
+        r"momentum 20j ([+-]?[0-9.]+%), RSI14 ([0-9.]+), volatilité quotidienne 20j ([0-9.]+%), "
+        r"([0-9]+) signaux positifs / ([0-9]+) négatifs"
+    )
+    match = pattern.search(decision)
+    if not match:
+        return decision
+    score, mm20, mm50, mom5, mom20, rsi, vol, positives, negatives = match.groups()
+    score_n, rsi_n, vol_n = int(score), float(rsi), float(vol.rstrip("%"))
+    if float(mm20) > float(mm50):
+        trend = "La moyenne mobile à 20 jours est au-dessus de celle à 50 jours, ce qui suggère une tendance plutôt favorable."
+    elif float(mm20) < float(mm50):
+        trend = "La moyenne mobile à 20 jours est sous celle à 50 jours, ce qui indique une tendance technique plus fragile."
+    else:
+        trend = "Les deux moyennes mobiles sont proches, sans avantage net selon cet indicateur."
+    mom5_n, mom20_n = float(mom5.rstrip("%")), float(mom20.rstrip("%"))
+    momentum = (
+        "Les mouvements récents sont positifs sur les deux horizons."
+        if mom5_n > 0 and mom20_n > 0 else
+        "Les mouvements récents sont négatifs sur les deux horizons."
+        if mom5_n < 0 and mom20_n < 0 else
+        "Les performances à court et moyen terme ne vont pas toutes dans le même sens."
+    )
+    rsi_text = (
+        "Le RSI est élevé : un essoufflement ou un retour en arrière est possible."
+        if rsi_n >= 70 else
+        "Le RSI est bas : le titre a subi une pression vendeuse importante."
+        if rsi_n <= 30 else
+        "Le RSI ne signale pas à lui seul une situation extrême."
+    )
+    risk_text = (
+        "La volatilité est élevée, ce qui impose davantage de prudence sur la taille d'une position."
+        if vol_n >= 5 else
+        "La volatilité mesurée reste modérée sur la période étudiée."
+    )
+    explanation = (
+        f"Lecture des indicateurs : {trend} {momentum} "
+        f"Le momentum sur 5 jours est de {mom5} et sur 20 jours de {mom20}. "
+        f"{rsi_text} {risk_text} Le score technique est de {score}/5, avec {positives} signaux positifs contre {negatives} négatifs. "
+        "Ces indicateurs reposent sur les dernières données journalières disponibles, qui peuvent être retardées ; ils ne prédisent pas avec certitude le prochain mouvement."
+    )
+    return pattern.sub(explanation, decision)
+    
 def search_rss_news(topic=""):
     """Fetch current financial headlines from Google News RSS search results."""
     topic = topic.strip()
@@ -438,8 +487,16 @@ def atlas_cycle_endpoint():
             "",
             "📊 <b>ANALYSE DES ACTIFS</b>",
         ]
+        if decisions:
+            lines.extend([
+                "",
+                "🧭 <b>Comment lire ce rapport ?</b>",
+                "ATLAS combine les indicateurs techniques avec les votes de son conseil IA. Un signal n’est pas une certitude : si les données sont incomplètes ou les avis insuffisamment concordants, le système privilégie l’attente. Les explications ci-dessous détaillent les facteurs observés et leurs limites.",
+                "",
+            ])
         for decision in decisions:
-            safe = html.escape(decision, quote=False)
+            readable_decision = explain_atlas_decision(decision)
+            safe = html.escape(readable_decision, quote=False)
             # Mettre le symbole ou le nom de l'actif en évidence, sans modifier la décision.
             if " : " in decision:
                 label, detail = decision.split(" : ", 1)
@@ -548,22 +605,28 @@ def telegram_webhook():
                 logging.info("ATLAS manual council diagnostic requested for %s mode=%s; no order will be placed.", test_symbol, diagnostic_mode)
                 votes = council_vote(test_symbol, test_symbol + " (diagnostic uniquement)", signal, False)
                 reply = (
-                    "🧪 ATLAS · TEST DU CONSEIL IA\n"
-                    "Contexte : {mode}\n"
-                    "Aucun ordre passé ; portefeuille inchangé.\n\n"
-                    "BUY : {buy}/5\nSELL : {sell}/5\nWAIT : {wait}/5\n\n"
-                    "Statut API : {status}\n"
-                    "Modèle configuré : {model}\n\n"
-                    "Chaque rôle doit avoir un modèle distinct configuré. "
-                    "Ce test ne valide pas la disponibilité des cours."
+                    "🧪 ATLAS · DIAGNOSTIC DU CONSEIL IA\n"
+                    "Actif de test : {symbol}\n"
+                    "Contexte utilisé : {mode}. Aucun ordre n’a été passé et le portefeuille n’a pas été modifié.\n\n"
+                    "📊 <b>Résultat collectif</b>\n"
+                    "• Avis d’achat : {buy}/5\n• Avis de vente : {sell}/5\n• Attente : {wait}/5\n"
+                    "• Disponibilité : {status}\n\n"
+                    "🧠 <b>Ce que chaque agent a répondu</b>\n{details}\n\n"
+                    "Le vote décrit l’avis du modèle à partir des indicateurs transmis. Il ne garantit pas une performance et ne constitue pas à lui seul une décision de trading. "
+                    "Les cours journaliers peuvent être retardés ; ce diagnostic vérifie les réponses API, pas la qualité prédictive de la stratégie."
                 ).format(
+                    symbol=test_symbol,
                     mode=diagnostic_mode,
                     buy=votes["buy"], sell=votes["sell"], wait=votes["wait"],
-                    status="5/5 réponses valides" if votes["available"] else "{}/5 réponses valides — voir les logs Render".format(votes.get("successful", 0)),
-                    model="; ".join(
-                        role + "=" + (os.environ.get("ATLAS_AI_" + role + "_MODEL", "").strip() or "non configuré")
-                        for role in ("TREND", "RISK", "FUNDAMENTALS", "CONTRARIAN", "MARKET")
-                    ),
+                    status="5/5 réponses reçues" if votes["available"] else "{}/5 réponses reçues ; les échecs sont détaillés dans les logs Render".format(votes.get("successful", 0)),
+                    details="\n".join(
+                        "• <b>{}</b> — <b>{}</b>: {}".format(
+                            html.escape(role, quote=False),
+                            html.escape(info.get("vote", "WAIT"), quote=False),
+                            html.escape(info.get("explanation", "Aucune explication disponible"), quote=False)
+                        )
+                        for role, info in votes.get("role_votes", {}).items()
+                    ) or "Aucun détail de vote n’a été retourné.",
                 )
             except Exception:
                 logging.exception("ATLAS manual council diagnostic failed")
