@@ -69,7 +69,7 @@ def council_vote(symbol, name, signal, held):
             "Tu votes pour un portefeuille EXCLUSIVEMENT fictif. Ton rôle: " + role_name + ". " + focus +
             "\n" + context + "\nChoisis BUY, SELL ou WAIT. N'invente rien. Si les données sont insuffisantes, WAIT. "
             + ("RÈGLE ABSOLUE : aucune position n'est détenue, donc SELL est interdit ; choisis BUY ou WAIT. " if not held else "Une position est détenue : SELL est autorisé seulement si les éléments le justifient. ")
-            + "Réponds en commençant par un seul mot parmi BUY, SELL, WAIT."
+            + "Commence par BUY, SELL ou WAIT comme premier mot, puis explique brièvement le facteur principal et le risque ou l’incertitude. Une phrase en français maximum."
         )
         for attempt in (1, 2, 3):
             try:
@@ -77,7 +77,7 @@ def council_vote(symbol, name, signal, held):
                     base_url + "/chat/completions",
                     headers={"Authorization": "Bearer " + api_key, "Content-Type": "application/json"},
                     json={"model": model, "messages": [
-                              {"role": "system", "content": "Output exactly one uppercase token: BUY, SELL, or WAIT. No reasoning, no punctuation."},
+                              {"role": "system", "content": "Commence impérativement par BUY, SELL ou WAIT, puis donne une justification courte et concrète en français (une phrase maximum). N’invente aucune donnée. Si les informations ne permettent pas de conclure, choisis WAIT et explique pourquoi."},
                               {"role": "user", "content": prompt},
                           ], "temperature": 0.0, "max_tokens": 2048},
                     timeout=25,
@@ -110,7 +110,7 @@ def council_vote(symbol, name, signal, held):
                     )
                     if attempt < 3:
                         continue
-                    return ("WAIT", False)
+                    return ("WAIT", False, "Aucune réponse exploitable après trois tentatives.")
                 tokens = [token.strip(".,:;!?()[]{}") for token in answer.strip().upper().split()]
                 first_word = next((token for token in tokens if token in ("BUY", "SELL", "WAIT")), "")
                 if not first_word:
@@ -125,7 +125,7 @@ def council_vote(symbol, name, signal, held):
                     log.warning("ATLAS council rejected SELL vote without a held position: symbol=%s role=%s", symbol, role_name)
                     first_word = "WAIT"
                 log.info("ATLAS council vote symbol=%s role=%s vote=%s", symbol, role_name, first_word)
-                return (first_word, True)
+                return (first_word, True, answer.strip())
             except Exception:
                 log.exception("ATLAS council reviewer failed: symbol=%s role=%s attempt=%s", symbol, role_name, attempt)
                 if attempt == 3:
@@ -135,11 +135,13 @@ def council_vote(symbol, name, signal, held):
              symbol, AI_MODEL, len(COUNCIL_ROLES))
     with concurrent.futures.ThreadPoolExecutor(max_workers=5) as pool:
         outcomes = list(pool.map(ask, COUNCIL_ROLES))
-    votes = [vote for vote, success in outcomes]
-    successful = sum(1 for vote, success in outcomes if success)
+    votes = [vote for vote, success, explanation in outcomes]
+    successful = sum(1 for vote, success, explanation in outcomes if success)
     result = {"buy": votes.count("BUY"), "sell": votes.count("SELL"),
               "wait": votes.count("WAIT"), "successful": successful,
-              "available": successful == len(COUNCIL_ROLES)}
+              "available": successful == len(COUNCIL_ROLES),
+              "role_votes": {role[1]: {"vote": outcome[0], "success": outcome[1], "explanation": outcome[2]}
+                             for role, outcome in zip(COUNCIL_ROLES, outcomes)}}
     log.info("ATLAS council summary symbol=%s BUY=%s SELL=%s WAIT=%s",
              symbol, result["buy"], result["sell"], result["wait"])
     return result
