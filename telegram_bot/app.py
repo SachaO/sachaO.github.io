@@ -705,7 +705,7 @@ def telegram_webhook():
         if not TELEGRAM_CHAT_ID or str(chat_id) != str(TELEGRAM_CHAT_ID):
             reply = "⛔ Accès refusé : la consultation de Cubrik est réservée à la conversation Telegram autorisée."
         else:
-            detailed = command != "/cubrikstatus"
+            detailed = command != "/cubrik"
             started, message = start_cubrik_request(
                 chat_id,
                 send_long_message,
