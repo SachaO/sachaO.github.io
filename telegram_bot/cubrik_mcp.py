@@ -409,6 +409,19 @@ async def _read_cubrik_snapshot(auth_url_callback=None, callback_result=None, de
     storage = PostgresOAuthStorage()
 
     async def redirect_handler(auth_url):
+        requested_scopes = set(
+            (parse_qs(urlparse(auth_url).query).get("scope") or [""])[0].split()
+        )
+        if "cubrik.trade" in requested_scopes:
+            raise CubrikMonitorError(
+                "Cubrik a inclus cubrik.trade dans la demande OAuth. ATLAS refuse d'afficher ce lien. "
+                "La demande doit contenir uniquement cubrik.read et cubrik.agents."
+            )
+        if not {"cubrik.read", "cubrik.agents"}.issubset(requested_scopes):
+            raise CubrikMonitorError(
+                "La demande OAuth Cubrik n'inclut pas les permissions minimales de lecture attendues. "
+                "Aucun lien n'a été transmis."
+            )
         if auth_url_callback:
             await auth_url_callback(auth_url)
         else:
@@ -437,6 +450,7 @@ async def _read_cubrik_snapshot(auth_url_callback=None, callback_result=None, de
             redirect_uris=[AnyUrl(redirect_uri)],
             grant_types=["authorization_code", "refresh_token"],
             response_types=["code"],
+            scope="cubrik.read cubrik.agents",
             application_type="native",
             token_endpoint_auth_method="none",
         ),
