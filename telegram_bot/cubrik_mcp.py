@@ -495,6 +495,7 @@ async def _read_cubrik_snapshot(auth_url_callback=None, callback_result=None, de
                     jobs = [
                         ("agents", {}),
                         ("platforms", {}),
+                        ("portfolio", {"refresh": True}),
                         ("results", {"period": "past_week", "account": "OKX"}),
                     ]
                 else:
@@ -533,11 +534,26 @@ async def _read_cubrik_snapshot(auth_url_callback=None, callback_result=None, de
                         history_args["account"] = okx_platform["id"]
                     # Capital total is explicitly approved for the public summary.
                     # Copy only the amount/currency; never forward the whole platform object.
-                    public_capital = okx_platform.get("equity")
+                    # Prefer portfolio equity (balance + unrealized P&L), then
+                    # fall back to the connected-platform balance if unavailable.
+                    portfolio_items = _portfolio_accounts(responses.get("portfolio"))
+                    okx_portfolio = next(
+                        (
+                            item for item in portfolio_items
+                            if str(item.get("name") or item.get("platform") or "").upper() == "OKX"
+                        ),
+                        portfolio_items[0] if portfolio_items else {},
+                    )
+                    public_capital = okx_portfolio.get("equity")
+                    if public_capital is None:
+                        public_capital = okx_portfolio.get("balance")
                     if public_capital is None:
                         public_capital = okx_platform.get("balance")
+                    public_currency = (
+                        okx_portfolio.get("currency") or okx_platform.get("currency")
+                    )
                     snapshot["public_capital"] = public_capital
-                    snapshot["public_currency"] = okx_platform.get("currency")
+                    snapshot["public_currency"] = public_currency
                     history_value, history_warning = await _call_read_tool(
                         session, tools, "history", history_args
                     )
