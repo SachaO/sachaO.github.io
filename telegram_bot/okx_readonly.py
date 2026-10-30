@@ -21,6 +21,7 @@ _ALLOWED_PATHS = {
     "/api/v5/account/balance",
     "/api/v5/account/config",
     "/api/v5/account/positions",
+    "/api/v5/account/positions-history",
     "/api/v5/trade/orders-pending",
     "/api/v5/trade/orders-history",
     "/api/v5/trade/orders-history-archive",
@@ -155,6 +156,22 @@ def _recent_orders():
     return _get("/api/v5/trade/orders-history", {"instType": None, "state": None, "limit": "20"})
 
 
+def _fills_archive():
+    return _get("/api/v5/trade/fills-history-archive", {"instType": None, "limit": "20"})
+
+
+def _orders_archive():
+    return _get("/api/v5/trade/orders-history-archive", {"instType": None, "state": None, "limit": "20"})
+
+
+def _positions_history():
+    return _get("/api/v5/account/positions-history", {"instType": None, "limit": "20"})
+
+
+def _recent_bills():
+    return _get("/api/v5/account/bills", {"limit": "20"})
+
+
 def _account_config():
     rows = _get("/api/v5/account/config")
     return rows[0] if rows else {}
@@ -187,6 +204,85 @@ def fetch_account_snapshot():
         "auto_loan": config.get("autoLoan"),
         "currency": balance.get("uTime"),
     }
+
+
+def fetch_history_snapshot():
+    """Read-only recent activity: up to 3 months of fills/orders and 7 days of bills."""
+    return {
+        "fills": _fills_archive(),
+        "orders": _orders_archive(),
+        "positions_history": _positions_history(),
+        "bills": _recent_bills(),
+        "captured_at": datetime.now().astimezone().strftime("%d/%m/%Y à %H:%M:%S"),
+    }
+
+
+def format_history_snapshot(data):
+    lines = [
+        "🧾 ATLAS — HISTORIQUE OKX",
+        "Lecture seule · Relevé du {}".format(data["captured_at"]),
+        "",
+        "Les historiques disponibles dépendent des limites de conservation et de pagination d'OKX.",
+        "",
+        "🔁 EXÉCUTIONS (jusqu'à 3 mois)",
+    ]
+    fills = data.get("fills") or []
+    if not fills:
+        lines.append("Aucune exécution renvoyée sur cette période.")
+    for fill in fills[:12]:
+        lines.append("• {date} — {inst} {side} | {size} à {price} | frais {fee} {fee_ccy}".format(
+            date=_utc_time(fill.get("ts")),
+            inst=fill.get("instId", "?"),
+            side=fill.get("side", "?"),
+            size=fill.get("fillSz", "?"),
+            price=fill.get("fillPx", "?"),
+            fee=fill.get("fee", "?"),
+            fee_ccy=fill.get("feeCcy", ""),
+        ))
+
+    orders = data.get("orders") or []
+    lines.extend(["", "📚 ORDRES (jusqu'à 3 mois)"])
+    if not orders:
+        lines.append("Aucun ordre historique renvoyé.")
+    for order in orders[:10]:
+        lines.append("• {date} — {inst} {side} | {state} | rempli {filled}/{size} | prix moyen {avg}".format(
+            date=_utc_time(order.get("uTime") or order.get("cTime")),
+            inst=order.get("instId", "?"),
+            side=order.get("side", "?"),
+            state=order.get("state", "?"),
+            filled=order.get("accFillSz", "0"),
+            size=order.get("sz", "?"),
+            avg=_num(order.get("avgPx"), 6),
+        ))
+
+    position_history = data.get("positions_history") or []
+    lines.extend(["", "🗂️ POSITIONS CLÔTURÉES / MODIFIÉES (jusqu'à 3 mois)"])
+    if not position_history:
+        lines.append("Aucune donnée d'historique de position renvoyée par OKX.")
+    for item in position_history[:8]:
+        lines.append("• {date} — {inst} {side} | taille {size} | P&L réalisé {pnl} USD".format(
+            date=_utc_time(item.get("uTime") or item.get("cTime")),
+            inst=item.get("instId", "?"),
+            side=item.get("方向") or item.get("posSide", "?"),
+            size=item.get("closeTotalPos") or item.get("pos", "?"),
+            pnl=_num(item.get("realizedPnl") or item.get("pnl"), 2, signed=True),
+        ))
+
+    bills = data.get("bills") or []
+    lines.extend(["", "💳 MOUVEMENTS DU COMPTE (7 derniers jours)"])
+    if not bills:
+        lines.append("Aucun mouvement renvoyé.")
+    for bill in bills[:10]:
+        lines.append("• {date} — {ccy} | variation {change} | solde {balance} | P&L {pnl} | frais {fee}".format(
+            date=_utc_time(bill.get("ts")),
+            ccy=bill.get("ccy", "?"),
+            change=_num(bill.get("balChg"), 8, signed=True),
+            balance=_num(bill.get("bal"), 8),
+            pnl=_num(bill.get("pnl"), 8, signed=True),
+            fee=_num(bill.get("fee"), 8, signed=True),
+        ))
+    lines.extend(["", "ℹ️ Les historiques sont limités par les fenêtres de disponibilité OKX ; les résultats affichés ne sont pas une comptabilité fiscale."])
+    return "\n".join(lines)
 
 
 def format_account_snapshot(data):
@@ -263,7 +359,7 @@ def format_account_snapshot(data):
             )
 
     fills = data.get("fills") or []
-    lines.extend(["", "🧾 DERNIÈRES EXÉCUTIONS ({})".format(len(fills))])
+    lines.extend(["", "🧾 EXÉCUTIONS (3 derniers jours · {})".format(len(fills))])
     if not fills:
         lines.append("Aucune exécution récente renvoyée par OKX.")
     else:
@@ -281,7 +377,7 @@ def format_account_snapshot(data):
             )
 
     orders = data.get("orders") or []
-    lines.extend(["", "📚 ORDRES TERMINÉS RÉCENTS ({})".format(len(orders))])
+    lines.extend(["", "📚 ORDRES TERMINÉS (7 derniers jours · {})".format(len(orders))])
     if not orders:
         lines.append("Aucun ordre terminé renvoyé sur la période disponible.")
     else:
@@ -299,6 +395,9 @@ def format_account_snapshot(data):
             )
 
     lines.extend([
+        "",
+        "Mode du compte : {}".format(data.get("account_mode") or "non communiqué"),
+        "Mode de position : {}".format(data.get("position_mode") or "non communiqué"),
         "",
         "ℹ️ Les montants sont ceux renvoyés par OKX. Le détail dépend des produits et des autorisations de lecture de la clé. Ce relevé n'exécute aucune action.",
     ])
