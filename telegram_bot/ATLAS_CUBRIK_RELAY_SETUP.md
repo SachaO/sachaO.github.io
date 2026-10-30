@@ -26,7 +26,11 @@ py .\atlas_cubrik_oauth_relay.py
 
 ## Après la première connexion
 
-Tu n'as plus besoin de lancer le relais à chaque consultation. Render conserve les jetons dans PostgreSQL, chiffrés avec CUBRIK_MCP_ENCRYPTION_KEY. Il utilise le refresh token lorsque Cubrik en fournit un. Une reconnexion sera nécessaire si tu révoques l'accès, si Cubrik retire le refresh token ou si le consentement expire.
+Tu n'as pas besoin de lancer le relais à chaque consultation tant que le jeton reste valide. Render conserve les jetons dans PostgreSQL, chiffrés avec CUBRIK_MCP_ENCRYPTION_KEY, et le client MCP utilise un refresh token lorsqu'il est fourni par Cubrik.
+
+Si Cubrik ne fournit pas de refresh token, le jeton d'accès finit par expirer et une nouvelle autorisation manuelle sera nécessaire. Le client ATLAS ne peut pas fabriquer un refresh token lui-même. Pour un renouvellement réellement automatique, le serveur OAuth de Cubrik doit prendre en charge et émettre un refresh token pour cette application MCP (notamment via offline_access si Cubrik l'annonce comme scope pris en charge).
+
+Les commandes ordinaires ne relancent désormais plus toutes seules une demande OAuth. Seule la commande /cubrikconnect ouvre volontairement le parcours de consentement. Si une connexion échoue parce que le jeton n'est plus valable, le bot t'indique d'utiliser cette commande.
 
 ## Sécurité
 
