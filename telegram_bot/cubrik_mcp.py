@@ -730,7 +730,8 @@ def _format_public_trade_activity(history_payload, analysis_payload, currency):
     net_result = _pick(kpis, ("netResult", "net_result", "realizedPnl", "realized_pnl"))
     net_pct = _pick(kpis, ("netResultPct", "net_result_pct", "returnPct", "return_pct"))
     trade_count = _pick(kpis, ("tradeCount", "trade_count", "closedTrades"))
-    win_rate = _pick(kpis, ("winRatePct", "win_rate_pct", "winRate", "win_rate"))
+    win_rate_pct = _pick(kpis, ("winRatePct", "win_rate_pct"))
+    win_rate_ratio = _pick(kpis, ("winRate", "win_rate"))
     profit_factor = _pick(kpis, ("profitFactor", "profit_factor"))
     max_drawdown_pct = _pick(kpis, ("maxDrawdownPct", "max_drawdown_pct"))
     currency = currency or analysis.get("currency") or "USD"
@@ -763,10 +764,12 @@ def _format_public_trade_activity(history_payload, analysis_payload, currency):
     # Metrics are mathematically reportable with a modest sample, but label the
     # sample size so no one mistakes a few trades for robust statistical evidence.
     if count >= 5:
-        if win_rate is not None:
+        if win_rate_pct is not None or win_rate_ratio is not None:
             try:
-                win_rate_number = float(win_rate)
-                if 0 <= win_rate_number <= 1:
+                win_rate_number = float(
+                    win_rate_pct if win_rate_pct is not None else win_rate_ratio
+                )
+                if win_rate_pct is None and 0 <= win_rate_number <= 1:
                     win_rate_number *= 100
                 lines.append("Trades gagnants : {} (sur {})".format(
                     _metric_number(win_rate_number, "%", 1), count
@@ -851,12 +854,25 @@ def _format_public_scanner_activity(value):
             lines.append("• " + " — ".join(pieces))
     summary = _pick(run, ("summary", "message", "result"))
     if summary:
-        text = str(summary).strip().split("\n\n", 1)[0].replace("\n", " ")
-        lines.append(_short_value(text, 520))
-    next_step = _pick(run, ("next", "next_steps", "watch"))
-    if next_step:
-        lines.append("À surveiller : " + _short_value(next_step, 180))
-    lines.append("Ce sont des idées de marché ; l'exécuteur doit les vérifier avant tout ordre.")
+        summary_text = str(summary).strip()
+        first_paragraph = summary_text.split("\n\n", 1)[0].replace("\n", " ")
+        no_setup = "aucune opportunité" in first_paragraph.lower()
+        if no_setup:
+            lines.append(_short_value(first_paragraph, 360))
+        else:
+            # When the scanner has candidates, keep only its leading candidate
+            # bullets. Do not publish unrelated market levels or fixed watchlists.
+            candidate_lines = [
+                line.strip()
+                for line in summary_text.splitlines()
+                if line.strip().startswith(("- **", "• **"))
+            ][:3]
+            if candidate_lines:
+                lines.append("Pistes repérées :")
+                lines.extend(_short_value(line.lstrip("-• ").replace("**", ""), 180) for line in candidate_lines)
+            else:
+                lines.append(_short_value(first_paragraph, 420))
+    lines.append("Les idées restent à confirmer par l'exécuteur ; aucune idée ne vaut ordre.")
     return lines
 
 
@@ -899,11 +915,13 @@ def _format_public_executor_activity(value):
     elif decisions:
         lines.append("Aucune entrée validée : l'exécuteur a choisi d'attendre.")
         reasons = []
-        for decision in decisions[:3]:
+        for decision in decisions:
             if isinstance(decision, dict) and _pick(decision, ("reason", "explanation")):
-                reasons.append(_short_value(_pick(decision, ("reason", "explanation")), 120))
+                reason = _short_value(_pick(decision, ("reason", "explanation")), 160)
+                if reason not in reasons:
+                    reasons.append(reason)
         if reasons:
-            lines.append("Motif : " + " ; ".join(reasons[:2]))
+            lines.append("Motif principal : " + reasons[0])
     else:
         summary = _pick(run, ("summary", "message", "result"))
         if summary:
