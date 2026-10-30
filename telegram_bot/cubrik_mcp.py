@@ -1260,6 +1260,19 @@ def _oauth_redirect_error_message():
     )
 
 
+def _find_monitor_error(exc):
+    """Find our actionable auth error when the MCP SDK wraps it in an ExceptionGroup."""
+    if isinstance(exc, CubrikMonitorError):
+        return exc
+    nested = getattr(exc, "exceptions", None)
+    if isinstance(nested, (list, tuple)):
+        for item in nested:
+            found = _find_monitor_error(item)
+            if found is not None:
+                return found
+    return None
+
+
 def _background_worker(
     chat_id,
     notify,
@@ -1328,7 +1341,11 @@ def _background_worker(
     except CubrikMonitorError as exc:
         notify(chat_id, "⚠️ Connexion Cubrik : " + str(exc))
     except Exception as exc:
-        if _contains_oauth_registration_error(exc):
+        monitor_error = _find_monitor_error(exc)
+        if monitor_error is not None:
+            log.warning("Cubrik MCP authorization issue: %s", str(monitor_error)[:240])
+            notify(chat_id, "⚠️ Connexion Cubrik : " + str(monitor_error))
+        elif _contains_oauth_registration_error(exc):
             log.error("Cubrik MCP rejected ATLAS's OAuth redirect URI: %s", _redirect_uri())
             notify(chat_id, _oauth_redirect_error_message())
         else:
