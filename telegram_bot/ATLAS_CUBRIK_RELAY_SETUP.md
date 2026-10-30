@@ -20,7 +20,7 @@ py .\atlas_cubrik_oauth_relay.py
 5. Laisse cette fenêtre ouverte.
 6. Depuis le même PC, envoie /cubrikconnect à ton bot Telegram.
 7. Ouvre le lien OAuth que le bot t'envoie dans le navigateur de ce PC.
-8. Accepte uniquement les permissions nécessaires à la lecture du compte, des agents et des historiques. Ne donne pas de permission de trading à ATLAS.
+8. Accepte uniquement les permissions nécessaires à la lecture du compte, des agents et des historiques. Ne donne pas de permission de trading à ATLAS. Si le serveur OAuth Cubrik annonce `offline_access`, ATLAS le demandera aussi pour obtenir un jeton de renouvellement ; il ne sera jamais demandé si Cubrik ne le déclare pas disponible.
 9. Après validation, le navigateur revient sur 127.0.0.1. Le relais transmet le code à Render en HTTPS, puis s'arrête automatiquement.
 10. Reviens sur Telegram et demande /cubrik.
 
