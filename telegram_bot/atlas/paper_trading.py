@@ -19,50 +19,81 @@ def now():
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
 
+# PostgreSQL schema is initialized once per worker, not on every query.
+# This avoids repeating CREATE/ALTER/INDEX statements for every market symbol.
+import threading
+
+_schema_lock = threading.Lock()
+_schema_initialized = False
+
+_SCHEMA_SQL = """
+CREATE TABLE IF NOT EXISTS atlas_account (
+    id INTEGER PRIMARY KEY CHECK (id=1), cash DOUBLE PRECISION NOT NULL,
+    created_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS atlas_positions (
+    symbol TEXT PRIMARY KEY, quantity DOUBLE PRECISION NOT NULL,
+    avg_cost DOUBLE PRECISION NOT NULL
+);
+CREATE TABLE IF NOT EXISTS atlas_prices (
+    symbol TEXT PRIMARY KEY, price DOUBLE PRECISION NOT NULL, as_of TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS atlas_trades (
+    id BIGSERIAL PRIMARY KEY, at TEXT NOT NULL, symbol TEXT NOT NULL,
+    side TEXT NOT NULL, quantity DOUBLE PRECISION NOT NULL, price DOUBLE PRECISION NOT NULL,
+    fee DOUBLE PRECISION NOT NULL, reason TEXT NOT NULL, strategy TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS atlas_cycles (
+    id BIGSERIAL PRIMARY KEY, at TEXT NOT NULL, status TEXT NOT NULL, summary TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS atlas_signals (
+    id BIGSERIAL PRIMARY KEY, at TEXT NOT NULL, symbol TEXT NOT NULL,
+    as_of TEXT NOT NULL, price DOUBLE PRECISION NOT NULL, score INTEGER NOT NULL,
+    momentum5 DOUBLE PRECISION NOT NULL, momentum20 DOUBLE PRECISION NOT NULL,
+    rsi DOUBLE PRECISION NOT NULL, volatility20 DOUBLE PRECISION NOT NULL,
+    UNIQUE(symbol, as_of)
+);
+ALTER TABLE atlas_signals ADD COLUMN IF NOT EXISTS as_of TEXT;
+ALTER TABLE atlas_signals ADD COLUMN IF NOT EXISTS return_1d DOUBLE PRECISION;
+ALTER TABLE atlas_signals ADD COLUMN IF NOT EXISTS return_3d DOUBLE PRECISION;
+ALTER TABLE atlas_signals ADD COLUMN IF NOT EXISTS return_7d DOUBLE PRECISION;
+CREATE UNIQUE INDEX IF NOT EXISTS atlas_signals_symbol_asof_idx ON atlas_signals(symbol, as_of);
+"""
+
+
 def connect():
+    """Open a bounded PostgreSQL connection and initialize the schema once per worker."""
+    global _schema_initialized
     if not DATABASE_URL:
         raise RuntimeError("DATABASE_URL n'est pas configurée sur Render.")
-    db = psycopg.connect(DATABASE_URL, row_factory=dict_row, connect_timeout=10)
-    with db.cursor() as cur:
-        cur.execute("""
-        CREATE TABLE IF NOT EXISTS atlas_account (
-            id INTEGER PRIMARY KEY CHECK (id=1), cash DOUBLE PRECISION NOT NULL,
-            created_at TEXT NOT NULL
-        );
-        CREATE TABLE IF NOT EXISTS atlas_positions (
-            symbol TEXT PRIMARY KEY, quantity DOUBLE PRECISION NOT NULL,
-            avg_cost DOUBLE PRECISION NOT NULL
-        );
-        CREATE TABLE IF NOT EXISTS atlas_prices (
-            symbol TEXT PRIMARY KEY, price DOUBLE PRECISION NOT NULL, as_of TEXT NOT NULL
-        );
-        CREATE TABLE IF NOT EXISTS atlas_trades (
-            id BIGSERIAL PRIMARY KEY, at TEXT NOT NULL, symbol TEXT NOT NULL,
-            side TEXT NOT NULL, quantity DOUBLE PRECISION NOT NULL, price DOUBLE PRECISION NOT NULL,
-            fee DOUBLE PRECISION NOT NULL, reason TEXT NOT NULL, strategy TEXT NOT NULL
-        );
-        CREATE TABLE IF NOT EXISTS atlas_cycles (
-            id BIGSERIAL PRIMARY KEY, at TEXT NOT NULL, status TEXT NOT NULL, summary TEXT NOT NULL
-        );
-        CREATE TABLE IF NOT EXISTS atlas_signals (
-            id BIGSERIAL PRIMARY KEY, at TEXT NOT NULL, symbol TEXT NOT NULL,
-            as_of TEXT NOT NULL, price DOUBLE PRECISION NOT NULL, score INTEGER NOT NULL,
-            momentum5 DOUBLE PRECISION NOT NULL, momentum20 DOUBLE PRECISION NOT NULL,
-            rsi DOUBLE PRECISION NOT NULL, volatility20 DOUBLE PRECISION NOT NULL,
-            UNIQUE(symbol, as_of)
-        );
-        ALTER TABLE atlas_signals ADD COLUMN IF NOT EXISTS as_of TEXT;
-        ALTER TABLE atlas_signals ADD COLUMN IF NOT EXISTS return_1d DOUBLE PRECISION;
-        ALTER TABLE atlas_signals ADD COLUMN IF NOT EXISTS return_3d DOUBLE PRECISION;
-        ALTER TABLE atlas_signals ADD COLUMN IF NOT EXISTS return_7d DOUBLE PRECISION;
-        CREATE UNIQUE INDEX IF NOT EXISTS atlas_signals_symbol_asof_idx ON atlas_signals(symbol, as_of);
-        """)
-        cur.execute(
-            "INSERT INTO atlas_account(id,cash,created_at) VALUES(1,%s,%s) ON CONFLICT(id) DO NOTHING",
-            (STARTING_CASH, now()),
-        )
-    db.commit()
-    return db
+
+    # Keep slow/locked SQL from hanging a Gunicorn worker indefinitely.
+    db = psycopg.connect(
+        DATABASE_URL,
+        row_factory=dict_row,
+        connect_timeout=20,
+        options="-c statement_timeout=60000 -c lock_timeout=15000",
+    )
+    if _schema_initialized:
+        return db
+
+    try:
+        with _schema_lock:
+            if not _schema_initialized:
+                with db.cursor() as cur:
+                    cur.execute(_SCHEMA_SQL)
+                    cur.execute(
+                        "INSERT INTO atlas_account(id,cash,created_at) VALUES(1,%s,%s) "
+                        "ON CONFLICT(id) DO NOTHING",
+                        (STARTING_CASH, now()),
+                    )
+                db.commit()
+                _schema_initialized = True
+        return db
+    except Exception:
+        db.rollback()
+        db.close()
+        raise
 
 
 def snapshot():
