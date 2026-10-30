@@ -594,7 +594,8 @@ def format_cubrik_agents_snapshot(data):
                 line += " — trading {}".format("autorisé" if agent.get("mayTrade") else "interdit")
             lines.append(line)
     if data.get("warnings"):
-        lines.extend(["", "⚠️ " + warning for warning in data["warnings"][:3]])
+        lines.append("")
+        lines.extend("⚠️ " + warning for warning in data["warnings"][:3])
     lines.extend([
         "",
         "Les agents observateurs analysent et alertent. Seul ATLAS-SWING-EXECUTOR possède le droit d'exécuter des ordres sur OKX.",
