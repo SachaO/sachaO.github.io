@@ -619,30 +619,30 @@ def telegram_webhook():
     elif command == "/start":
         if is_owner_private:
             reply = (
-                "Bienvenue sur TRADING_AI_ALERTES 📈\\n\\n"
+                "Bienvenue sur TRADING_AI_ALERTES 📈\n\n"
                 "Tu disposes ici des commandes privées complètes pour suivre OKX, Cubrik et ATLAS. "
                 "Dans les groupes, les membres ne voient que /cubrikagents."
             )
         else:
             reply = (
-                "Bienvenue sur TRADING_AI_ALERTES 📈\\n\\n"
+                "Bienvenue sur TRADING_AI_ALERTES 📈\n\n"
                 "La commande publique disponible est /cubrikagents : elle affiche uniquement le statut et le rôle des agents, sans données financières."
             )
     elif command == "/help":
         if is_owner_private:
             reply = (
-                "Commandes privées disponibles :\\n"
-                "/news — synthèse des actualités financières\\n"
-                "/status — état du bot\\n"
-                "/atlas — portefeuille réel OKX\\n"
-                "/positions — positions réelles OKX\\n"
-                "/trades — opérations réelles OKX\\n"
-                "/atlasstats — évaluation des signaux ATLAS\\n"
-                "/atlastest — diagnostic du conseil IA sans ordre\\n"
-                "/cubrikconnect — connexion Cubrik\\n"
-                "/cubrik — capital, performance et positions\\n"
-                "/cubrikagents — statut et horaires des agents\\n"
-                "/cubriktrades — résultats et historique\\n\\n"
+                "Commandes privées disponibles :\n"
+                "/news — synthèse des actualités financières\n"
+                "/status — état du bot\n"
+                "/atlas — portefeuille réel OKX\n"
+                "/positions — positions réelles OKX\n"
+                "/trades — opérations réelles OKX\n"
+                "/atlasstats — évaluation des signaux ATLAS\n"
+                "/atlastest — diagnostic du conseil IA sans ordre\n"
+                "/cubrikconnect — connexion Cubrik\n"
+                "/cubrik — capital, performance et positions\n"
+                "/cubrikagents — statut et horaires des agents\n"
+                "/cubriktrades — résultats et historique\n\n"
                 "Ces commandes sensibles sont réservées à cette conversation privée."
             )
         else:
