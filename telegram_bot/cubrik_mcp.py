@@ -19,6 +19,7 @@ import psycopg
 from cryptography.fernet import Fernet, InvalidToken
 from mcp import ClientSession
 from mcp.client.auth import AuthorizationCodeResult, OAuthClientProvider
+from mcp.client.auth.exceptions import OAuthRegistrationError
 from mcp.client.streamable_http import streamable_http_client
 from mcp.shared.auth import OAuthClientInformationFull, OAuthClientMetadata, OAuthToken
 from pydantic import AnyUrl
@@ -646,6 +647,19 @@ def _background_worker(chat_id, notify, detailed=True, oauth_queue=None):
         ))
         message = format_cubrik_snapshot(snapshot, detailed=detailed)
         notify(chat_id, message)
+    except OAuthRegistrationError:
+        redirect_uri = _redirect_uri()
+        log.error("Cubrik MCP rejected the configured OAuth redirect URI: %s", redirect_uri)
+        notify(
+            chat_id,
+            "⚠️ Cubrik refuse l'adresse de retour OAuth configurée pour ATLAS.\n\n"
+            "Adresse à faire autoriser par le support Cubrik :\n"
+            + redirect_uri
+            + "\n\n"
+            "Demande-leur d'ajouter cette URL aux redirections MCP autorisées pour les applications personnalisées, "
+            "ou de fournir une URL de callback officiellement prise en charge. "
+            "Aucune autorisation n'a été accordée et aucun ordre n'a été envoyé."
+        )
     except CubrikMonitorError as exc:
         notify(chat_id, "⚠️ Connexion Cubrik : " + str(exc))
     except Exception as exc:
