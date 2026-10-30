@@ -766,6 +766,7 @@ def telegram_webhook():
             chat_id,
             send_long_message,
             detailed=detailed,
+            allow_reauthorization=(command == "/cubrikconnect"),
         )
         reply = (
             "🔎 Je consulte Cubrik. Le compte rendu arrivera ici."
