@@ -668,7 +668,8 @@ def format_cubrik_snapshot(data, detailed=True):
             "🧠 Agents actifs : {} / {}".format(active_count, len(agents)),
         ]
         if data.get("warnings"):
-            lines.extend(["", "⚠️ " + warning for warning in data["warnings"][:2]])
+            lines.append("")
+            lines.extend("⚠️ " + warning for warning in data["warnings"][:2])
         if not positions and realized == 0:
             lines.extend([
                 "",
