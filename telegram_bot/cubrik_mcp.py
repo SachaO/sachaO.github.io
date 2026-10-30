@@ -622,6 +622,27 @@ def format_cubrik_snapshot(data, detailed=True):
     return "\n".join(lines)
 
 
+def _contains_oauth_registration_error(exc):
+    if isinstance(exc, OAuthRegistrationError):
+        return True
+    nested = getattr(exc, "exceptions", None)
+    if isinstance(nested, (list, tuple)):
+        return any(_contains_oauth_registration_error(item) for item in nested)
+    return False
+
+
+def _oauth_redirect_error_message():
+    return (
+        "⚠️ Cubrik refuse l'adresse de retour OAuth configurée pour ATLAS.\n\n"
+        "Adresse à faire autoriser par le support Cubrik :\n"
+        + _redirect_uri()
+        + "\n\n"
+        "Demande-leur d'ajouter cette URL aux redirections MCP autorisées pour les applications personnalisées, "
+        "ou de fournir une URL de callback officiellement prise en charge. "
+        "Aucune autorisation n'a été accordée et aucun ordre n'a été envoyé."
+    )
+
+
 def _background_worker(chat_id, notify, detailed=True, oauth_queue=None):
     global _ACTIVE_WORKER
     auth_url_holder = {"url": None, "state": None}
@@ -663,11 +684,15 @@ def _background_worker(chat_id, notify, detailed=True, oauth_queue=None):
     except CubrikMonitorError as exc:
         notify(chat_id, "⚠️ Connexion Cubrik : " + str(exc))
     except Exception as exc:
-        log.exception("ATLAS Cubrik MCP operation failed (%s)", type(exc).__name__)
-        notify(
-            chat_id,
-            "⚠️ ATLAS n'a pas réussi à lire Cubrik. Vérifie l'autorisation MCP et les logs Render. Aucun ordre n'a été envoyé.",
-        )
+        if _contains_oauth_registration_error(exc):
+            log.error("Cubrik MCP rejected ATLAS's OAuth redirect URI: %s", _redirect_uri())
+            notify(chat_id, _oauth_redirect_error_message())
+        else:
+            log.exception("ATLAS Cubrik MCP operation failed (%s)", type(exc).__name__)
+            notify(
+                chat_id,
+                "⚠️ ATLAS n'a pas réussi à lire Cubrik. Vérifie l'autorisation MCP et les logs Render. Aucun ordre n'a été envoyé.",
+            )
     finally:
         with _PENDING_LOCK:
             _ACTIVE_WORKER = None
