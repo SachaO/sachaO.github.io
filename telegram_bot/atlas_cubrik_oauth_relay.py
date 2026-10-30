@@ -21,8 +21,8 @@ class CallbackHandler(BaseHTTPRequestHandler):
     server_version = "ATLAS-Cubrik-Relay/1.0"
 
     def log_message(self, fmt, *args):
-        # Do not log the browser URL: it contains the one-time OAuth code.
-        print("Callback relay:", fmt % args)
+        # Never log request paths: the browser URL contains a one-time OAuth code.
+        return
 
     def _html(self, status, title, message):
         body = (
