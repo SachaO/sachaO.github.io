@@ -488,11 +488,15 @@ async def _read_cubrik_snapshot(auth_url_callback=None, callback_result=None, de
                 snapshot = {"captured_at": datetime.now().astimezone().strftime("%d/%m/%Y %H:%M")}
                 warnings = []
 
-                # Public group mode requests only the agents list: no balances,
-                # positions, trading results, history, notifications or credit data.
-                # All other reports still use read-only tools only.
+                # Public group mode requests only agent metadata and realized
+                # trading activity. It deliberately does NOT request account balances,
+                # portfolio/equity, open positions, subscription or credit information.
                 if agents_only:
-                    jobs = [("agents", {})]
+                    jobs = [
+                        ("agents", {}),
+                        ("platforms", {}),
+                        ("results", {"period": "past_week", "account": "OKX"}),
+                    ]
                 else:
                     jobs = [
                         ("account", {}),
@@ -513,7 +517,30 @@ async def _read_cubrik_snapshot(auth_url_callback=None, callback_result=None, de
 
                 agents = _extract_agents(responses.get("agents"))
                 if agents_only:
+                    # Derive the connected OKX account id only to query its trade
+                    # history. Platform balances returned by list_platforms are
+                    # never copied into the public response or formatter payload.
+                    platform_items = _extract_platforms(responses.get("platforms"))
+                    okx_platform = next(
+                        (
+                            platform for platform in platform_items
+                            if str(platform.get("name") or platform.get("id") or "").upper() == "OKX"
+                        ),
+                        platform_items[0] if platform_items else {},
+                    )
+                    history_args = {"days": 7, "limit": 10}
+                    if okx_platform.get("id"):
+                        history_args["account"] = okx_platform["id"]
+                    history_value, history_warning = await _call_read_tool(
+                        session, tools, "history", history_args
+                    )
+                    if history_value is not None:
+                        snapshot["history"] = history_value
+                    if history_warning:
+                        warnings.append(history_warning)
+
                     snapshot["agents"] = responses.get("agents")
+                    snapshot["results"] = responses.get("results")
                     snapshot["warnings"] = warnings
                     return snapshot
 
@@ -569,6 +596,76 @@ def _pnl_badge(value):
     return "⚪ 0,00"
 
 
+def _public_trade_side(value):
+    value = str(value or "opération").strip().lower()
+    labels = {
+        "buy": "Achat",
+        "long": "Achat",
+        "sell": "Vente",
+        "short": "Vente",
+    }
+    return labels.get(value, value.capitalize())
+
+
+def _format_public_trade_activity(history_payload, results_payload):
+    trades = _items(history_payload, ("trades", "history", "items", "data", "fills"))
+    result_accounts = _items(results_payload, ("accounts", "items", "data"))
+    okx_result = next(
+        (
+            item for item in result_accounts
+            if str(item.get("account") or item.get("name") or "").upper() == "OKX"
+        ),
+        result_accounts[0] if result_accounts else {},
+    )
+    net_result = _pick(
+        okx_result,
+        ("netResult", "net_result", "realizedPnl", "realized_pnl", "pnl", "profit_loss"),
+    )
+    currency = okx_result.get("currency")
+
+    lines = [
+        "📊 RÉSULTATS DES TRADES — 7 DERNIERS JOURS",
+        "Gain/perte réalisé cumulé : {}".format(
+            _pnl_badge(net_result) +
+            ((" " + str(currency)) if currency else
+             (" (devise non communiquée)" if net_result is not None else ""))
+        ),
+    ]
+
+    if not trades:
+        lines.append("Aucune opération clôturée renvoyée sur cette période.")
+        return lines
+
+    lines.append("Dernières opérations :")
+    for trade in trades[:8]:
+        if not isinstance(trade, dict):
+            continue
+        instrument = _pick(trade, ("instrument", "symbol", "instId", "market")) or "Actif inconnu"
+        side = _public_trade_side(_pick(trade, ("side", "direction", "action")))
+        pnl = _pick(
+            trade,
+            ("pnl", "profit_loss", "realized_pnl", "realizedPnl", "net_pnl", "netPnl"),
+        )
+        at = _pick(trade, ("closed_at", "closedAt", "at", "created_at", "timestamp", "time"))
+        agent = _pick(trade, ("agent_name", "agentName", "agent", "opened_by", "task_name"))
+        line = "• {} — {} — {}".format(
+            instrument,
+            side,
+            _pnl_badge(pnl),
+        )
+        trade_currency = _pick(trade, ("currency", "pnl_currency", "quote_currency")) or currency
+        if trade_currency and pnl is not None:
+            line += " " + str(trade_currency)
+        elif pnl is not None:
+            line += " (devise non communiquée)"
+        if agent and isinstance(agent, str):
+            line += " — " + _short_value(agent, 60)
+        if at:
+            line += " — " + str(at)
+        lines.append(line)
+    return lines
+
+
 def format_cubrik_agents_snapshot(data):
     agents = _extract_agents(data.get("agents"))
     active = sum(
@@ -576,7 +673,7 @@ def format_cubrik_agents_snapshot(data):
         if str(agent.get("status", "")).lower() in ("active", "running")
     )
     lines = [
-        "🤖 ATLAS — AGENTS CUBRIK",
+        "🤖 ATLAS — ACTIVITÉ CUBRIK",
         "Relevé : {}".format(data.get("captured_at", "heure inconnue")),
         "",
         "{} agent(s) actif(s) sur {}".format(active, len(agents)),
@@ -593,12 +690,15 @@ def format_cubrik_agents_snapshot(data):
             if agent.get("mayTrade") is not None:
                 line += " — trading {}".format("autorisé" if agent.get("mayTrade") else "interdit")
             lines.append(line)
+
+    lines.extend(["", *_format_public_trade_activity(data.get("history"), data.get("results"))])
+
     if data.get("warnings"):
         lines.append("")
         lines.extend("⚠️ " + warning for warning in data["warnings"][:3])
     lines.extend([
         "",
-        "Les agents observateurs analysent et alertent. Seul ATLAS-SWING-EXECUTOR possède le droit d'exécuter des ordres sur OKX.",
+        "Ce récapitulatif montre uniquement les opérations clôturées et leurs gains/pertes. Le capital, le solde du compte et les crédits ne sont pas affichés.",
     ])
     return "\n".join(lines)
 
