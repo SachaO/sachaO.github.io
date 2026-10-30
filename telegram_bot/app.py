@@ -10,7 +10,7 @@ import requests
 from flask import Flask, request, abort
 from atlas.paper_trading import format_snapshot, snapshot, signal_performance
 from atlas.engine import run_cycle, get_history, analyse_signal, council_vote
-from cubrik_mcp import start_cubrik_request, complete_oauth_callback, is_connected, CubrikMonitorError
+from cubrik_mcp import start_cubrik_request, complete_oauth_callback, is_connected, CubrikMonitorError, probe_native_loopback_registration
 
 logging.basicConfig(level=logging.INFO)
 app = Flask(__name__)
@@ -71,6 +71,7 @@ def set_commands():
         {"command": "atlasstats", "description": "Évaluer les signaux ATLAS sur 1, 3 et 7 jours"},
         {"command": "atlastest", "description": "Tester les cinq votes IA sans passer d’ordre"},
         {"command": "cubrikconnect", "description": "Relier ATLAS à Cubrik en lecture seule"},
+        {"command": "cubrikprobe", "description": "Tester le callback natif Cubrik"},
         {"command": "cubrik", "description": "Voir l’état de Cubrik et du portefeuille"},
         {"command": "cubrikagents", "description": "Voir les agents et leurs dernières exécutions"},
         {"command": "cubriktrades", "description": "Voir les résultats et transactions Cubrik"},
@@ -701,6 +702,33 @@ def telegram_webhook():
         reply = "\n".join(lines)
     elif command == "/news":
         reply = format_news_message(topic)
+    elif command == "/cubrikprobe":
+        if not TELEGRAM_CHAT_ID or str(chat_id) != str(TELEGRAM_CHAT_ID):
+            reply = "⛔ Accès refusé."
+        else:
+            try:
+                results = probe_native_loopback_registration()
+                accepted = next((item for item in results if item.get("accepted")), None)
+                if accepted:
+                    reply = (
+                        "✅ Cubrik accepte une redirection OAuth native locale :\n"
+                        + accepted["redirect_uri"]
+                        + "\n\nJe peux maintenant préparer un petit assistant local qui fera la connexion sur ton PC puis transférera le jeton à Render de manière sécurisée."
+                    )
+                else:
+                    reply = "❌ Cubrik refuse aussi les redirections natives locales.\n\n" + "\n".join(
+                        "• {} : HTTP {} — {} {}".format(
+                            item.get("redirect_uri"),
+                            item.get("status", "n/a"),
+                            item.get("error", "erreur"),
+                            item.get("description", ""),
+                        )
+                        for item in results
+                    )
+                    reply += "\n\nAucune autorisation ni permission n'a été accordée."
+            except Exception:
+                logging.exception("Cubrik native OAuth probe failed")
+                reply = "⚠️ Le test OAuth natif n'a pas pu être effectué."
     elif command in ("/cubrikconnect", "/cubrik", "/cubrikagents", "/cubriktrades"):
         if not TELEGRAM_CHAT_ID or str(chat_id) != str(TELEGRAM_CHAT_ID):
             reply = "⛔ Accès refusé : la consultation de Cubrik est réservée à la conversation Telegram autorisée."
