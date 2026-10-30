@@ -12,7 +12,7 @@ import os
 import queue
 import threading
 from datetime import datetime
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 
 import httpx2
 import psycopg
@@ -148,6 +148,15 @@ class PostgresOAuthStorage:
         return OAuthToken.model_validate_json(payload) if payload else None
 
     async def set_tokens(self, tokens):
+        granted_scopes = set((getattr(tokens, "scope", None) or "").split())
+        if "cubrik.trade" in granted_scopes:
+            raise CubrikMonitorError(
+                "Cubrik a accordé la permission de trading à ATLAS. Le jeton a été refusé et n'a pas été enregistré."
+            )
+        if granted_scopes and not {"cubrik.read", "cubrik.agents"}.issubset(granted_scopes):
+            raise CubrikMonitorError(
+                "Le jeton Cubrik ne contient pas les permissions de lecture attendues. Il n'a pas été enregistré."
+            )
         await asyncio.to_thread(_write_secret, "tokens", tokens.model_dump_json())
 
     async def get_client_info(self):
@@ -409,21 +418,32 @@ async def _read_cubrik_snapshot(auth_url_callback=None, callback_result=None, de
     storage = PostgresOAuthStorage()
 
     async def redirect_handler(auth_url):
-        requested_scopes = set(
-            (parse_qs(urlparse(auth_url).query).get("scope") or [""])[0].split()
-        )
-        if "cubrik.trade" in requested_scopes:
+        parsed = urlparse(auth_url)
+        query = parse_qs(parsed.query, keep_blank_values=True)
+        requested_scopes = set((query.get("scope") or [""])[0].split())
+        required_scopes = {"cubrik.read", "cubrik.agents"}
+        if not required_scopes.issubset(requested_scopes):
             raise CubrikMonitorError(
-                "Cubrik a inclus cubrik.trade dans la demande OAuth. ATLAS refuse d'afficher ce lien. "
-                "La demande doit contenir uniquement cubrik.read et cubrik.agents."
-            )
-        if not {"cubrik.read", "cubrik.agents"}.issubset(requested_scopes):
-            raise CubrikMonitorError(
-                "La demande OAuth Cubrik n'inclut pas les permissions minimales de lecture attendues. "
+                "La demande OAuth Cubrik ne contient pas les permissions de lecture et d'accès aux agents attendues. "
                 "Aucun lien n'a été transmis."
             )
+
+        # Cubrik advertises a combined scope list that also includes cubrik.trade.
+        # ATLAS explicitly narrows the authorization request to read + agent visibility.
+        safe_scopes = required_scopes | ({"offline_access"} if "offline_access" in requested_scopes else set())
+        safe_scope_value = " ".join(
+            scope for scope in ("cubrik.read", "cubrik.agents", "offline_access")
+            if scope in safe_scopes
+        )
+        query["scope"] = [safe_scope_value]
+
+        # Keep the SDK's token-response scope validation and storage aligned with
+        # the narrowed authorization request, not the wider metadata advertisement.
+        oauth.context.client_metadata.scope = safe_scope_value
+        safe_auth_url = urlunparse(parsed._replace(query=urlencode(query, doseq=True)))
+
         if auth_url_callback:
-            await auth_url_callback(auth_url)
+            await auth_url_callback(safe_auth_url)
         else:
             raise CubrikMonitorError(
                 "La session Cubrik doit être reconnectée. Utilise /cubrikconnect."
