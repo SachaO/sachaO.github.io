@@ -450,14 +450,31 @@ async def _read_cubrik_snapshot(
                 "Aucun lien n'a été transmis."
             )
 
-        # Cubrik advertises a combined scope list that also includes cubrik.trade.
-        # ATLAS explicitly narrows the authorization request to read + agent visibility.
-        safe_scopes = required_scopes | ({"offline_access"} if "offline_access" in requested_scopes else set())
+        # Keep ATLAS strictly read-only. Request offline_access only when Cubrik's
+        # Authorization Server metadata explicitly advertises that scope. The MCP
+        # SDK 2.3.0 does not add it automatically.
+        oauth_metadata = getattr(oauth.context, "oauth_metadata", None)
+        advertised_scopes = set(
+            getattr(oauth_metadata, "scopes_supported", None) or []
+        )
+        refresh_scope_supported = "offline_access" in advertised_scopes
+        safe_scopes = required_scopes | ({"offline_access"} if refresh_scope_supported else set())
         safe_scope_value = " ".join(
             scope for scope in ("cubrik.read", "cubrik.agents", "offline_access")
             if scope in safe_scopes
         )
         query["scope"] = [safe_scope_value]
+        if refresh_scope_supported:
+            # OIDC providers may require an explicit consent screen for offline access.
+            query["prompt"] = ["consent"]
+        else:
+            query.pop("prompt", None)
+
+        log.info(
+            "Cubrik OAuth metadata: offline_access_supported=%s; requested_refresh_scope=%s",
+            refresh_scope_supported,
+            refresh_scope_supported,
+        )
 
         # Keep the SDK's token-response scope validation and storage aligned with
         # the narrowed authorization request, not the wider metadata advertisement.
