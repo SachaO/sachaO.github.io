@@ -21,7 +21,6 @@ _ALLOWED_PATHS = {
     "/api/v5/account/balance",
     "/api/v5/account/config",
     "/api/v5/account/positions",
-    "/api/v5/account/positions-history",
     "/api/v5/trade/orders-pending",
     "/api/v5/trade/orders-history",
     "/api/v5/trade/orders-history-archive",
@@ -164,10 +163,6 @@ def _orders_archive():
     return _get("/api/v5/trade/orders-history-archive", {"instType": None, "state": None, "limit": "20"})
 
 
-def _positions_history():
-    return _get("/api/v5/account/positions-history", {"instType": None, "limit": "20"})
-
-
 def _recent_bills():
     return _get("/api/v5/account/bills", {"limit": "20"})
 
@@ -177,23 +172,33 @@ def _account_config():
     return rows[0] if rows else {}
 
 
+def _optional_read(function):
+    try:
+        return function(), None
+    except OKXReadOnlyError as exc:
+        return [], str(exc)
+
+
 def fetch_account_snapshot():
-    """Fetch a factual, read-only snapshot; fail closed if required calls fail."""
+    """Fetch a factual, read-only snapshot and keep partial results if an endpoint is unavailable."""
     balance = _account_balance()
     if not balance:
         raise OKXReadOnlyError("OKX n'a retourné aucun résumé de compte.")
-    details = balance.get("details") or []
-    funding = _funding_balances()
-    positions = _positions()
-    pending = _pending_orders()
-    fills = _recent_fills()
-    orders = _recent_orders()
-    config = _account_config()
+    funding, funding_error = _optional_read(_funding_balances)
+    positions, positions_error = _optional_read(_positions)
+    pending, pending_error = _optional_read(_pending_orders)
+    fills, fills_error = _optional_read(_recent_fills)
+    orders, orders_error = _optional_read(_recent_orders)
+    config_rows, config_error = _optional_read(lambda: _get("/api/v5/account/config"))
+    config = config_rows[0] if config_rows else {}
+    warnings = [message for message in (
+        funding_error, positions_error, pending_error, fills_error, orders_error, config_error
+    ) if message]
     return {
         "captured_at": datetime.now().astimezone().strftime("%d/%m/%Y à %H:%M:%S"),
         "equity_usd": balance.get("totalEq"),
         "available_equity": balance.get("availEq"),
-        "trading_assets": details,
+        "trading_assets": balance.get("details") or [],
         "funding_assets": funding,
         "positions": positions,
         "pending_orders": pending,
@@ -201,18 +206,21 @@ def fetch_account_snapshot():
         "orders": orders,
         "account_mode": config.get("acctLv"),
         "position_mode": config.get("posMode"),
-        "auto_loan": config.get("autoLoan"),
-        "currency": balance.get("uTime"),
+        "warnings": warnings,
     }
 
 
 def fetch_history_snapshot():
     """Read-only recent activity: up to 3 months of fills/orders and 7 days of bills."""
+    fills, fills_error = _optional_read(_fills_archive)
+    orders, orders_error = _optional_read(_orders_archive)
+    bills, bills_error = _optional_read(_recent_bills)
+    warnings = [message for message in (fills_error, orders_error, bills_error) if message]
     return {
-        "fills": _fills_archive(),
-        "orders": _orders_archive(),
-        "positions_history": _positions_history(),
-        "bills": _recent_bills(),
+        "fills": fills,
+        "orders": orders,
+        "bills": bills,
+        "warnings": warnings,
         "captured_at": datetime.now().astimezone().strftime("%d/%m/%Y à %H:%M:%S"),
     }
 
@@ -255,19 +263,6 @@ def format_history_snapshot(data):
             avg=_num(order.get("avgPx"), 6),
         ))
 
-    position_history = data.get("positions_history") or []
-    lines.extend(["", "🗂️ POSITIONS CLÔTURÉES / MODIFIÉES (jusqu'à 3 mois)"])
-    if not position_history:
-        lines.append("Aucune donnée d'historique de position renvoyée par OKX.")
-    for item in position_history[:8]:
-        lines.append("• {date} — {inst} {side} | taille {size} | P&L réalisé {pnl} USD".format(
-            date=_utc_time(item.get("uTime") or item.get("cTime")),
-            inst=item.get("instId", "?"),
-            side=item.get("方向") or item.get("posSide", "?"),
-            size=item.get("closeTotalPos") or item.get("pos", "?"),
-            pnl=_num(item.get("realizedPnl") or item.get("pnl"), 2, signed=True),
-        ))
-
     bills = data.get("bills") or []
     lines.extend(["", "💳 MOUVEMENTS DU COMPTE (7 derniers jours)"])
     if not bills:
@@ -281,6 +276,9 @@ def format_history_snapshot(data):
             pnl=_num(bill.get("pnl"), 8, signed=True),
             fee=_num(bill.get("fee"), 8, signed=True),
         ))
+    if data.get("warnings"):
+        lines.extend(["", "⚠️ Certaines rubriques n'ont pas pu être lues :"])
+        lines.extend("• " + warning for warning in data["warnings"][:3])
     lines.extend(["", "ℹ️ Les historiques sont limités par les fenêtres de disponibilité OKX ; les résultats affichés ne sont pas une comptabilité fiscale."])
     return "\n".join(lines)
 
@@ -393,6 +391,10 @@ def format_account_snapshot(data):
                     avg=_num(order.get("avgPx"), 6),
                 )
             )
+
+    if data.get("warnings"):
+        lines.extend(["", "⚠️ Rubriques non accessibles :"])
+        lines.extend("• " + warning for warning in data["warnings"][:3])
 
     lines.extend([
         "",
