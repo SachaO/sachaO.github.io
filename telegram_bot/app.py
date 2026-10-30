@@ -62,25 +62,50 @@ def send_long_message(chat_id, text, parse_mode=None):
 
 
 def set_commands():
-    commands = [
+    # Public users and group chats see only the sanitized agents overview.
+    public_commands = [
+        {"command": "cubrikagents", "description": "Voir les agents Cubrik (statut uniquement)"},
+    ]
+    private_owner_commands = [
         {"command": "start", "description": "Démarrer le bot"},
-        {"command": "help", "description": "Afficher cette aide"},
+        {"command": "help", "description": "Afficher toutes les commandes privées"},
         {"command": "news", "description": "Résumé des actualités financières"},
         {"command": "status", "description": "Vérifier le bot"},
         {"command": "chatid", "description": "Afficher l’identifiant de la conversation"},
-        {"command": "atlas", "description": "Voir le vrai portefeuille OKX via Cubrik"},
+        {"command": "atlas", "description": "Voir le portefeuille réel OKX"},
         {"command": "positions", "description": "Voir les positions réelles OKX"},
         {"command": "trades", "description": "Voir les opérations réelles OKX"},
-        {"command": "atlasstats", "description": "Évaluer les signaux ATLAS sur 1, 3 et 7 jours"},
-        {"command": "atlastest", "description": "Tester les cinq votes IA sans passer d’ordre"},
-        {"command": "cubrikconnect", "description": "Relier ATLAS à Cubrik en lecture seule"},
-        {"command": "cubrik", "description": "Voir l’état de Cubrik et du portefeuille"},
-        {"command": "cubrikagents", "description": "Voir les agents et leurs dernières exécutions"},
-        {"command": "cubriktrades", "description": "Voir les résultats et transactions Cubrik"},
+        {"command": "atlasstats", "description": "Évaluer les signaux ATLAS"},
+        {"command": "atlastest", "description": "Diagnostic du conseil IA sans ordre"},
+        {"command": "cubrikconnect", "description": "Relier ATLAS à Cubrik"},
+        {"command": "cubrik", "description": "Voir le capital et la performance OKX"},
+        {"command": "cubrikagents", "description": "Voir les agents et leurs horaires"},
+        {"command": "cubriktrades", "description": "Voir les résultats et transactions"},
     ]
-    response = requests.post(f"{API}/setMyCommands", json={"commands": commands}, timeout=15)
-    response.raise_for_status()
-    logging.info("Telegram bot commands configured successfully.")
+
+    for scope in ({"type": "default"}, {"type": "all_group_chats"}):
+        response = requests.post(
+            f"{API}/setMyCommands",
+            json={"commands": public_commands, "scope": scope},
+            timeout=15,
+        )
+        response.raise_for_status()
+
+    if TELEGRAM_CHAT_ID:
+        try:
+            owner_chat_id = int(TELEGRAM_CHAT_ID)
+        except ValueError:
+            owner_chat_id = TELEGRAM_CHAT_ID
+        response = requests.post(
+            f"{API}/setMyCommands",
+            json={
+                "commands": private_owner_commands,
+                "scope": {"type": "chat", "chat_id": owner_chat_id},
+            },
+            timeout=15,
+        )
+        response.raise_for_status()
+    logging.info("Telegram command scopes configured: public agents-only; owner private full menu.")
 
 
 def configure_telegram():
@@ -564,38 +589,64 @@ def telegram_webhook():
         return "ok", 200
 
     chat_id = message["chat"]["id"]
+    chat_type = message["chat"].get("type", "private")
+    is_group_chat = chat_type in ("group", "supergroup")
+    is_owner_private = (
+        chat_type == "private"
+        and bool(TELEGRAM_CHAT_ID)
+        and str(chat_id) == str(TELEGRAM_CHAT_ID)
+    )
     text = (message.get("text") or "").strip()
     parts = text.split()
     command = parts[0].split("@")[0].lower() if parts else ""
     topic = " ".join(parts[1:]).strip()
-    logging.info("Telegram message received; command=%s", command or "(no text)")
+    logging.info(
+        "Telegram message received; command=%s chat_type=%s owner_private=%s",
+        command or "(no text)", chat_type, is_owner_private,
+    )
 
-    if command == "/start":
+    owner_private_commands = {
+        "/news", "/status", "/chatid", "/atlas", "/positions", "/trades",
+        "/atlasstats", "/atlastest", "/cubrikconnect", "/cubrik", "/cubriktrades",
+    }
+    if is_group_chat and command != "/cubrikagents":
         reply = (
-            "Bienvenue sur TRADING_AI_ALERTES 📈\n\n"
-            "Ce bot collecte des titres financiers via RSS et peut les synthétiser avec une IA si un fournisseur est configuré.\n"
-            "Utilise /news pour obtenir une synthèse des dernières nouvelles.\n"
-            "Le portefeuille réel OKX est consultable via Cubrik avec /atlas, /positions et /trades."
+            "🔒 Dans ce groupe, seule la commande /cubrikagents est disponible. "
+            "Les données financières et les commandes complètes restent accessibles dans la conversation privée du propriétaire avec le bot."
         )
+    elif command in owner_private_commands and not is_owner_private:
+        reply = "⛔ Cette commande est réservée au propriétaire dans sa conversation privée avec le bot."
+    elif command == "/start":
+        if is_owner_private:
+            reply = (
+                "Bienvenue sur TRADING_AI_ALERTES 📈\\n\\n"
+                "Tu disposes ici des commandes privées complètes pour suivre OKX, Cubrik et ATLAS. "
+                "Dans les groupes, les membres ne voient que /cubrikagents."
+            )
+        else:
+            reply = (
+                "Bienvenue sur TRADING_AI_ALERTES 📈\\n\\n"
+                "La commande publique disponible est /cubrikagents : elle affiche uniquement le statut et le rôle des agents, sans données financières."
+            )
     elif command == "/help":
-        reply = (
-            "Commandes disponibles :\n"
-            "/start — présentation du bot\n"
-            "/help — afficher cette aide\n"
-            "/news — synthèse des actualités financières\n"
-            "/news Oracle — recherche ciblée\n"
-            "/status — vérifier que le bot répond\n"
-            "/atlas — portefeuille réel OKX via Cubrik\n"
-            "/positions — positions réelles OKX\n"
-            "/trades — dernières opérations réelles OKX\n"
-            "/atlasstats — évaluer les signaux sur 1, 3 et 7 jours\n"
-            "/atlastest — tester les cinq votes IA sans ordre simulé\n"
-            "/cubrikconnect — relier ATLAS à Cubrik en lecture seule\n"
-            "/cubrik — état de Cubrik, plateformes, agents et positions\n"
-            "/cubrikagents — détails des agents et dernières exécutions\n"
-            "/cubriktrades — résultats et historique des transactions\n\n"
-            "La synthèse IA nécessite la configuration d'un fournisseur compatible. Sans clé, le bot propose un digest transparent basé sur les titres."
-        )
+        if is_owner_private:
+            reply = (
+                "Commandes privées disponibles :\\n"
+                "/news — synthèse des actualités financières\\n"
+                "/status — état du bot\\n"
+                "/atlas — portefeuille réel OKX\\n"
+                "/positions — positions réelles OKX\\n"
+                "/trades — opérations réelles OKX\\n"
+                "/atlasstats — évaluation des signaux ATLAS\\n"
+                "/atlastest — diagnostic du conseil IA sans ordre\\n"
+                "/cubrikconnect — connexion Cubrik\\n"
+                "/cubrik — capital, performance et positions\\n"
+                "/cubrikagents — statut et horaires des agents\\n"
+                "/cubriktrades — résultats et historique\\n\\n"
+                "Ces commandes sensibles sont réservées à cette conversation privée."
+            )
+        else:
+            reply = "Commande disponible : /cubrikagents — statut des agents uniquement, sans capital ni données de portefeuille."
     elif command in ("/atlas", "/positions", "/trades"):
         # Les commandes portefeuille affichent désormais les données réelles OKX
         # lues via Cubrik ; le ledger paper-trading n'est plus présenté comme le compte réel.
@@ -690,21 +741,37 @@ def telegram_webhook():
         reply = "\n".join(lines)
     elif command == "/news":
         reply = format_news_message(topic)
-    elif command in ("/cubrikconnect", "/cubrik", "/cubrikagents", "/cubriktrades"):
-        if not TELEGRAM_CHAT_ID or str(chat_id) != str(TELEGRAM_CHAT_ID):
-            reply = "⛔ Accès refusé : la consultation de Cubrik est réservée à la conversation Telegram autorisée."
+    elif command == "/cubrikagents":
+        # Public mode is read-only and requests only Cubrik's agent list.
+        if not is_connected():
+            reply = (
+                "ℹ️ La consultation des agents n'est pas encore reliée. "
+                "Le propriétaire doit terminer /cubrikconnect dans sa conversation privée."
+            )
         else:
-            detailed = command != "/cubrik"
             started, message = start_cubrik_request(
                 chat_id,
                 send_long_message,
-                detailed=detailed,
+                detailed=False,
+                agents_only=True,
             )
             reply = (
-                "🔎 Je consulte Cubrik. Le compte rendu arrivera dans ce chat."
+                "🔎 Je récupère uniquement le statut et les horaires des agents."
                 if started else
                 "ℹ️ " + message
             )
+    elif command in ("/cubrikconnect", "/cubrik", "/cubriktrades"):
+        detailed = command != "/cubrik"
+        started, message = start_cubrik_request(
+            chat_id,
+            send_long_message,
+            detailed=detailed,
+        )
+        reply = (
+            "🔎 Je consulte Cubrik. Le compte rendu arrivera ici."
+            if started else
+            "ℹ️ " + message
+        )
     elif command == "/status":
         ai_state = "configurée" if AI_API_KEY and AI_MODEL else "non configurée (résumé de secours)"
         cubrik_state = "connecté" if is_connected() else "à relier"
