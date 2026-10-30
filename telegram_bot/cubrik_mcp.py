@@ -266,6 +266,109 @@ def _short_value(value, limit=180):
     return str(value).replace("\n", " ").strip()[:limit]
 
 
+def _pick(data, names):
+    if not isinstance(data, dict):
+        return None
+    for name in names:
+        value = data.get(name)
+        if value not in (None, "", [], {}):
+            return value
+    return None
+
+
+def _format_results(payload):
+    if not isinstance(payload, dict):
+        return _short_value(payload, 900)
+    fields = [
+        ("P&L net", ("pnl", "profit_loss", "net_pnl", "total_pnl")),
+        ("P&L réalisé", ("realized_pnl", "realizedPnl")),
+        ("P&L latent", ("unrealized_pnl", "unrealizedPnl")),
+        ("Nombre de trades", ("trade_count", "trades_count", "total_trades")),
+        ("Taux de réussite", ("win_rate", "winRate")),
+        ("Perte maximale", ("max_drawdown", "maxDrawdown")),
+    ]
+    lines = []
+    for label, keys in fields:
+        value = _pick(payload, keys)
+        if value is not None:
+            rendered = _money(value) if isinstance(value, (int, float)) else _short_value(value, 100)
+            if "taux" in label.lower() and isinstance(value, (int, float)) and value <= 1:
+                rendered = "{:.1f} %".format(float(value) * 100)
+            elif "taux" in label.lower() and isinstance(value, (int, float)):
+                rendered = "{:.1f} %".format(float(value))
+            lines.append("• {} : {}".format(label, rendered))
+    if not lines:
+        summary = _pick(payload, ("summary", "message", "text", "description"))
+        if summary:
+            lines.append(_short_value(summary, 900))
+        else:
+            lines.append(_short_value(payload, 900))
+    return "\n".join(lines)
+
+
+def _format_agent_runs(value):
+    runs = _items(value, ("runs", "items", "history", "data"))
+    if not runs and isinstance(value, dict):
+        runs = [value]
+    if not runs:
+        return _short_value(value, 320)
+    lines = []
+    for run in runs[:3]:
+        if not isinstance(run, dict):
+            lines.append(_short_value(run, 240))
+            continue
+        at = _pick(run, ("at", "created_at", "started_at", "startedAt", "timestamp", "time"))
+        status = _pick(run, ("status", "result_status", "outcome"))
+        summary = _pick(run, ("summary", "decision", "message", "result", "explanation", "response"))
+        parts = []
+        if at:
+            parts.append(str(at))
+        if status:
+            parts.append(str(status))
+        if summary:
+            parts.append(_short_value(summary, 260))
+        if not parts:
+            parts.append(_short_value(run, 260))
+        lines.append(" · ".join(parts))
+    return "\n".join(lines)
+
+
+def _format_trade_history(payload):
+    trades = _items(payload, ("trades", "history", "items", "data", "fills"))
+    if not trades:
+        if isinstance(payload, dict):
+            summary = _pick(payload, ("summary", "message", "text"))
+            if summary:
+                return _short_value(summary, 900)
+        return "Aucune transaction récente renvoyée par Cubrik."
+    lines = []
+    for trade in trades[:10]:
+        if not isinstance(trade, dict):
+            lines.append(_short_value(trade, 180))
+            continue
+        at = _pick(trade, ("at", "created_at", "timestamp", "time", "closed_at"))
+        instrument = _pick(trade, ("instrument", "symbol", "instId", "market")) or "Actif inconnu"
+        side = _pick(trade, ("side", "direction", "action")) or "opération"
+        size = _pick(trade, ("size", "quantity", "qty", "fillSz"))
+        price = _pick(trade, ("price", "avg_price", "fillPx", "entry_price"))
+        pnl = _pick(trade, ("pnl", "profit_loss", "realized_pnl", "realizedPnl"))
+        parts = [str(instrument), str(side)]
+        if size is not None:
+            parts.append("quantité " + _short_value(size, 40))
+        if price is not None:
+            parts.append("prix " + _short_value(price, 40))
+        if pnl is not None:
+            parts.append("P&L " + _short_value(pnl, 40))
+        if at:
+            parts.append("le " + str(at))
+        lines.append("• " + " · ".join(parts))
+    return "\n".join(lines)
+
+
+def _portfolio_accounts(payload):
+    return _items(payload, ("accounts", "platforms", "items", "data"))
+
+
 def _account_data(payload):
     if not isinstance(payload, dict):
         return {}
@@ -459,6 +562,19 @@ def format_cubrik_snapshot(data, detailed=True):
                 line += " — trading : " + ("autorisé" if agent.get("mayTrade") else "interdit")
             lines.append(line)
 
+    portfolio_accounts = _portfolio_accounts(data.get("portfolio"))
+    if portfolio_accounts:
+        lines.extend(["", "💼 COMPTES BROKER VUS PAR CUBRIK"])
+        for account in portfolio_accounts[:6]:
+            name = account.get("name") or account.get("platform") or "Compte"
+            equity = account.get("equity")
+            balance = account.get("balance")
+            amount = equity if equity is not None else balance
+            if amount is not None:
+                lines.append("• {} : {}".format(name, _money(amount)))
+            else:
+                lines.append("• {} : solde non communiqué".format(name))
+
     lines.extend(["", "📈 POSITIONS OUVERTES ({})".format(len(positions))])
     if not positions:
         lines.append("Aucune position ouverte renvoyée par Cubrik.")
@@ -474,17 +590,17 @@ def format_cubrik_snapshot(data, detailed=True):
     if detailed:
         results = data.get("results")
         if results is not None:
-            lines.extend(["", "📊 RÉSULTATS (7 derniers jours)", _short_value(results, 900)])
+            lines.extend(["", "📊 RÉSULTATS (7 derniers jours)", _format_results(results)])
 
         history = data.get("history")
         if history is not None:
-            lines.extend(["", "🧾 HISTORIQUE DES TRANSACTIONS", _short_value(history, 900)])
+            lines.extend(["", "🧾 HISTORIQUE DES TRANSACTIONS", _format_trade_history(history)])
 
         run_groups = data.get("agent_runs") or []
         if run_groups:
             lines.extend(["", "⏱️ DERNIÈRES EXÉCUTIONS DES AGENTS"])
             for group in run_groups[:5]:
-                lines.append("• {} : {}".format(group["agent"], _short_value(group["runs"], 360)))
+                lines.append("• {} :\n  {}".format(group["agent"], _format_agent_runs(group["runs"])))
 
         if notifications:
             lines.extend(["", "🔔 DERNIÈRES NOTIFICATIONS"])
