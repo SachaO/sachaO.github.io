@@ -10,6 +10,7 @@ import requests
 from flask import Flask, request, abort
 from atlas.paper_trading import format_snapshot, snapshot, signal_performance
 from atlas.engine import run_cycle, get_history, analyse_signal, council_vote
+from cubrik_mcp import start_cubrik_request, complete_oauth_callback, is_connected, CubrikMonitorError
 
 logging.basicConfig(level=logging.INFO)
 app = Flask(__name__)
@@ -43,6 +44,20 @@ def send_message(chat_id, text, parse_mode=None):
     response.raise_for_status()
 
 
+def send_long_message(chat_id, text, parse_mode=None):
+    """Send a long Telegram report without cutting it in the middle of a line."""
+    remaining = text or ""
+    while remaining:
+        if len(remaining) <= 3900:
+            chunk, remaining = remaining, ""
+        else:
+            split_at = remaining.rfind("\n", 0, 3900)
+            if split_at < 1000:
+                split_at = 3900
+            chunk, remaining = remaining[:split_at], remaining[split_at:].lstrip("\n")
+        send_message(chat_id, chunk, parse_mode=parse_mode)
+
+
 def set_commands():
     commands = [
         {"command": "start", "description": "Démarrer le bot"},
@@ -55,6 +70,10 @@ def set_commands():
         {"command": "trades", "description": "Voir les dernières opérations simulées"},
         {"command": "atlasstats", "description": "Évaluer les signaux ATLAS sur 1, 3 et 7 jours"},
         {"command": "atlastest", "description": "Tester les cinq votes IA sans passer d’ordre"},
+        {"command": "cubrikconnect", "description": "Relier ATLAS à Cubrik en lecture seule"},
+        {"command": "cubrik", "description": "Voir l’état de Cubrik et du portefeuille"},
+        {"command": "cubrikagents", "description": "Voir les agents et leurs dernières exécutions"},
+        {"command": "cubriktrades", "description": "Voir les résultats et transactions Cubrik"},
     ]
     response = requests.post(f"{API}/setMyCommands", json={"commands": commands}, timeout=15)
     response.raise_for_status()
@@ -411,6 +430,26 @@ def health():
     return "Trading alerts bot is running.", 200
 
 
+@app.get("/cubrik/callback")
+def cubrik_oauth_callback():
+    try:
+        complete_oauth_callback(request.args.to_dict(flat=True))
+    except CubrikMonitorError as exc:
+        logging.warning("Cubrik OAuth callback rejected: %s", str(exc)[:160])
+        return (
+            "<html><body><h2>Connexion Cubrik non terminée</h2>"
+            "<p>Tu peux fermer cette page et relancer /cubrikconnect dans Telegram.</p></body></html>",
+            400,
+            {"Content-Type": "text/html; charset=utf-8"},
+        )
+    return (
+        "<html><body><h2>Autorisation Cubrik reçue</h2>"
+        "<p>Tu peux fermer cette page et revenir sur Telegram. ATLAS termine la connexion.</p></body></html>",
+        200,
+        {"Content-Type": "text/html; charset=utf-8"},
+    )
+
+
 @app.post("/hourly-alerts")
 def hourly_alerts():
     # Endpoint déclenché par GitHub Actions une fois par heure.
@@ -455,16 +494,27 @@ def hourly_alerts():
             seen.add(article["link"])
             unique.append((name, article))
     if not unique:
-        logging.info("Hourly check completed: no recent headlines; no Telegram message sent.")
-        return "no new headlines", 200
+        logging.info("Hourly check completed: no recent headlines.")
+    else:
+        lines = ["🚨 VEILLE BOURSIÈRE — " + datetime.now().strftime("%d/%m/%Y %H:%M"), "Nouvelles récentes détectées (fenêtre d'environ 55 min) :"]
+        for name, article in unique[:12]:
+            lines.append("\n• " + name + " : " + article["title"] + "\n" + article["source"] + " — " + article["link"])
+        lines.append("\nℹ️ Les titres doivent être vérifiés dans les articles originaux. Ceci n'est pas un conseil d'investissement.")
+        send_message(TELEGRAM_CHAT_ID, "\n".join(lines))
+        logging.info("Hourly alert sent with %s headlines.", len(unique[:12]))
 
-    lines = ["🚨 VEILLE BOURSIÈRE — " + datetime.now().strftime("%d/%m/%Y %H:%M"), "Nouvelles récentes détectées (fenêtre d'environ 70 min) :"]
-    for name, article in unique[:12]:
-        lines.append("\\n• " + name + " : " + article["title"] + "\\n" + article["source"] + " — " + article["link"])
-    lines.append("\\nℹ️ Les titres doivent être vérifiés dans les articles originaux. Ceci n'est pas un conseil d'investissement.")
-    send_message(TELEGRAM_CHAT_ID, "\\n".join(lines))
-    logging.info("Hourly alert sent with %s headlines.", len(unique[:12]))
-    return "alerts sent", 200
+    # Cubrik is queried only through its authorized read-only MCP tools.
+    if is_connected():
+        started, message = start_cubrik_request(
+            TELEGRAM_CHAT_ID,
+            send_long_message,
+            detailed=False,
+        )
+        if not started:
+            logging.info("Hourly Cubrik report skipped: %s", message)
+    else:
+        logging.info("Hourly Cubrik report skipped: MCP authorization not connected.")
+    return "hourly checks completed", 200
 
 
 @app.post("/atlas-cycle")
@@ -558,7 +608,11 @@ def telegram_webhook():
             "/positions — positions simulées\n"
             "/trades — dernières opérations fictives\n"
             "/atlasstats — évaluer les signaux sur 1, 3 et 7 jours\n"
-            "/atlastest — tester les cinq votes IA sans ordre simulé\n\n"
+            "/atlastest — tester les cinq votes IA sans ordre simulé\n"
+            "/cubrikconnect — relier ATLAS à Cubrik en lecture seule\n"
+            "/cubrik — état de Cubrik, plateformes, agents et positions\n"
+            "/cubrikagents — détails des agents et dernières exécutions\n"
+            "/cubriktrades — résultats et historique des transactions\n\n"
             "La synthèse IA nécessite la configuration d'un fournisseur compatible. Sans clé, le bot propose un digest transparent basé sur les titres."
         )
     elif command == "/atlas":
@@ -647,9 +701,25 @@ def telegram_webhook():
         reply = "\n".join(lines)
     elif command == "/news":
         reply = format_news_message(topic)
+    elif command in ("/cubrikconnect", "/cubrik", "/cubrikagents", "/cubriktrades"):
+        if not TELEGRAM_CHAT_ID or str(chat_id) != str(TELEGRAM_CHAT_ID):
+            reply = "⛔ Accès refusé : la consultation de Cubrik est réservée à la conversation Telegram autorisée."
+        else:
+            detailed = command != "/cubrikstatus"
+            started, message = start_cubrik_request(
+                chat_id,
+                send_long_message,
+                detailed=detailed,
+            )
+            reply = (
+                "🔎 Je consulte Cubrik. Le compte rendu arrivera dans ce chat."
+                if started else
+                "ℹ️ " + message
+            )
     elif command == "/status":
         ai_state = "configurée" if AI_API_KEY and AI_MODEL else "non configurée (résumé de secours)"
-        reply = f"✅ Le bot Telegram fonctionne. Analyse IA : {ai_state}."
+        cubrik_state = "connecté" if is_connected() else "à relier"
+        reply = f"✅ Le bot Telegram fonctionne. Analyse IA : {ai_state}. Cubrik : {cubrik_state}."
     elif command == "/chatid":
         reply = f"🆔 Identifiant de cette conversation : {chat_id}"
     else:
