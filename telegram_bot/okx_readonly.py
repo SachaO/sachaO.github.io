@@ -25,7 +25,7 @@ _ALLOWED_PATHS = {
     "/api/v5/trade/orders-history",
     "/api/v5/trade/orders-history-archive",
     "/api/v5/trade/fills-history",
-    "/api/v5/trade/fills-history-archive",
+    "/api/v5/trade/fills",
     "/api/v5/account/bills",
     "/api/v5/account/bills-archive",
     "/api/v5/asset/balances",
@@ -146,9 +146,24 @@ def _pending_orders():
     return _get("/api/v5/trade/orders-pending", {"instType": None, "ordType": None, "state": None})
 
 
+_HISTORY_INSTRUMENT_TYPES = ("SPOT", "MARGIN", "SWAP", "FUTURES", "OPTION")
+
+
+def _collect_by_instrument_type(path, limit="20"):
+    rows = []
+    errors = []
+    for instrument_type in _HISTORY_INSTRUMENT_TYPES:
+        try:
+            rows.extend(_get(path, {"instType": instrument_type, "limit": limit}))
+        except OKXReadOnlyError as exc:
+            errors.append("{} : {}".format(instrument_type, str(exc)))
+    rows.sort(key=lambda item: _safe_float(item.get("ts") or item.get("uTime") or item.get("cTime"), 0) or 0, reverse=True)
+    return rows, errors
+
+
 def _recent_fills():
-    # OKX's fills-history endpoint covers the recent trading window.
-    return _get("/api/v5/trade/fills-history", {"instType": None, "limit": "20"})
+    # GET /trade/fills returns the most recent 3 days; instType is required.
+    return _collect_by_instrument_type("/api/v5/trade/fills")
 
 
 def _recent_orders():
@@ -156,11 +171,13 @@ def _recent_orders():
 
 
 def _fills_archive():
-    return _get("/api/v5/trade/fills-history-archive", {"instType": None, "limit": "20"})
+    # GET /trade/fills-history returns up to 3 months; instType is required.
+    return _collect_by_instrument_type("/api/v5/trade/fills-history")
 
 
 def _orders_archive():
-    return _get("/api/v5/trade/orders-history-archive", {"instType": None, "state": None, "limit": "20"})
+    # GET /trade/orders-history-archive requires instType.
+    return _collect_by_instrument_type("/api/v5/trade/orders-history-archive")
 
 
 def _recent_bills():
@@ -187,13 +204,14 @@ def fetch_account_snapshot():
     funding, funding_error = _optional_read(_funding_balances)
     positions, positions_error = _optional_read(_positions)
     pending, pending_error = _optional_read(_pending_orders)
-    fills, fills_error = _optional_read(_recent_fills)
+    fills_result, fills_error = _optional_read(_recent_fills)
+    fills, fills_type_errors = fills_result if fills_result else ([], [])
     orders, orders_error = _optional_read(_recent_orders)
     config_rows, config_error = _optional_read(lambda: _get("/api/v5/account/config"))
     config = config_rows[0] if config_rows else {}
     warnings = [message for message in (
         funding_error, positions_error, pending_error, fills_error, orders_error, config_error
-    ) if message]
+    ) if message] + fills_type_errors
     return {
         "captured_at": datetime.now().astimezone().strftime("%d/%m/%Y à %H:%M:%S"),
         "equity_usd": balance.get("totalEq"),
@@ -212,10 +230,12 @@ def fetch_account_snapshot():
 
 def fetch_history_snapshot():
     """Read-only recent activity: up to 3 months of fills/orders and 7 days of bills."""
-    fills, fills_error = _optional_read(_fills_archive)
-    orders, orders_error = _optional_read(_orders_archive)
+    fills_result, fills_error = _optional_read(_fills_archive)
+    orders_result, orders_error = _optional_read(_orders_archive)
+    fills, fills_type_errors = fills_result if fills_result else ([], [])
+    orders, orders_type_errors = orders_result if orders_result else ([], [])
     bills, bills_error = _optional_read(_recent_bills)
-    warnings = [message for message in (fills_error, orders_error, bills_error) if message]
+    warnings = [message for message in (fills_error, orders_error, bills_error) if message] + fills_type_errors + orders_type_errors
     return {
         "fills": fills,
         "orders": orders,
