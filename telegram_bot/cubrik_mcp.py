@@ -43,6 +43,7 @@ READ_TOOL_ALIASES = {
     "agents": ("list_agents", "get_agents", "list_tasks"),
     "notifications": ("list_notifications", "get_notifications"),
     "results": ("get_trading_results", "get_results"),
+    "analysis": ("get_analysis", "get_analytics"),
     "history": ("get_trade_history", "list_trade_history"),
     "agent_runs": ("get_agent_runs", "list_agent_runs"),
 }
@@ -488,15 +489,14 @@ async def _read_cubrik_snapshot(auth_url_callback=None, callback_result=None, de
                 snapshot = {"captured_at": datetime.now().astimezone().strftime("%d/%m/%Y %H:%M")}
                 warnings = []
 
-                # Public group mode requests only agent metadata and realized
-                # trading activity. It deliberately does NOT request account balances,
-                # portfolio/equity, open positions, subscription or credit information.
+                # Public group mode is a concise trading journal: account equity,
+                # open positions, realized analytics, closed trades and the latest
+                # executor run. It never reads subscription or credit information.
                 if agents_only:
                     jobs = [
                         ("agents", {}),
-                        ("platforms", {}),
                         ("portfolio", {"refresh": True}),
-                        ("results", {"period": "past_week", "account": "OKX"}),
+                        ("analysis", {"account": "OKX", "period": "week"}),
                     ]
                 else:
                     jobs = [
@@ -518,24 +518,8 @@ async def _read_cubrik_snapshot(auth_url_callback=None, callback_result=None, de
 
                 agents = _extract_agents(responses.get("agents"))
                 if agents_only:
-                    # Derive the connected OKX account id only to query its trade
-                    # history. Platform balances returned by list_platforms are
-                    # never copied into the public response or formatter payload.
-                    platform_items = _extract_platforms(responses.get("platforms"))
-                    okx_platform = next(
-                        (
-                            platform for platform in platform_items
-                            if str(platform.get("name") or platform.get("id") or "").upper() == "OKX"
-                        ),
-                        platform_items[0] if platform_items else {},
-                    )
-                    history_args = {"days": 7, "limit": 10}
-                    if okx_platform.get("id"):
-                        history_args["account"] = okx_platform["id"]
-                    # Capital total is explicitly approved for the public summary.
-                    # Copy only the amount/currency; never forward the whole platform object.
-                    # Prefer portfolio equity (balance + unrealized P&L), then
-                    # fall back to the connected-platform balance if unavailable.
+                    # OKX portfolio gives the latest equity and current positions.
+                    # get_analysis supplies the reporting currency (USD on OKX).
                     portfolio_items = _portfolio_accounts(responses.get("portfolio"))
                     okx_portfolio = next(
                         (
@@ -544,16 +528,23 @@ async def _read_cubrik_snapshot(auth_url_callback=None, callback_result=None, de
                         ),
                         portfolio_items[0] if portfolio_items else {},
                     )
+                    analysis = responses.get("analysis") or {}
                     public_capital = okx_portfolio.get("equity")
                     if public_capital is None:
                         public_capital = okx_portfolio.get("balance")
-                    if public_capital is None:
-                        public_capital = okx_platform.get("balance")
                     public_currency = (
-                        okx_portfolio.get("currency") or okx_platform.get("currency")
-                    )
+                        analysis.get("currency")
+                        if isinstance(analysis, dict) else None
+                    ) or okx_portfolio.get("currency")
+
                     snapshot["public_capital"] = public_capital
                     snapshot["public_currency"] = public_currency
+                    snapshot["public_positions"] = _extract_positions(responses.get("portfolio"))
+                    snapshot["analysis"] = analysis
+
+                    history_args = {"days": 7, "limit": 10}
+                    if okx_portfolio.get("id"):
+                        history_args["account"] = okx_portfolio["id"]
                     history_value, history_warning = await _call_read_tool(
                         session, tools, "history", history_args
                     )
@@ -562,8 +553,31 @@ async def _read_cubrik_snapshot(auth_url_callback=None, callback_result=None, de
                     if history_warning:
                         warnings.append(history_warning)
 
-                    snapshot["agents"] = responses.get("agents")
-                    snapshot["results"] = responses.get("results")
+                    # Find the only trade-enabled executor internally; the agent roster
+                    # itself is not included in the public Telegram message.
+                    executor = next(
+                        (
+                            agent for agent in agents
+                            if str(agent.get("name") or "").upper() == "ATLAS-SWING-EXECUTOR"
+                        ),
+                        None,
+                    )
+                    executor_id = (
+                        executor.get("id") or executor.get("agent_id")
+                        if isinstance(executor, dict) else None
+                    )
+                    if executor_id and _tool_has_name(tools, "agent_runs"):
+                        run_value, run_warning = await _call_read_tool(
+                            session,
+                            tools,
+                            "agent_runs",
+                            {"agent_id": str(executor_id), "limit": 2},
+                        )
+                        if run_value is not None:
+                            snapshot["executor_runs"] = run_value
+                        if run_warning:
+                            warnings.append(run_warning)
+
                     snapshot["warnings"] = warnings
                     return snapshot
 
@@ -630,37 +644,69 @@ def _public_trade_side(value):
     return labels.get(value, value.capitalize())
 
 
-def _format_public_trade_activity(history_payload, results_payload):
+def _format_run_timestamp(value):
+    if not value:
+        return "heure inconnue"
+    try:
+        parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+        if parsed.tzinfo is not None:
+            parsed = parsed.astimezone()
+        return parsed.strftime("%d/%m à %H:%M")
+    except (TypeError, ValueError):
+        return str(value)
+
+
+def _format_public_positions(positions, currency):
+    if not positions:
+        return ["📂 Positions ouvertes : aucune"]
+
+    lines = ["📂 POSITIONS EN COURS"]
+    for position in positions[:6]:
+        symbol = _pick(position, ("instrument", "instId", "symbol", "market")) or "Actif inconnu"
+        side = _pick(position, ("side", "direction", "posSide"))
+        size = _pick(position, ("size", "pos", "quantity", "qty", "contracts"))
+        entry = _pick(position, ("entry_price", "avgPx", "average_price", "avg_price"))
+        pnl = _pick(position, ("unrealized_pnl", "unrealizedPnl", "upl"))
+        pieces = [str(symbol)]
+        if side:
+            pieces.append(str(side).upper())
+        if size is not None:
+            pieces.append("taille {}".format(_short_value(size, 35)))
+        if entry is not None:
+            pieces.append("entrée {}".format(_short_value(entry, 35)))
+        if pnl is not None:
+            pieces.append("P&L latent {} {}".format(_pnl_badge(pnl), currency or ""))
+        lines.append("• " + " · ".join(pieces))
+    return lines
+
+
+def _format_public_trade_activity(history_payload, analysis_payload, currency):
     trades = _items(history_payload, ("trades", "history", "items", "data", "fills"))
-    result_accounts = _items(results_payload, ("accounts", "items", "data"))
-    okx_result = next(
-        (
-            item for item in result_accounts
-            if str(item.get("account") or item.get("name") or "").upper() == "OKX"
-        ),
-        result_accounts[0] if result_accounts else {},
-    )
-    net_result = _pick(
-        okx_result,
-        ("netResult", "net_result", "realizedPnl", "realized_pnl", "pnl", "profit_loss"),
-    )
-    currency = okx_result.get("currency")
+    analysis = analysis_payload if isinstance(analysis_payload, dict) else {}
+    kpis = analysis.get("kpis") if isinstance(analysis.get("kpis"), dict) else {}
+    net_result = _pick(kpis, ("netResult", "net_result", "realizedPnl", "realized_pnl"))
+    trade_count = _pick(kpis, ("tradeCount", "trade_count", "closedTrades"))
+    currency = currency or analysis.get("currency")
 
     lines = [
-        "📊 RÉSULTATS DES TRADES — 7 DERNIERS JOURS",
-        "Gain/perte réalisé cumulé : {}".format(
-            _pnl_badge(net_result) +
-            ((" " + str(currency)) if currency else
-             (" (devise non communiquée)" if net_result is not None else ""))
+        "📊 PERFORMANCE RÉALISÉE — 7 JOURS",
+        "Gain/perte net : {}{}".format(
+            _pnl_badge(net_result),
+            (" " + str(currency)) if currency else "",
         ),
     ]
+    if trade_count is not None:
+        lines.append("Trades clôturés : {}".format(trade_count))
 
     if not trades:
-        lines.append("Aucune opération clôturée renvoyée sur cette période.")
+        if not trade_count:
+            lines.append("Aucun achat/vente clôturé sur la période.")
+        else:
+            lines.append("Cubrik indique des trades clôturés, mais le détail des opérations n'a pas été renvoyé.")
         return lines
 
-    lines.append("Dernières opérations :")
-    for trade in trades[:8]:
+    lines.append("DERNIÈRES OPÉRATIONS")
+    for trade in trades[:6]:
         if not isinstance(trade, dict):
             continue
         instrument = _pick(trade, ("instrument", "symbol", "instId", "market")) or "Actif inconnu"
@@ -670,66 +716,96 @@ def _format_public_trade_activity(history_payload, results_payload):
             ("pnl", "profit_loss", "realized_pnl", "realizedPnl", "net_pnl", "netPnl"),
         )
         at = _pick(trade, ("closed_at", "closedAt", "at", "created_at", "timestamp", "time"))
-        agent = _pick(trade, ("agent_name", "agentName", "agent", "opened_by", "task_name"))
-        line = "• {} — {} — {}".format(
-            instrument,
-            side,
-            _pnl_badge(pnl),
-        )
         trade_currency = _pick(trade, ("currency", "pnl_currency", "quote_currency")) or currency
-        if trade_currency and pnl is not None:
+        line = "• {} — {} — {}".format(instrument, side, _pnl_badge(pnl))
+        if pnl is not None and trade_currency:
             line += " " + str(trade_currency)
-        elif pnl is not None:
-            line += " (devise non communiquée)"
-        if agent and isinstance(agent, str):
-            line += " — " + _short_value(agent, 60)
         if at:
-            line += " — " + str(at)
+            line += " — " + _format_run_timestamp(at)
         lines.append(line)
     return lines
 
 
-def format_cubrik_agents_snapshot(data):
-    agents = _extract_agents(data.get("agents"))
-    active = sum(
-        1 for agent in agents
-        if str(agent.get("status", "")).lower() in ("active", "running")
-    )
+def _format_public_executor_activity(value):
+    runs = _items(value, ("runs", "items", "history", "data"))
+    if not runs and isinstance(value, dict):
+        runs = [value]
+    if not runs:
+        return [
+            "🧭 DERNIÈRE ACTIVITÉ",
+            "Aucune exécution récente détaillée n'a été renvoyée par Cubrik.",
+        ]
+
+    run = runs[0] if isinstance(runs[0], dict) else {}
     lines = [
-        "🤖 ATLAS — ACTIVITÉ CUBRIK",
+        "🧭 DERNIÈRE ACTIVITÉ CUBRIK — {}".format(
+            _format_run_timestamp(run.get("at") or run.get("started_at") or run.get("timestamp"))
+        )
+    ]
+    decisions = run.get("decisions") or []
+    if decisions:
+        for decision in decisions[:5]:
+            if not isinstance(decision, dict):
+                continue
+            symbol = decision.get("symbol") or "Actif"
+            action = str(decision.get("action") or "review").lower()
+            reason = _pick(decision, ("reason", "explanation", "summary"))
+            if action in ("skip", "wait", "hold", "none"):
+                label = "pas d'entrée"
+            elif action in ("buy", "long", "open_long"):
+                label = "signal acheteur évalué"
+            elif action in ("sell", "short", "open_short"):
+                label = "signal vendeur évalué"
+            else:
+                label = action
+            text = "{} : {}".format(symbol, label)
+            if reason:
+                text += " ({})".format(_short_value(reason, 120))
+            lines.append("• " + text)
+
+    summary = _pick(run, ("summary", "message", "result"))
+    if summary:
+        first_paragraph = str(summary).strip().split("
+
+", 1)[0].replace("
+", " ")
+        lines.append(_short_value(first_paragraph, 260))
+    if run.get("error"):
+        lines.append("⚠️ Exécution signalée en erreur.")
+    elif str(run.get("status") or "").lower() == "succeeded":
+        lines.append("Exécution terminée ; les opérations confirmées figurent dans l'historique ci-dessus.")
+    return lines
+
+
+def format_cubrik_agents_snapshot(data):
+    currency = data.get("public_currency") or "USD"
+    capital = data.get("public_capital")
+    analysis = data.get("analysis") or {}
+    positions = data.get("public_positions") or []
+
+    lines = [
+        "🤖 ATLAS — SUIVI DU COMPTE OKX",
         "Relevé : {}".format(data.get("captured_at", "heure inconnue")),
         "",
-        "{} agent(s) actif(s) sur {}".format(active, len(agents)),
-        "",
-        "💰 Capital total OKX : {}".format(
-            _amount_label(data.get("public_capital"), data.get("public_currency"))
-            if data.get("public_capital") is not None else
-            "non communiqué par Cubrik"
+        "💰 Capital total : {} {}".format(
+            _money(capital) if capital is not None else "non communiqué",
+            currency,
         ),
     ]
-    if not agents:
-        lines.append("Aucun agent n'a été renvoyé par Cubrik.")
-    else:
-        for agent in agents[:8]:
-            name = agent.get("name") or agent.get("title") or "Agent sans nom"
-            status = str(agent.get("status") or "inconnu").lower()
-            status_label = "🟢 actif" if status in ("active", "running") else "⚪ en pause"
-            line = "• {} — {}".format(name, status_label)
-            line += " — {}".format(_schedule(agent))
-            if agent.get("mayTrade") is not None:
-                line += " — trading {}".format("autorisé" if agent.get("mayTrade") else "interdit")
-            lines.append(line)
-
-    lines.extend(["", *_format_public_trade_activity(data.get("history"), data.get("results"))])
+    lines.extend(_format_public_positions(positions, currency))
+    lines.extend([""] + _format_public_trade_activity(
+        data.get("history"),
+        analysis,
+        currency,
+    ))
+    lines.extend([""] + _format_public_executor_activity(data.get("executor_runs")))
 
     if data.get("warnings"):
         lines.append("")
         lines.extend("⚠️ " + warning for warning in data["warnings"][:3])
-    lines.extend([
-        "",
-        "Ce récapitulatif montre le capital total OKX, les opérations clôturées et leurs gains/pertes. Les crédits et les informations d'abonnement restent privés.",
-    ])
-    return "\n".join(lines)
+
+    return "
+".join(lines)
 
 
 def format_cubrik_snapshot(data, detailed=True):
