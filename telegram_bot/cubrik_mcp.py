@@ -28,7 +28,7 @@ from pydantic import AnyUrl
 log = logging.getLogger(__name__)
 
 DEFAULT_SERVER_URL = "https://mcp.cubrik.ai/mcp"
-DEFAULT_CALLBACK_URI = "https://sachao-github-io.onrender.com/cubrik/callback"
+DEFAULT_CALLBACK_URI = "http://127.0.0.1:8765/callback"
 
 _PENDING_LOCK = threading.RLock()
 _PENDING = None
@@ -437,7 +437,8 @@ async def _read_cubrik_snapshot(auth_url_callback=None, callback_result=None, de
             redirect_uris=[AnyUrl(redirect_uri)],
             grant_types=["authorization_code", "refresh_token"],
             response_types=["code"],
-            application_type="web",
+            application_type="native",
+            token_endpoint_auth_method="none",
         ),
         storage=storage,
         redirect_handler=redirect_handler,
@@ -716,7 +717,7 @@ def _background_worker(chat_id, notify, detailed=True, oauth_queue=None):
                 _PENDING["state"] = auth_url_holder["state"]
         notify(
             chat_id,
-            "🔐 Pour relier ATLAS à Cubrik, ouvre ce lien puis autorise la lecture du compte et la consultation/gestion des agents si Cubrik sépare ces droits. Ne coche surtout pas la permission Trading : ATLAS ne doit pas passer d'ordres.\n\n" + auth_url,
+            "🔐 Connexion Cubrik — étape 1 : lance le fichier atlas_cubrik_oauth_relay.py sur le même PC que ton navigateur et laisse la fenêtre ouverte.\n\nÉtape 2 : ouvre ce lien depuis CE MÊME PC, puis autorise uniquement la lecture du compte et des agents. Refuse toute permission de trading. Le navigateur reviendra sur 127.0.0.1 et le relais transmettra le code à Render.\n\n" + auth_url,
         )
 
     try:
