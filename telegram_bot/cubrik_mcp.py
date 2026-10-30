@@ -531,6 +531,13 @@ async def _read_cubrik_snapshot(auth_url_callback=None, callback_result=None, de
                     history_args = {"days": 7, "limit": 10}
                     if okx_platform.get("id"):
                         history_args["account"] = okx_platform["id"]
+                    # Capital total is explicitly approved for the public summary.
+                    # Copy only the amount/currency; never forward the whole platform object.
+                    public_capital = okx_platform.get("equity")
+                    if public_capital is None:
+                        public_capital = okx_platform.get("balance")
+                    snapshot["public_capital"] = public_capital
+                    snapshot["public_currency"] = okx_platform.get("currency")
                     history_value, history_warning = await _call_read_tool(
                         session, tools, "history", history_args
                     )
@@ -677,6 +684,12 @@ def format_cubrik_agents_snapshot(data):
         "Relevé : {}".format(data.get("captured_at", "heure inconnue")),
         "",
         "{} agent(s) actif(s) sur {}".format(active, len(agents)),
+        "",
+        "💰 Capital total OKX : {}".format(
+            _amount_label(data.get("public_capital"), data.get("public_currency"))
+            if data.get("public_capital") is not None else
+            "non communiqué par Cubrik"
+        ),
     ]
     if not agents:
         lines.append("Aucun agent n'a été renvoyé par Cubrik.")
@@ -698,7 +711,7 @@ def format_cubrik_agents_snapshot(data):
         lines.extend("⚠️ " + warning for warning in data["warnings"][:3])
     lines.extend([
         "",
-        "Ce récapitulatif montre uniquement les opérations clôturées et leurs gains/pertes. Le capital, le solde du compte et les crédits ne sont pas affichés.",
+        "Ce récapitulatif montre le capital total OKX, les opérations clôturées et leurs gains/pertes. Les crédits et les informations d'abonnement restent privés.",
     ])
     return "\n".join(lines)
 
