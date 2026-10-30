@@ -44,6 +44,20 @@ def send_message(chat_id, text, parse_mode=None):
     response.raise_for_status()
 
 
+def send_long_message(chat_id, text, parse_mode=None):
+    """Send long account reports in Telegram-safe chunks without cutting mid-line."""
+    remaining = text or ""
+    while remaining:
+        if len(remaining) <= 3900:
+            chunk, remaining = remaining, ""
+        else:
+            split_at = remaining.rfind("\n", 0, 3900)
+            if split_at < 1000:
+                split_at = 3900
+            chunk, remaining = remaining[:split_at], remaining[split_at:].lstrip("\n")
+        send_message(chat_id, chunk, parse_mode=parse_mode)
+
+
 def set_commands():
     commands = [
         {"command": "start", "description": "Démarrer le bot"},
@@ -721,7 +735,10 @@ def telegram_webhook():
                 reply = "Je n’arrive pas à joindre le modèle IA pour le moment. Réessaie dans quelques minutes."
 
     try:
-        send_message(chat_id, reply, parse_mode="HTML" if command == "/news" else None)
+        if command in ("/okx", "/okxhistorique"):
+            send_long_message(chat_id, reply)
+        else:
+            send_message(chat_id, reply, parse_mode="HTML" if command == "/news" else None)
     except requests.RequestException:
         logging.exception("Échec de l'envoi d'une réponse Telegram")
         return "telegram send failed", 500
