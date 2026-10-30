@@ -412,7 +412,7 @@ def _tool_has_name(tools, logical_name):
     return _find_tool(tools, READ_TOOL_ALIASES[logical_name]) is not None
 
 
-async def _read_cubrik_snapshot(auth_url_callback=None, callback_result=None, detailed=True):
+async def _read_cubrik_snapshot(auth_url_callback=None, callback_result=None, detailed=True, agents_only=False):
     server_url = _server_url()
     redirect_uri = _redirect_uri()
     storage = PostgresOAuthStorage()
@@ -488,15 +488,20 @@ async def _read_cubrik_snapshot(auth_url_callback=None, callback_result=None, de
                 snapshot = {"captured_at": datetime.now().astimezone().strftime("%d/%m/%Y %H:%M")}
                 warnings = []
 
-                # Read-only calls only. No create/update/start/pause/trade tool is selected.
-                jobs = [
-                    ("account", {}),
-                    ("platforms", {}),
-                    ("portfolio", {"refresh": True}),
-                    ("agents", {}),
-                    ("notifications", {"limit": 8}),
-                    ("results", {"period": "past_week"}),
-                ]
+                # Public group mode requests only the agents list: no balances,
+                # positions, trading results, history, notifications or credit data.
+                # All other reports still use read-only tools only.
+                if agents_only:
+                    jobs = [("agents", {})]
+                else:
+                    jobs = [
+                        ("account", {}),
+                        ("platforms", {}),
+                        ("portfolio", {"refresh": True}),
+                        ("agents", {}),
+                        ("notifications", {"limit": 8}),
+                        ("results", {"period": "past_week"}),
+                    ]
                 responses = {}
                 for logical_name, arguments in jobs:
                     value, warning = await _call_read_tool(
@@ -507,6 +512,11 @@ async def _read_cubrik_snapshot(auth_url_callback=None, callback_result=None, de
                         warnings.append(warning)
 
                 agents = _extract_agents(responses.get("agents"))
+                if agents_only:
+                    snapshot["agents"] = responses.get("agents")
+                    snapshot["warnings"] = warnings
+                    return snapshot
+
                 if detailed and _tool_has_name(tools, "agent_runs"):
                     recent_runs = []
                     for agent in agents[:5]:
@@ -542,14 +552,133 @@ async def _read_cubrik_snapshot(auth_url_callback=None, callback_result=None, de
                 return snapshot
 
 
+def _amount_label(value, currency=None):
+    label = _money(value)
+    return label + ((" " + str(currency)) if currency else " (unité non communiquée)")
+
+
+def _pnl_badge(value):
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return "⚪ non communiqué"
+    if number > 0:
+        return "🟢 +{}".format(_money(number))
+    if number < 0:
+        return "🔴 {}".format(_money(number))
+    return "⚪ 0,00"
+
+
+def format_cubrik_agents_snapshot(data):
+    agents = _extract_agents(data.get("agents"))
+    active = sum(
+        1 for agent in agents
+        if str(agent.get("status", "")).lower() in ("active", "running")
+    )
+    lines = [
+        "🤖 ATLAS — AGENTS CUBRIK",
+        "Relevé : {}".format(data.get("captured_at", "heure inconnue")),
+        "",
+        "{} agent(s) actif(s) sur {}".format(active, len(agents)),
+    ]
+    if not agents:
+        lines.append("Aucun agent n'a été renvoyé par Cubrik.")
+    else:
+        for agent in agents[:8]:
+            name = agent.get("name") or agent.get("title") or "Agent sans nom"
+            status = str(agent.get("status") or "inconnu").lower()
+            status_label = "🟢 actif" if status in ("active", "running") else "⚪ en pause"
+            line = "• {} — {}".format(name, status_label)
+            line += " — {}".format(_schedule(agent))
+            if agent.get("mayTrade") is not None:
+                line += " — trading {}".format("autorisé" if agent.get("mayTrade") else "interdit")
+            lines.append(line)
+    if data.get("warnings"):
+        lines.extend(["", "⚠️ " + warning for warning in data["warnings"][:3]])
+    lines.extend([
+        "",
+        "Les agents observateurs analysent et alertent. Seul ATLAS-SWING-EXECUTOR possède le droit d'exécuter des ordres sur OKX.",
+    ])
+    return "\n".join(lines)
+
+
 def format_cubrik_snapshot(data, detailed=True):
     account = _account_data(data.get("account"))
-    credits = account.get("credits") or {}
     agents_summary = account.get("agents") or {}
     platforms = _extract_platforms(data.get("platforms"))
     agents = _extract_agents(data.get("agents"))
     positions = _extract_positions(data.get("portfolio"))
     notifications = _items(data.get("notifications"), ("notifications", "items", "data"))
+
+    if not detailed:
+        portfolio_accounts = _portfolio_accounts(data.get("portfolio"))
+        account_entry = next(
+            (item for item in portfolio_accounts if str(item.get("name", "")).upper() == "OKX"),
+            portfolio_accounts[0] if portfolio_accounts else {},
+        )
+        capital = account_entry.get("equity")
+        if capital is None:
+            capital = account_entry.get("balance")
+        currency = account_entry.get("currency")
+
+        results_payload = data.get("results") or {}
+        result_accounts = _items(results_payload, ("accounts", "items", "data"))
+        okx_result = next(
+            (item for item in result_accounts if str(item.get("account", item.get("name", ""))).upper() == "OKX"),
+            result_accounts[0] if result_accounts else {},
+        )
+        realized = _pick(okx_result, ("netResult", "net_result", "realizedPnl", "realized_pnl"))
+        realized_currency = okx_result.get("currency") or currency
+
+        if positions:
+            latent_values = [
+                _pick(position, ("unrealized_pnl", "unrealizedPnl", "upl"))
+                for position in positions
+            ]
+            try:
+                latent = sum(float(value) for value in latent_values)
+            except (TypeError, ValueError):
+                latent = None
+        else:
+            latent = 0.0
+
+        active_count = sum(
+            1 for agent in agents
+            if str(agent.get("status", "")).lower() in ("active", "running")
+        )
+        lines = [
+            "🤖 ATLAS — PORTEFEUILLE OKX",
+            "Relevé : {}".format(data.get("captured_at", "heure inconnue")),
+            "",
+            "💰 Capital total : {}".format(
+                _amount_label(capital, currency) if capital is not None else "non communiqué"
+            ),
+            "📈 Plus-value réalisée (7 derniers jours) : {}".format(
+                _pnl_badge(realized) +
+                ((" " + str(realized_currency)) if realized_currency else
+                 (" (unité non communiquée)" if realized is not None else ""))
+            ),
+            "📊 P&L latent : {}".format(
+                _pnl_badge(latent) +
+                ((" " + str(currency)) if currency else
+                 (" (unité non communiquée)" if latent is not None else ""))
+            ),
+            "📂 Positions ouvertes : {}".format(len(positions)),
+            "🧠 Agents actifs : {} / {}".format(active_count, len(agents)),
+        ]
+        if data.get("warnings"):
+            lines.extend(["", "⚠️ " + warning for warning in data["warnings"][:2]])
+        if not positions and realized == 0:
+            lines.extend([
+                "",
+                "Le compte OKX est connecté. Aucune position n'est actuellement ouverte et aucun trade n'a été clôturé sur les 7 derniers jours. L'agent swing reste actif et attend un signal conforme à ses règles de risque ; il n'a pas besoin de prendre une position à chaque analyse.",
+            ])
+        elif positions:
+            lines.extend([
+                "",
+                "Le portefeuille comporte des positions ouvertes. Le P&L latent évolue avec le marché et ne devient réalisé qu'à la clôture.",
+            ])
+        return "\n".join(lines)
 
     lines = [
         "🤖 ATLAS — ÉTAT DE CUBRIK",
@@ -559,18 +688,13 @@ def format_cubrik_snapshot(data, detailed=True):
     plan = account.get("plan") or account.get("subscription") or "non communiqué"
     lines.extend([
         "",
-        "📦 ABONNEMENT ET CRÉDITS",
+        "📦 COMPTE",
         "Forfait : {}".format(plan),
         "Agents actifs : {} / {}".format(
             agents_summary.get("active", sum(1 for a in agents if str(a.get("status", "")).lower() in ("active", "running"))),
             agents_summary.get("limit", "?"),
         ),
-        "Crédits restants : {} / {}".format(
-            credits.get("left", "?"), credits.get("month", "?")
-        ),
     ])
-    if credits.get("renews"):
-        lines.append("Renouvellement des crédits : {}".format(credits["renews"]))
 
     lines.extend(["", "🔌 PLATEFORMES CONNECTÉES"])
     if not platforms:
@@ -737,7 +861,7 @@ def _oauth_redirect_error_message():
     )
 
 
-def _background_worker(chat_id, notify, detailed=True, oauth_queue=None):
+def _background_worker(chat_id, notify, detailed=True, oauth_queue=None, agents_only=False):
     global _ACTIVE_WORKER
     auth_url_holder = {"url": None, "state": None}
 
@@ -759,8 +883,13 @@ def _background_worker(chat_id, notify, detailed=True, oauth_queue=None):
             auth_url_callback=on_authorization_url,
             callback_result=oauth_queue,
             detailed=detailed,
+            agents_only=agents_only,
         ))
-        message = format_cubrik_snapshot(snapshot, detailed=detailed)
+        message = (
+            format_cubrik_agents_snapshot(snapshot)
+            if agents_only else
+            format_cubrik_snapshot(snapshot, detailed=detailed)
+        )
         notify(chat_id, message)
     except OAuthRegistrationError:
         redirect_uri = _redirect_uri()
@@ -794,7 +923,7 @@ def _background_worker(chat_id, notify, detailed=True, oauth_queue=None):
                 _PENDING.clear()
 
 
-def start_cubrik_request(chat_id, notify, detailed=True):
+def start_cubrik_request(chat_id, notify, detailed=True, agents_only=False):
     """Run a Cubrik read-only request in a worker thread so Flask stays responsive."""
     global _ACTIVE_WORKER, _PENDING
     with _PENDING_LOCK:
@@ -803,7 +932,7 @@ def start_cubrik_request(chat_id, notify, detailed=True):
         oauth_queue = queue.Queue()
         worker = threading.Thread(
             target=_background_worker,
-            args=(chat_id, notify, detailed, oauth_queue),
+            args=(chat_id, notify, detailed, oauth_queue, agents_only),
             daemon=True,
             name="atlas-cubrik-mcp",
         )
