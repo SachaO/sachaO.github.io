@@ -622,6 +622,65 @@ def format_cubrik_snapshot(data, detailed=True):
     return "\n".join(lines)
 
 
+def probe_native_loopback_registration():
+    """Check whether Cubrik accepts an MCP native-client loopback redirect.
+
+    This creates a public OAuth client registration only; it does not log in,
+    request user consent, read data, or grant trading permissions.
+    """
+    import requests
+
+    endpoint = "https://api.cubrik.ai/oauth/register"
+    candidates = (
+        "http://127.0.0.1:8765/callback",
+        "http://localhost:8765/callback",
+    )
+    results = []
+    for redirect_uri in candidates:
+        payload = {
+            "client_name": "ATLAS native read-only monitor",
+            "application_type": "native",
+            "redirect_uris": [redirect_uri],
+            "grant_types": ["authorization_code", "refresh_token"],
+            "response_types": ["code"],
+            "token_endpoint_auth_method": "none",
+        }
+        try:
+            response = requests.post(
+                endpoint,
+                json=payload,
+                headers={"Content-Type": "application/json"},
+                timeout=(5, 20),
+            )
+            if response.status_code in (200, 201):
+                data = response.json()
+                results.append({
+                    "redirect_uri": redirect_uri,
+                    "accepted": True,
+                    "has_client_id": bool(data.get("client_id")),
+                })
+                break
+            try:
+                body = response.json()
+            except ValueError:
+                body = {}
+            results.append({
+                "redirect_uri": redirect_uri,
+                "accepted": False,
+                "status": response.status_code,
+                "error": str(body.get("error") or "unknown")[:80],
+                "description": str(body.get("error_description") or "")[:220],
+            })
+        except requests.RequestException as exc:
+            results.append({
+                "redirect_uri": redirect_uri,
+                "accepted": False,
+                "error": type(exc).__name__,
+                "description": "Impossible de joindre l'endpoint OAuth Cubrik.",
+            })
+    return results
+
+
 def _contains_oauth_registration_error(exc):
     if isinstance(exc, OAuthRegistrationError):
         return True
