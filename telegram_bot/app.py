@@ -10,7 +10,7 @@ import requests
 from flask import Flask, request, abort
 from atlas.paper_trading import format_snapshot, snapshot, signal_performance
 from atlas.engine import run_cycle, get_history, analyse_signal, council_vote
-from okx_readonly import fetch_and_format_account, fetch_history_snapshot, format_history_snapshot, OKXReadOnlyError
+from okx_readonly import fetch_and_format_account, fetch_history_snapshot, format_history_snapshot, format_hourly_account_summary, fetch_account_snapshot, OKXReadOnlyError
 
 logging.basicConfig(level=logging.INFO)
 app = Flask(__name__)
@@ -430,7 +430,7 @@ def health():
 
 @app.post("/hourly-alerts")
 def hourly_alerts():
-    # Endpoint déclenché par GitHub Actions une fois par heure.
+    # Déclenché par GitHub Actions chaque heure : veille + état du compte OKX en lecture seule.
     if not ALERTS_CRON_SECRET or request.headers.get("X-Alert-Secret") != ALERTS_CRON_SECRET:
         abort(403)
     if not TELEGRAM_CHAT_ID:
@@ -464,25 +464,45 @@ def hourly_alerts():
         except Exception:
             logging.exception("Hourly news check failed for %s", name)
 
-    # Déduplique les liens dans cette exécution et limite la taille du message.
     unique = []
     seen = set()
     for name, article in fresh:
         if article["link"] not in seen:
             seen.add(article["link"])
             unique.append((name, article))
-    if not unique:
-        logging.info("Hourly check completed: no recent headlines; no Telegram message sent.")
-        return "no new headlines", 200
 
-    lines = ["🚨 VEILLE BOURSIÈRE — " + datetime.now().strftime("%d/%m/%Y %H:%M"), "Nouvelles récentes détectées (fenêtre d'environ 70 min) :"]
-    for name, article in unique[:12]:
-        lines.append("\n• " + name + " : " + article["title"] + "\n" + article["source"] + " — " + article["link"])
-    lines.append("\nℹ️ Les titres doivent être vérifiés dans les articles originaux. Ceci n'est pas un conseil d'investissement.")
-    send_message(TELEGRAM_CHAT_ID, "\n".join(lines))
-    logging.info("Hourly alert sent with %s headlines.", len(unique[:12]))
-    return "alerts sent", 200
+    okx_configured = all(os.environ.get(key, "").strip() for key in (
+        "OKX_READ_API_KEY", "OKX_READ_API_SECRET", "OKX_READ_PASSPHRASE"
+    ))
+    if not unique and not okx_configured:
+        logging.info("Hourly check completed: no recent headlines and OKX read-only key not configured.")
+        return "no new headlines; account reporting not configured", 200
 
+    lines = ["🤖 ATLAS — POINT HORAIRE · " + datetime.now().astimezone().strftime("%d/%m/%Y %H:%M")]
+    if unique:
+        lines.extend(["", "🚨 VEILLE BOURSIÈRE — Actualités récentes (environ 55 minutes) :"])
+        for name, article in unique[:8]:
+            lines.append("• {} : {} — {}".format(name, article["title"], article["source"]))
+        lines.append("Les titres doivent être vérifiés dans les articles originaux.")
+    else:
+        lines.extend(["", "📰 Veille : aucune nouvelle importante détectée dans la fenêtre récente."])
+
+    if okx_configured:
+        try:
+            account = fetch_account_snapshot()
+            lines.extend(["", format_hourly_account_summary(account)])
+            logging.info("Hourly OKX read-only account summary prepared.")
+        except OKXReadOnlyError as exc:
+            logging.warning("Hourly OKX read-only account summary failed: %s", exc)
+            lines.extend(["", "⚠️ Le compte OKX n'a pas pu être lu. Utilise /okx pour obtenir le détail de l'erreur."])
+        except Exception:
+            logging.exception("Unexpected hourly OKX read-only reporting error")
+            lines.extend(["", "⚠️ Une erreur inattendue empêche la lecture du compte OKX. Aucun ordre n'a été envoyé."])
+
+    lines.extend(["", "ℹ️ Les informations du compte sont consultées en lecture seule. ATLAS n'envoie aucun ordre."])
+    send_long_message(TELEGRAM_CHAT_ID, "\n".join(lines))
+    logging.info("Hourly ATLAS report sent; headlines=%s; account_configured=%s.", len(unique), okx_configured)
+    return "hourly report sent", 200
 
 @app.post("/atlas-cycle")
 def atlas_cycle_endpoint():
