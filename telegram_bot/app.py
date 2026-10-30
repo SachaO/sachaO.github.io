@@ -561,7 +561,9 @@ def telegram_webhook():
             "/positions — positions simulées\n"
             "/trades — dernières opérations fictives\n"
             "/atlasstats — évaluer les signaux sur 1, 3 et 7 jours\n"
-            "/atlastest — tester les cinq votes IA sans ordre simulé\n\n"
+            "/atlastest — tester les cinq votes IA sans ordre simulé\n"
+            "/okx — voir le compte OKX en lecture seule\n"
+            "/okxhistorique — historique OKX, frais et mouvements\n\n"
             "La synthèse IA nécessite la configuration d'un fournisseur compatible. Sans clé, le bot propose un digest transparent basé sur les titres."
         )
     elif command == "/atlas":
