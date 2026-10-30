@@ -1,4 +1,4 @@
-name: Probe Cubrik MCP native loopback OAuth
+name: Probe Cubrik MCP native loopback OAuth (rerun)
 
 on:
   workflow_dispatch:
