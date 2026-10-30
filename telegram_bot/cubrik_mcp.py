@@ -518,7 +518,7 @@ def _background_worker(chat_id, notify, detailed=True, oauth_queue=None):
                 _PENDING["state"] = auth_url_holder["state"]
         notify(
             chat_id,
-            "🔐 Pour relier ATLAS à Cubrik, ouvre ce lien puis autorise uniquement la lecture du compte et, si nécessaire, la consultation des agents. Refuse toute permission de trading.\n\n" + auth_url,
+            "🔐 Pour relier ATLAS à Cubrik, ouvre ce lien puis autorise la lecture du compte et la consultation/gestion des agents si Cubrik sépare ces droits. Ne coche surtout pas la permission Trading : ATLAS ne doit pas passer d'ordres.\n\n" + auth_url,
         )
 
     try:
