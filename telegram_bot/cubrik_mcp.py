@@ -18,7 +18,7 @@ import httpx2
 import psycopg
 from cryptography.fernet import Fernet, InvalidToken
 from mcp import ClientSession
-from mcp.client.auth import AuthorizationCodeResult, OAuthClientProvider, TokenStorage
+from mcp.client.auth import AuthorizationCodeResult, OAuthClientProvider
 from mcp.client.streamable_http import streamable_http_client
 from mcp.shared.auth import OAuthClientInformationFull, OAuthClientMetadata, OAuthToken
 from pydantic import AnyUrl
@@ -139,7 +139,7 @@ def _write_secret(slot, payload):
             )
 
 
-class PostgresOAuthStorage(TokenStorage):
+class PostgresOAuthStorage:
     """MCP OAuth TokenStorage with encrypted PostgreSQL persistence."""
 
     async def get_tokens(self):
