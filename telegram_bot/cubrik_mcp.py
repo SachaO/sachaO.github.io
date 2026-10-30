@@ -436,13 +436,14 @@ async def _read_cubrik_snapshot(auth_url_callback=None, callback_result=None, de
             redirect_uris=[AnyUrl(redirect_uri)],
             grant_types=["authorization_code", "refresh_token"],
             response_types=["code"],
+            application_type="web",
         ),
         storage=storage,
         redirect_handler=redirect_handler,
         callback_handler=oauth_callback_handler,
     )
 
-    async with httpx2.AsyncClient(auth=oauth, follow_redirects=True) as http_client:
+    async with httpx2.AsyncClient(auth=oauth, follow_redirects=True, timeout=httpx2.Timeout(30.0, read=300.0)) as http_client:
         async with streamable_http_client(server_url, http_client=http_client) as (read_stream, write_stream):
             async with ClientSession(read_stream, write_stream) as session:
                 await session.initialize()
