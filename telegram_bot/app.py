@@ -64,7 +64,7 @@ def send_long_message(chat_id, text, parse_mode=None):
 def set_commands():
     # Public users and group chats see only the sanitized agents overview.
     public_commands = [
-        {"command": "cubrikagents", "description": "Voir les agents Cubrik (statut uniquement)"},
+        {"command": "cubrikagents", "description": "Voir agents, trades et gains/pertes"},
     ]
     private_owner_commands = [
         {"command": "start", "description": "Démarrer le bot"},
@@ -646,7 +646,7 @@ def telegram_webhook():
                 "Ces commandes sensibles sont réservées à cette conversation privée."
             )
         else:
-            reply = "Commande disponible : /cubrikagents — statut des agents uniquement, sans capital ni données de portefeuille."
+            reply = "Commande disponible : /cubrikagents — statut des agents et journal des trades avec gains/pertes, sans afficher le capital ni le solde."
     elif command in ("/atlas", "/positions", "/trades"):
         # Les commandes portefeuille affichent désormais les données réelles OKX
         # lues via Cubrik ; le ledger paper-trading n'est plus présenté comme le compte réel.
