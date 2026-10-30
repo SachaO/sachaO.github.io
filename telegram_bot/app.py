@@ -10,6 +10,7 @@ import requests
 from flask import Flask, request, abort
 from atlas.paper_trading import format_snapshot, snapshot, signal_performance
 from atlas.engine import run_cycle, get_history, analyse_signal, council_vote
+from okx_readonly import fetch_and_format_account, fetch_history_snapshot, format_history_snapshot, OKXReadOnlyError
 
 logging.basicConfig(level=logging.INFO)
 app = Flask(__name__)
@@ -647,6 +648,30 @@ def telegram_webhook():
         reply = "\n".join(lines)
     elif command == "/news":
         reply = format_news_message(topic)
+    elif command in ("/okx", "/okxhistorique"):
+        # Accès strictement privé : ces commandes affichent des données financières du compte.
+        if not TELEGRAM_CHAT_ID or str(chat_id) != str(TELEGRAM_CHAT_ID):
+            reply = "⛔ Accès refusé : ces informations de compte sont réservées à la conversation Telegram autorisée."
+        elif not all(os.environ.get(key, "").strip() for key in ("OKX_READ_API_KEY", "OKX_READ_API_SECRET", "OKX_READ_PASSPHRASE")):
+            reply = (
+                "🔐 La lecture du compte OKX n'est pas encore configurée.\\n\\n"
+                "Crée une clé API OKX avec l'autorisation Read uniquement, sans Trade ni Withdraw, "
+                "puis ajoute ses trois identifiants dans les variables secrètes Render. "
+                "Pour un compte européen, le domaine API par défaut est eea.okx.com. "
+                "Aucune clé ne doit être envoyée dans Telegram."
+            )
+        else:
+            try:
+                if command == "/okxhistorique":
+                    reply = format_history_snapshot(fetch_history_snapshot())
+                else:
+                    reply = fetch_and_format_account()
+            except OKXReadOnlyError as exc:
+                logging.warning("ATLAS read-only OKX request failed: %s", exc)
+                reply = "⚠️ Je n'ai pas pu lire le compte OKX.\\n" + str(exc)
+            except Exception:
+                logging.exception("Unexpected ATLAS read-only OKX error")
+                reply = "⚠️ Une erreur inattendue empêche la lecture du compte OKX. Aucun ordre n'a été envoyé."
     elif command == "/status":
         ai_state = "configurée" if AI_API_KEY and AI_MODEL else "non configurée (résumé de secours)"
         reply = f"✅ Le bot Telegram fonctionne. Analyse IA : {ai_state}."
