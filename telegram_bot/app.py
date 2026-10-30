@@ -79,7 +79,7 @@ def set_commands():
         {"command": "atlastest", "description": "Diagnostic du conseil IA sans ordre"},
         {"command": "cubrikconnect", "description": "Relier ATLAS à Cubrik"},
         {"command": "cubrik", "description": "Voir le capital et la performance OKX"},
-        {"command": "cubrikagents", "description": "Voir les agents et leurs horaires"},
+        {"command": "cubrikagents", "description": "Suivi OKX : capital, positions, trades et résultats"},
         {"command": "cubriktrades", "description": "Voir les résultats et transactions"},
     ]
 
@@ -626,7 +626,7 @@ def telegram_webhook():
         else:
             reply = (
                 "Bienvenue sur TRADING_AI_ALERTES 📈\n\n"
-                "La commande publique disponible est /cubrikagents : elle affiche uniquement le statut et le rôle des agents, sans données financières."
+                "La commande publique /cubrikagents affiche le capital OKX, les positions, les opérations récentes et leurs gains/pertes. Les crédits et les informations d’abonnement restent privés."
             )
     elif command == "/help":
         if is_owner_private:
@@ -641,12 +641,12 @@ def telegram_webhook():
                 "/atlastest — diagnostic du conseil IA sans ordre\n"
                 "/cubrikconnect — connexion Cubrik\n"
                 "/cubrik — capital, performance et positions\n"
-                "/cubrikagents — statut et horaires des agents\n"
+                "/cubrikagents — suivi du capital, des positions et des trades OKX\n"
                 "/cubriktrades — résultats et historique\n\n"
                 "Ces commandes sensibles sont réservées à cette conversation privée."
             )
         else:
-            reply = "Commande disponible : /cubrikagents — statut des agents et journal des trades avec gains/pertes, sans afficher le capital ni le solde."
+            reply = "Commande disponible : /cubrikagents — capital total OKX, positions en cours, derniers trades et gains/pertes."
     elif command in ("/atlas", "/positions", "/trades"):
         # Les commandes portefeuille affichent désormais les données réelles OKX
         # lues via Cubrik ; le ledger paper-trading n'est plus présenté comme le compte réel.
@@ -756,7 +756,7 @@ def telegram_webhook():
                 agents_only=True,
             )
             reply = (
-                "🔎 Je récupère uniquement le statut et les horaires des agents."
+                "🔎 Je récupère le capital, les positions et l’activité de trading OKX."
                 if started else
                 "ℹ️ " + message
             )
