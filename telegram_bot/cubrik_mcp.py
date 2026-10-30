@@ -765,9 +765,7 @@ def _format_public_executor_activity(value):
 
     summary = _pick(run, ("summary", "message", "result"))
     if summary:
-        first_paragraph = str(summary).strip().split("
-
-", 1)[0].replace("
+        first_paragraph = str(summary).strip().split("\\n\\n", 1)[0].replace("\\n", " ")
 ", " ")
         lines.append(_short_value(first_paragraph, 260))
     if run.get("error"):
@@ -804,8 +802,7 @@ def format_cubrik_agents_snapshot(data):
         lines.append("")
         lines.extend("⚠️ " + warning for warning in data["warnings"][:3])
 
-    return "
-".join(lines)
+    return "\\n".join(lines)
 
 
 def format_cubrik_snapshot(data, detailed=True):
