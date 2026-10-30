@@ -87,9 +87,9 @@ def set_commands():
         {"command": "news", "description": "Résumé des actualités financières"},
         {"command": "status", "description": "Vérifier le bot"},
         {"command": "chatid", "description": "Afficher l’identifiant de la conversation"},
-        {"command": "atlas", "description": "Voir le portefeuille fictif ATLAS"},
-        {"command": "positions", "description": "Voir les positions simulées"},
-        {"command": "trades", "description": "Voir les dernières opérations simulées"},
+        {"command": "atlas", "description": "Voir le vrai portefeuille OKX via Cubrik"},
+        {"command": "positions", "description": "Voir les positions réelles OKX"},
+        {"command": "trades", "description": "Voir les opérations réelles OKX"},
         {"command": "atlasstats", "description": "Évaluer les signaux ATLAS sur 1, 3 et 7 jours"},
         {"command": "atlastest", "description": "Tester les cinq votes IA sans passer d’ordre"},
         {"command": "cubrikconnect", "description": "Relier ATLAS à Cubrik en lecture seule"},
@@ -617,7 +617,7 @@ def telegram_webhook():
             "Bienvenue sur TRADING_AI_ALERTES 📈\n\n"
             "Ce bot collecte des titres financiers via RSS et peut les synthétiser avec une IA si un fournisseur est configuré.\n"
             "Utilise /news pour obtenir une synthèse des dernières nouvelles.\n"
-            "ATLAS gère un portefeuille fictif consultable avec /atlas, /positions et /trades."
+            "Le portefeuille réel OKX est consultable via Cubrik avec /atlas, /positions et /trades."
         )
     elif command == "/help":
         reply = (
@@ -627,9 +627,9 @@ def telegram_webhook():
             "/news — synthèse des actualités financières\n"
             "/news Oracle — recherche ciblée\n"
             "/status — vérifier que le bot répond\n"
-            "/atlas — portefeuille fictif et résultat\n"
-            "/positions — positions simulées\n"
-            "/trades — dernières opérations fictives\n"
+            "/atlas — portefeuille réel OKX via Cubrik\n"
+            "/positions — positions réelles OKX\n"
+            "/trades — dernières opérations réelles OKX\n"
             "/atlasstats — évaluer les signaux sur 1, 3 et 7 jours\n"
             "/atlastest — tester les cinq votes IA sans ordre simulé\n"
             "/cubrikconnect — relier ATLAS à Cubrik en lecture seule\n"
@@ -638,14 +638,22 @@ def telegram_webhook():
             "/cubriktrades — résultats et historique des transactions\n\n"
             "La synthèse IA nécessite la configuration d'un fournisseur compatible. Sans clé, le bot propose un digest transparent basé sur les titres."
         )
-    elif command == "/atlas":
-        reply = format_snapshot()
-    elif command == "/positions":
-        state = snapshot()
-        reply = "Aucune position fictive pour le moment." if not state["positions"] else "📊 POSITIONS ATLAS (simulation)\n" + "\n".join("{} : {:.6g} unité(s), valeur {:.2f} USD, résultat latent {:+.2f} USD".format(p["symbol"], p["quantity"], p["market_value"], p["pnl"]) for p in state["positions"])
-    elif command == "/trades":
-        state = snapshot()
-        reply = "Aucune opération fictive enregistrée." if not state["trades"] else "🧾 DERNIÈRES OPÉRATIONS ATLAS\n" + "\n".join("{} {} {:.6g} {} à {:.4f} USD — {}".format(t["at"][:16].replace("T", " "), t["side"], t["quantity"], t["symbol"], t["price"], t["reason"]) for t in state["trades"][:8])
+    elif command in ("/atlas", "/positions", "/trades"):
+        # Les commandes portefeuille affichent désormais les données réelles OKX
+        # lues via Cubrik ; le ledger paper-trading n'est plus présenté comme le compte réel.
+        if not TELEGRAM_CHAT_ID or str(chat_id) != str(TELEGRAM_CHAT_ID):
+            reply = "⛔ Accès refusé : la consultation du portefeuille OKX est réservée à la conversation autorisée."
+        else:
+            started, message = start_cubrik_request(
+                chat_id,
+                send_long_message,
+                detailed=True,
+            )
+            reply = (
+                "🔎 Je récupère le solde, l'equity, les positions et l'historique réels d'OKX via Cubrik. Le rapport arrive ici."
+                if started else
+                "ℹ️ " + message
+            )
     elif command == "/atlastest":
         if not TELEGRAM_CHAT_ID or str(chat_id) != str(TELEGRAM_CHAT_ID):
             reply = "⛔ Test refusé : configure TELEGRAM_CHAT_ID dans Render avec l’identifiant de ta conversation privée, puis réessaie. Cela évite que d’autres personnes déclenchent des appels IA payants."
