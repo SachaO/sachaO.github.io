@@ -15,6 +15,26 @@ from cubrik_mcp import start_cubrik_request, complete_oauth_callback, is_connect
 logging.basicConfig(level=logging.INFO)
 app = Flask(__name__)
 
+# Temporary, opt-in one-shot OAuth diagnostic. It only registers an unconsented
+# public native client to test whether Cubrik accepts standard loopback URIs.
+if os.environ.get("CUBRIK_OAUTH_PROBE_ON_STARTUP", "0") == "1":
+    try:
+        _probe_results = probe_native_loopback_registration()
+        _accepted = next((item for item in _probe_results if item.get("accepted")), None)
+        if _accepted:
+            logging.warning(
+                "CUBRIK_OAUTH_PROBE_RESULT accepted_loopback=%s",
+                _accepted.get("redirect_uri"),
+            )
+        else:
+            logging.warning(
+                "CUBRIK_OAUTH_PROBE_RESULT no_loopback_accepted details=%s",
+                json.dumps(_probe_results, ensure_ascii=False)[:1200],
+            )
+    except Exception:
+        logging.exception("CUBRIK_OAUTH_PROBE_RESULT unexpected_failure")
+
+
 BOT_TOKEN = os.environ["TELEGRAM_BOT_TOKEN"].strip()
 WEBHOOK_SECRET = os.environ["TELEGRAM_WEBHOOK_SECRET"].strip()
 PUBLIC_URL = os.environ.get("PUBLIC_URL", "").strip().rstrip("/")
