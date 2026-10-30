@@ -496,7 +496,6 @@ async def _read_cubrik_snapshot(auth_url_callback=None, callback_result=None, de
                     jobs = [
                         ("agents", {}),
                         ("portfolio", {"refresh": True}),
-                        ("analysis", {"account": "OKX", "period": "week"}),
                     ]
                 else:
                     jobs = [
@@ -528,7 +527,18 @@ async def _read_cubrik_snapshot(auth_url_callback=None, callback_result=None, de
                         ),
                         portfolio_items[0] if portfolio_items else {},
                     )
-                    analysis = responses.get("analysis") or {}
+                    analysis_value, analysis_warning = await _call_read_tool(
+                        session,
+                        tools,
+                        "analysis",
+                        {
+                            "account": okx_portfolio.get("id") or "OKX",
+                            "period": "week",
+                        },
+                    )
+                    if analysis_warning:
+                        warnings.append(analysis_warning)
+                    analysis = analysis_value or {}
                     public_capital = okx_portfolio.get("equity")
                     if public_capital is None:
                         public_capital = okx_portfolio.get("balance")
