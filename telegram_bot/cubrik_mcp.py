@@ -159,6 +159,21 @@ class PostgresOAuthStorage:
                 "Le jeton Cubrik ne contient pas les permissions de lecture attendues. Il n'a pas été enregistré."
             )
         await asyncio.to_thread(_write_secret, "tokens", tokens.model_dump_json())
+        # Record only non-sensitive OAuth metadata. Never log either token value.
+        expires_in = getattr(tokens, "expires_in", None)
+        if getattr(tokens, "refresh_token", None):
+            log.info(
+                "Cubrik OAuth token stored with refresh capability; scopes=%s expires_in=%s",
+                " ".join(sorted(granted_scopes)),
+                expires_in,
+            )
+        else:
+            log.warning(
+                "Cubrik OAuth token stored WITHOUT refresh capability; a later consent may be required. "
+                "scopes=%s expires_in=%s",
+                " ".join(sorted(granted_scopes)),
+                expires_in,
+            )
 
     async def get_client_info(self):
         payload = await asyncio.to_thread(_read_secret, "client_info")
@@ -413,7 +428,13 @@ def _tool_has_name(tools, logical_name):
     return _find_tool(tools, READ_TOOL_ALIASES[logical_name]) is not None
 
 
-async def _read_cubrik_snapshot(auth_url_callback=None, callback_result=None, detailed=True, agents_only=False):
+async def _read_cubrik_snapshot(
+    auth_url_callback=None,
+    callback_result=None,
+    detailed=True,
+    agents_only=False,
+    allow_reauthorization=False,
+):
     server_url = _server_url()
     redirect_uri = _redirect_uri()
     storage = PostgresOAuthStorage()
@@ -443,6 +464,13 @@ async def _read_cubrik_snapshot(auth_url_callback=None, callback_result=None, de
         oauth.context.client_metadata.scope = safe_scope_value
         safe_auth_url = urlunparse(parsed._replace(query=urlencode(query, doseq=True)))
 
+        if not allow_reauthorization:
+            raise CubrikMonitorError(
+                "La session Cubrik n'est plus acceptée et n'a pas pu être renouvelée automatiquement. "
+                "Pour éviter de relancer un consentement à chaque commande, envoie /cubrikconnect uniquement "
+                "lorsqu'une reconnexion manuelle est nécessaire. Si cela revient environ toutes les heures, "
+                "Cubrik doit fournir un refresh token pour permettre le renouvellement automatique."
+            )
         if auth_url_callback:
             await auth_url_callback(safe_auth_url)
         else:
@@ -1232,7 +1260,14 @@ def _oauth_redirect_error_message():
     )
 
 
-def _background_worker(chat_id, notify, detailed=True, oauth_queue=None, agents_only=False):
+def _background_worker(
+    chat_id,
+    notify,
+    detailed=True,
+    oauth_queue=None,
+    agents_only=False,
+    allow_reauthorization=False,
+):
     global _ACTIVE_WORKER
     auth_url_holder = {"url": None, "state": None}
 
@@ -1255,6 +1290,7 @@ def _background_worker(chat_id, notify, detailed=True, oauth_queue=None, agents_
             callback_result=oauth_queue,
             detailed=detailed,
             agents_only=agents_only,
+            allow_reauthorization=allow_reauthorization,
         ))
         message = (
             format_cubrik_agents_snapshot(snapshot)
@@ -1262,6 +1298,20 @@ def _background_worker(chat_id, notify, detailed=True, oauth_queue=None, agents_
             format_cubrik_snapshot(snapshot, detailed=detailed)
         )
         notify(chat_id, message)
+        if allow_reauthorization:
+            try:
+                stored_tokens = asyncio.run(PostgresOAuthStorage().get_tokens())
+                if stored_tokens and not getattr(stored_tokens, "refresh_token", None):
+                    notify(
+                        chat_id,
+                        "⚠️ Connexion Cubrik réussie, mais aucun jeton de renouvellement n'a été fourni. "
+                        "L'accès peut expirer et nécessiter une nouvelle autorisation. "
+                        "Le lien utilisé reste strictement limité à la lecture et aux agents, sans droit de trading. "
+                        "Pour supprimer ces reconnexions, Cubrik doit prendre en charge le refresh token "
+                        "pour les applications MCP (par exemple via offline_access lorsqu'il est proposé).",
+                    )
+            except Exception:
+                log.exception("Unable to inspect Cubrik OAuth refresh capability.")
     except OAuthRegistrationError:
         redirect_uri = _redirect_uri()
         log.error("Cubrik MCP rejected the configured OAuth redirect URI: %s", redirect_uri)
@@ -1294,7 +1344,13 @@ def _background_worker(chat_id, notify, detailed=True, oauth_queue=None, agents_
                 _PENDING.clear()
 
 
-def start_cubrik_request(chat_id, notify, detailed=True, agents_only=False):
+def start_cubrik_request(
+    chat_id,
+    notify,
+    detailed=True,
+    agents_only=False,
+    allow_reauthorization=False,
+):
     """Run a Cubrik read-only request in a worker thread so Flask stays responsive."""
     global _ACTIVE_WORKER, _PENDING
     with _PENDING_LOCK:
@@ -1303,7 +1359,14 @@ def start_cubrik_request(chat_id, notify, detailed=True, agents_only=False):
         oauth_queue = queue.Queue()
         worker = threading.Thread(
             target=_background_worker,
-            args=(chat_id, notify, detailed, oauth_queue, agents_only),
+            args=(
+                chat_id,
+                notify,
+                detailed,
+                oauth_queue,
+                agents_only,
+                allow_reauthorization,
+            ),
             daemon=True,
             name="atlas-cubrik-mcp",
         )
