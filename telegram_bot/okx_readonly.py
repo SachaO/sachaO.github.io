@@ -428,3 +428,35 @@ def format_account_snapshot(data):
 
 def fetch_and_format_account():
     return format_account_snapshot(fetch_account_snapshot())
+
+
+
+def format_hourly_account_summary(data):
+    """Compact French summary for the existing hourly Telegram automation."""
+    positions = data.get("positions") or []
+    orders = data.get("pending_orders") or []
+    total_upl = sum((_safe_float(position.get("upl"), 0) or 0) for position in positions)
+    lines = [
+        "💼 POINT COMPTE OKX",
+        "Valeur totale : {} USD · Disponible : {} USD".format(
+            _num(data.get("equity_usd")),
+            _num(data.get("available_equity")),
+        ),
+        "Positions ouvertes : {} · Ordres en attente : {}".format(len(positions), len(orders)),
+    ]
+    if positions:
+        lines.append("P&L latent total des positions : {} USD".format(_num(total_upl, 2, signed=True)))
+        for position in positions[:4]:
+            side = position.get("posSide") or ("long" if (_safe_float(position.get("pos"), 0) or 0) > 0 else "short")
+            lines.append("• {} {} : P&L {} USD · levier x{}".format(
+                position.get("instId", "?"),
+                side,
+                _num(position.get("upl"), 2, signed=True),
+                position.get("lever") or "?",
+            ))
+    else:
+        lines.append("Aucune position ouverte détectée.")
+    if data.get("warnings"):
+        lines.append("⚠️ Certaines rubriques du compte sont momentanément non accessibles.")
+    lines.append("Relevé en lecture seule · {}".format(data["captured_at"]))
+    return "\n".join(lines)
