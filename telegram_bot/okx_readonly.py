@@ -167,7 +167,8 @@ def _recent_fills():
 
 
 def _recent_orders():
-    return _get("/api/v5/trade/orders-history", {"instType": None, "state": None, "limit": "20"})
+    # Get recent completed orders for each instrument family, avoiding an implicit product filter.
+    return _collect_by_instrument_type("/api/v5/trade/orders-history")
 
 
 def _fills_archive():
@@ -206,12 +207,13 @@ def fetch_account_snapshot():
     pending, pending_error = _optional_read(_pending_orders)
     fills_result, fills_error = _optional_read(_recent_fills)
     fills, fills_type_errors = fills_result if fills_result else ([], [])
-    orders, orders_error = _optional_read(_recent_orders)
+    orders_result, orders_error = _optional_read(_recent_orders)
+    orders, orders_type_errors = orders_result if orders_result else ([], [])
     config_rows, config_error = _optional_read(lambda: _get("/api/v5/account/config"))
     config = config_rows[0] if config_rows else {}
     warnings = [message for message in (
         funding_error, positions_error, pending_error, fills_error, orders_error, config_error
-    ) if message] + fills_type_errors
+    ) if message] + fills_type_errors + orders_type_errors
     return {
         "captured_at": datetime.now().astimezone().strftime("%d/%m/%Y à %H:%M:%S"),
         "equity_usd": balance.get("totalEq"),
