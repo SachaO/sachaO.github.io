@@ -56,6 +56,8 @@ def set_commands():
         {"command": "trades", "description": "Voir les dernières opérations simulées"},
         {"command": "atlasstats", "description": "Évaluer les signaux ATLAS sur 1, 3 et 7 jours"},
         {"command": "atlastest", "description": "Tester les cinq votes IA sans passer d’ordre"},
+        {"command": "okx", "description": "Voir le compte OKX réel en lecture seule"},
+        {"command": "okxhistorique", "description": "Voir l’historique du compte OKX"},
     ]
     response = requests.post(f"{API}/setMyCommands", json={"commands": commands}, timeout=15)
     response.raise_for_status()
@@ -461,9 +463,9 @@ def hourly_alerts():
 
     lines = ["🚨 VEILLE BOURSIÈRE — " + datetime.now().strftime("%d/%m/%Y %H:%M"), "Nouvelles récentes détectées (fenêtre d'environ 70 min) :"]
     for name, article in unique[:12]:
-        lines.append("\\n• " + name + " : " + article["title"] + "\\n" + article["source"] + " — " + article["link"])
-    lines.append("\\nℹ️ Les titres doivent être vérifiés dans les articles originaux. Ceci n'est pas un conseil d'investissement.")
-    send_message(TELEGRAM_CHAT_ID, "\\n".join(lines))
+        lines.append("\n• " + name + " : " + article["title"] + "\n" + article["source"] + " — " + article["link"])
+    lines.append("\nℹ️ Les titres doivent être vérifiés dans les articles originaux. Ceci n'est pas un conseil d'investissement.")
+    send_message(TELEGRAM_CHAT_ID, "\n".join(lines))
     logging.info("Hourly alert sent with %s headlines.", len(unique[:12]))
     return "alerts sent", 200
 
@@ -654,7 +656,7 @@ def telegram_webhook():
             reply = "⛔ Accès refusé : ces informations de compte sont réservées à la conversation Telegram autorisée."
         elif not all(os.environ.get(key, "").strip() for key in ("OKX_READ_API_KEY", "OKX_READ_API_SECRET", "OKX_READ_PASSPHRASE")):
             reply = (
-                "🔐 La lecture du compte OKX n'est pas encore configurée.\\n\\n"
+                "🔐 La lecture du compte OKX n'est pas encore configurée.\n\n"
                 "Crée une clé API OKX avec l'autorisation Read uniquement, sans Trade ni Withdraw, "
                 "puis ajoute ses trois identifiants dans les variables secrètes Render. "
                 "Pour un compte européen, le domaine API par défaut est eea.okx.com. "
@@ -668,7 +670,7 @@ def telegram_webhook():
                     reply = fetch_and_format_account()
             except OKXReadOnlyError as exc:
                 logging.warning("ATLAS read-only OKX request failed: %s", exc)
-                reply = "⚠️ Je n'ai pas pu lire le compte OKX.\\n" + str(exc)
+                reply = "⚠️ Je n'ai pas pu lire le compte OKX.\n" + str(exc)
             except Exception:
                 logging.exception("Unexpected ATLAS read-only OKX error")
                 reply = "⚠️ Une erreur inattendue empêche la lecture du compte OKX. Aucun ordre n'a été envoyé."
@@ -690,11 +692,11 @@ def telegram_webhook():
                     if any(term in lowered for term in terms):
                         query = name + (" SRRK" if name == "Scholar Rock" else " SION" if name == "Sionna Therapeutics" else " INV" if name == "Innventure" else " ORCL" if name == "Oracle" else " NVDA" if name == "NVIDIA" else "")
                         found.extend(search_rss_news(query)[:3])
-                context = "\\n".join("- " + a["title"] + " (" + a["source"] + ", " + a["published"] + ")" for a in found) or "Aucune actualité RSS spécifique récupérée."
+                context = "\n".join("- " + a["title"] + " (" + a["source"] + ", " + a["published"] + ")" for a in found) or "Aucune actualité RSS spécifique récupérée."
                 market_items = market_symbols_for_text(text)
-                market_context = "\\n".join(name + " (" + symbol + ") : " + get_market_snapshot(symbol) for name, symbol in market_items)
+                market_context = "\n".join(name + " (" + symbol + ") : " + get_market_snapshot(symbol) for name, symbol in market_items)
                 if market_context:
-                    context += "\\n\\nDONNÉES DE MARCHÉ :\\n" + market_context
+                    context += "\n\nDONNÉES DE MARCHÉ :\n" + market_context
                 system_prompt = (
                     "Tu es TRADING_AI_ALERTES, assistant conversationnel francophone spécialisé dans l'actualité et l'analyse des marchés. Par défaut, pour toute question liée à une entreprise ou à un actif financier, fournis spontanément une analyse financière développée en français, sans attendre que l'utilisateur précise le format. Organise la réponse en 5 à 7 paragraphes courts et lisibles, avec des phrases complètes et des transitions naturelles. Analyse le contexte général du marché et du secteur, la tendance du titre (haussière, baissière ou neutre/en consolidation), les actualités et catalyseurs importants, les facteurs favorables et défavorables, les risques majeurs, les perspectives à moyen terme avec scénarios haussier, central et baissier, puis les indicateurs ou événements à surveiller. Distingue le court terme du moyen terme lorsque les données le permettent et explique pourquoi les éléments cités pourraient influencer le cours. Distingue toujours les faits confirmés, les interprétations et les hypothèses. Ne qualifie jamais une tendance de haussière ou baissière sans données de marché suffisamment récentes : si tu ne disposes que de titres d'actualité, indique explicitement que tu ne peux pas confirmer la tendance du cours. N'invente ni cours en direct, ni performance, ni indicateur technique, ni chiffre, ni probabilité. Si tu ne disposes pas de données fiables sur les prix ou les graphiques, dis-le clairement et limite-toi à une analyse fondamentale des informations disponibles. Ne donne pas de recommandation d'achat ou de vente présentée comme certaine. Pour les questions qui ne concernent pas la finance, réponds normalement et directement. "
                     "RÈGLE ABSOLUE : toute la réponse doit être rédigée en français naturel. Même si les sources, les titres ou la question contiennent de l'anglais, explique leur contenu en français. Seuls les noms propres, les noms d'entreprises et les tickers peuvent rester en anglais. Avant de répondre, vérifie que chaque phrase est en français et traduis toute phrase anglaise. "
