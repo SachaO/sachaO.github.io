@@ -10,7 +10,7 @@ import feedparser
 import requests
 from flask import Flask, request, abort
 from atlas.paper_trading import format_snapshot, snapshot, signal_performance
-from atlas.engine import run_cycle, get_history, analyse_signal, council_vote
+from atlas.engine import get_history, analyse_signal, council_vote
 from cubrik_mcp import start_cubrik_request, complete_oauth_callback, is_connected, CubrikMonitorError, probe_native_loopback_registration
 
 logging.basicConfig(level=logging.INFO)
@@ -542,54 +542,28 @@ def hourly_alerts():
 
 @app.post("/atlas-cycle")
 def atlas_cycle_endpoint():
+    """Scheduled ATLAS supervision: read the real OKX account through Cubrik.
+
+    Cubrik agents are the execution engine. This Render endpoint is deliberately
+    read-only and no longer runs the legacy paper-trading cycle.
+    """
     if not ALERTS_CRON_SECRET or request.headers.get("X-Alert-Secret") != ALERTS_CRON_SECRET:
         abort(403)
-    result = run_cycle()
-    if TELEGRAM_CHAT_ID:
-        state = result["portfolio"]
-        decisions = result["decisions"][:8]
-        lines = [
-            "🤖 <b>ATLAS · RAPPORT DE MARCHÉ</b>",
-            "━━━━━━━━━━━━━━━━━━",
-            "🔎 <b>Univers découvert :</b> {} actifs ; analysés ce cycle : {}".format(result.get("discovered_candidates", 0), result.get("scanned_assets", result["updated"])),
-            "🔄 <b>Cours actualisés :</b> {}".format(result["updated"]),
-            "💼 <b>Portefeuille fictif</b>",
-            "Valeur : <b>{:,.2f} USD</b>".format(state["equity"]).replace(",", " "),
-            "Résultat : <b>{:+,.2f} USD ({:+.2f} %)</b>".format(state["pnl"], state["return_pct"]).replace(",", " "),
-            "Liquidités : {:,.2f} USD".format(state["cash"]).replace(",", " "),
-            "",
-            "📊 <b>ANALYSE DES ACTIFS</b>",
-        ]
-        if decisions:
-            lines.extend([
-                "",
-                "🧭 <b>Comment lire ce rapport ?</b>",
-                "ATLAS combine les indicateurs techniques avec les votes de son conseil IA. Un signal n’est pas une certitude : si les données sont incomplètes ou les avis insuffisamment concordants, le système privilégie l’attente. Les explications ci-dessous détaillent les facteurs observés et leurs limites.",
-                "",
-            ])
-        for decision in decisions:
-            readable_decision = explain_atlas_decision(decision)
-            safe = html.escape(readable_decision, quote=False)
-            # Mettre le symbole ou le nom de l'actif en évidence, sans modifier la décision.
-            if " : " in decision:
-                label, detail = decision.split(" : ", 1)
-                safe = "<b>{}</b> · {}".format(html.escape(label, quote=False), html.escape(detail, quote=False))
-            elif " (" in decision:
-                label, detail = decision.split(" (", 1)
-                safe = "<b>{}</b> · {}".format(html.escape(label, quote=False), html.escape("(" + detail, quote=False))
-            if "ACHAT SIMULÉ" in decision:
-                safe = "🟢 " + safe
-            elif "VENTE SIMULÉE" in decision:
-                safe = "🔴 " + safe
-            elif "ATTENTE" in decision or "CONSERVATION" in decision:
-                safe = "⚪ " + safe
-            lines.append(safe)
-        if result["errors"]:
-            lines.extend(["", "⚠️ <b>À VÉRIFIER</b>"])
-            lines.extend("• " + html.escape(error, quote=False) for error in result["errors"][:4])
-        lines.extend(["", "━━━━━━━━━━━━━━━━━━", "🧪 <i>Simulation uniquement · Aucun ordre réel</i>"])
-        send_message(TELEGRAM_CHAT_ID, "\n".join(lines), parse_mode="HTML")
-    return {"status": "ok", "updated": result["updated"], "decisions": len(result["decisions"]), "errors": result["errors"]}, 200
+    if not TELEGRAM_CHAT_ID:
+        return {"status": "error", "message": "TELEGRAM_CHAT_ID is not configured"}, 503
+    started, message = start_cubrik_request(
+        TELEGRAM_CHAT_ID,
+        send_long_message,
+        detailed=True,
+    )
+    if not started:
+        logging.info("Scheduled Cubrik portfolio report skipped: %s", message)
+        return {"status": "busy", "message": message}, 202
+    logging.info("Scheduled real OKX portfolio report requested through Cubrik.")
+    return {
+        "status": "ok",
+        "message": "Read-only OKX portfolio refresh started through Cubrik.",
+    }, 202
 
 
 @app.post("/telegram-webhook")
