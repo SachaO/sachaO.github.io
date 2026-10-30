@@ -4,3 +4,5 @@ feedparser>=6.0,<7.0
 gunicorn>=22.0,<24.0
 yfinance>=0.2.54,<1.0
 psycopg[binary]>=3.2,<4.0
+cryptography>=44,<47
+mcp>=2.3,<3
