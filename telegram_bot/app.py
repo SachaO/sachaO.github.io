@@ -18,6 +18,7 @@ app = Flask(__name__)
 
 # Temporary, opt-in one-shot OAuth diagnostic. It only registers an unconsented
 # public native client to test whether Cubrik accepts standard loopback URIs.
+logging.info("CUBRIK_OAUTH_PROBE_FLAG=%r", os.environ.get("CUBRIK_OAUTH_PROBE_ON_STARTUP"))
 if os.environ.get("CUBRIK_OAUTH_PROBE_ON_STARTUP", "0") == "1":
     try:
         _probe_results = probe_native_loopback_registration()
