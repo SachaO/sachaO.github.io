@@ -1,0 +1,64 @@
+name: Probe Cubrik MCP native loopback OAuth
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/cubrik-oauth-loopback-probe.yml"
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Test native loopback redirects
+        env:
+          REGISTRATION_URL: https://api.cubrik.ai/oauth/register
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          import requests
+
+          url = os.environ["REGISTRATION_URL"]
+          candidates = [
+              "http://127.0.0.1:8765/callback",
+              "http://localhost:8765/callback",
+              "http://[::1]:8765/callback",
+          ]
+          accepted = False
+          for redirect_uri in candidates:
+              payload = {
+                  "client_name": "ATLAS native OAuth loopback probe",
+                  "application_type": "native",
+                  "redirect_uris": [redirect_uri],
+                  "grant_types": ["authorization_code", "refresh_token"],
+                  "response_types": ["code"],
+                  "token_endpoint_auth_method": "none",
+              }
+              try:
+                  response = requests.post(
+                      url,
+                      json=payload,
+                      headers={"Content-Type": "application/json"},
+                      timeout=20,
+                  )
+                  print(f"{redirect_uri}: HTTP {response.status_code}")
+                  if response.status_code in (200, 201):
+                      data = response.json()
+                      # Do not log any secret or registration access token.
+                      print("Accepted native client registration.")
+                      print("client_id_present:", bool(data.get("client_id")))
+                      print("redirect_uris:", data.get("redirect_uris"))
+                      accepted = True
+                      break
+                  try:
+                      error = response.json()
+                      print("error:", error.get("error"), "|", error.get("error_description"))
+                  except Exception:
+                      print("response:", response.text[:300])
+              except Exception as exc:
+                  print("request failed:", type(exc).__name__)
+          if not accepted:
+              print("No native loopback URI accepted. No authorization was performed.")
+          PY
