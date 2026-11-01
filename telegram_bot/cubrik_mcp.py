@@ -757,27 +757,24 @@ def _format_run_timestamp(value):
 
 def _format_public_positions(positions, currency):
     if not positions:
-        return ["📂 Positions ouvertes : aucune"]
+        return ["Positions : aucune"]
 
-    lines = ["📂 Positions ouvertes"]
-    for position in positions[:6]:
-        symbol = _pick(position, ("instrument", "instId", "symbol", "market")) or "Actif inconnu"
+    lines = ["Positions :"]
+    for position in positions[:3]:
+        symbol = _pick(position, ("instrument", "instId", "symbol", "market")) or "Actif"
         side = _pick(position, ("side", "direction", "posSide"))
-        size = _pick(position, ("size", "pos", "quantity", "qty", "contracts"))
-        entry = _pick(position, ("entry_price", "avgPx", "average_price", "avg_price"))
         pnl = _pick(position, ("unrealized_pnl", "unrealizedPnl", "upl"))
-        pieces = [str(symbol)]
+        detail = str(symbol)
         if side:
-            pieces.append(str(side).upper())
-        if size is not None:
-            pieces.append("taille {}".format(_short_value(size, 35)))
-        if entry is not None:
-            pieces.append("entrée {}".format(_short_value(entry, 35)))
+            detail += " (" + str(side).lower() + ")"
         if pnl is not None:
-            pieces.append("P&L latent {} {}".format(_pnl_badge(pnl), currency or ""))
-        lines.append("• " + " · ".join(pieces))
+            detail += " — résultat actuel " + _pnl_badge(pnl)
+            if currency:
+                detail += " " + str(currency)
+        lines.append("• " + detail)
+    if len(positions) > 3:
+        lines.append("… et {} autre(s) position(s).".format(len(positions) - 3))
     return lines
-
 
 def _metric_number(value, suffix="", decimals=2):
     try:
@@ -788,89 +785,26 @@ def _metric_number(value, suffix="", decimals=2):
 
 
 def _format_public_trade_activity(history_payload, analysis_payload, currency):
+    """One-line summary of actual closed trading activity; omit empty KPI noise."""
     trades = _items(history_payload, ("trades", "history", "items", "data", "fills"))
     analysis = analysis_payload if isinstance(analysis_payload, dict) else {}
     kpis = analysis.get("kpis") if isinstance(analysis.get("kpis"), dict) else {}
-    net_result = _pick(kpis, ("netResult", "net_result", "realizedPnl", "realized_pnl"))
-    net_pct = _pick(kpis, ("netResultPct", "net_result_pct", "returnPct", "return_pct"))
-    trade_count = _pick(kpis, ("tradeCount", "trade_count", "closedTrades"))
-    win_rate_pct = _pick(kpis, ("winRatePct", "win_rate_pct"))
-    win_rate_ratio = _pick(kpis, ("winRate", "win_rate"))
-    profit_factor = _pick(kpis, ("profitFactor", "profit_factor"))
-    max_drawdown_pct = _pick(kpis, ("maxDrawdownPct", "max_drawdown_pct"))
-    currency = currency or analysis.get("currency") or "USD"
-
+    raw_count = _pick(kpis, ("tradeCount", "trade_count", "closedTrades"))
     try:
-        count = int(trade_count if trade_count is not None else len(trades))
+        count = int(raw_count if raw_count is not None else len(trades))
     except (TypeError, ValueError):
         count = len(trades)
 
-    lines = [
-        "📈 Activité des 7 derniers jours",
-        "Trades clôturés : {}".format(count),
-    ]
+    if count <= 0:
+        return ["Activité sur 7 jours : aucun trade clôturé."]
 
-    if count == 0:
-        lines.append("Aucun trade n'a été clôturé sur les 7 derniers jours.")
-        lines.append("Il n'y a donc pas encore de performance réalisée à évaluer.")
-        return lines
-
+    net_result = _pick(kpis, ("netResult", "net_result", "realizedPnl", "realized_pnl"))
+    result = ""
     if net_result is not None:
-        lines.append("Résultat net : {} {}".format(_pnl_badge(net_result), currency))
-    else:
-        lines.append("Résultat net : non communiqué par Cubrik.")
-
-    if net_pct is not None:
-        rendered_pct = _metric_number(net_pct, "%", 2)
-        if rendered_pct is not None:
-            lines.append("Évolution réalisée : {}".format(rendered_pct))
-
-    if count >= 5:
-        if win_rate_pct is not None or win_rate_ratio is not None:
-            try:
-                win_rate_number = float(
-                    win_rate_pct if win_rate_pct is not None else win_rate_ratio
-                )
-                if win_rate_pct is None and 0 <= win_rate_number <= 1:
-                    win_rate_number *= 100
-                lines.append("Trades gagnants : {} sur {}".format(
-                    _metric_number(win_rate_number, "%", 1), count
-                ))
-            except (TypeError, ValueError):
-                pass
-        if profit_factor is not None:
-            lines.append("Facteur de profit : {}".format(
-                _metric_number(profit_factor, "", 2) or "non communiqué"
-            ))
-        if max_drawdown_pct is not None:
-            lines.append("Baisse maximale : {}%".format(
-                _metric_number(max_drawdown_pct, "", 2) or "non communiqué"
-            ))
-    else:
-        lines.append("Les statistiques de réussite restent peu fiables avec moins de 5 trades.")
-
-    if trades:
-        lines.append("Dernières opérations clôturées :")
-        for trade in trades[:5]:
-            if not isinstance(trade, dict):
-                continue
-            instrument = _pick(trade, ("instrument", "symbol", "instId", "market")) or "Actif inconnu"
-            side = _public_trade_side(_pick(trade, ("side", "direction", "action")))
-            pnl = _pick(
-                trade,
-                ("pnl", "profit_loss", "realized_pnl", "realizedPnl", "net_pnl", "netPnl"),
-            )
-            at = _pick(trade, ("closed_at", "closedAt", "at", "created_at", "timestamp", "time"))
-            trade_currency = _pick(trade, ("currency", "pnl_currency", "quote_currency")) or currency
-            line = "{} — {} — {}".format(instrument, side, _pnl_badge(pnl))
-            if pnl is not None and trade_currency:
-                line += " " + str(trade_currency)
-            if at:
-                line += " — " + _format_run_timestamp(at)
-            lines.append("• " + line)
-    else:
-        lines.append("Cubrik a fourni un bilan global, sans détail des opérations.")
-    return lines
+        result = " — résultat net {} {}".format(
+            _pnl_badge(net_result), currency or analysis.get("currency") or "USD"
+        )
+    return ["Activité sur 7 jours : {} trade(s) clôturé(s){}.".format(count, result)]
 
 
 def _latest_real_run(value):
@@ -878,9 +812,7 @@ def _latest_real_run(value):
     if not runs and isinstance(value, dict):
         runs = [value]
     for run in runs:
-        if not isinstance(run, dict):
-            continue
-        if run.get("test") is True:
+        if not isinstance(run, dict) or run.get("test") is True:
             continue
         if str(run.get("status") or "").lower() not in ("succeeded", "running", "completed"):
             continue
@@ -889,150 +821,113 @@ def _latest_real_run(value):
 
 
 def _format_public_scanner_activity(value):
+    """Summarize the latest market scan in a single useful sentence."""
     run = _latest_real_run(value)
     if not run:
-        return [
-            "🔎 Analyse du marché",
-            "Je n'ai pas encore reçu de nouvelle analyse du scanner.",
-        ]
+        return ["Marché : dernière analyse du scanner indisponible."]
 
-    lines = [
-        "🔎 Analyse du marché",
-        "Dernier passage : {}".format(
-            _format_run_timestamp(run.get("at") or run.get("started_at") or run.get("timestamp"))
-        ),
-    ]
     candidates = run.get("decisions") or run.get("opportunities") or run.get("candidates") or []
-    if candidates:
-        lines.append("Pistes repérées :")
-        for candidate in candidates[:3]:
-            if not isinstance(candidate, dict):
-                continue
-            instrument = _pick(candidate, ("symbol", "instrument", "market", "name")) or "Actif"
-            side = _pick(candidate, ("side", "direction", "bias"))
-            reason = _pick(candidate, ("reason", "thesis", "summary", "why"))
-            detail = str(instrument)
-            if side:
-                detail += " — orientation " + str(side).lower()
-            if reason:
-                detail += " : " + _human_text(reason, 130)
-            lines.append("• " + detail)
+    usable = []
+    for candidate in candidates:
+        if not isinstance(candidate, dict):
+            continue
+        symbol = _pick(candidate, ("symbol", "instrument", "market", "name"))
+        if symbol and str(symbol) not in usable:
+            usable.append(str(symbol))
 
     summary = _pick(run, ("summary", "message", "result"))
-    if summary:
-        first_paragraph = str(summary).strip().split("\n\n", 1)[0]
-        cleaned = _human_text(first_paragraph, 360)
-        if cleaned and not candidates:
-            lines.append(cleaned)
-    elif not candidates:
-        lines.append("Le scanner n'a signalé aucune piste exploitable.")
+    summary_text = _human_text(summary, 500).lower() if summary else ""
+    if not usable and (
+        "aucune opportunité" in summary_text
+        or "aucune opportunite" in summary_text
+        or "aucun signal" in summary_text
+        or "pas de signal" in summary_text
+    ):
+        return ["Marché : aucune opportunité suffisamment fiable pour le moment."]
 
-    lines.append("Le scanner repère des possibilités ; il ne passe aucun ordre.")
-    return lines
+    if usable:
+        return ["Marché : pistes repérées sur {}. Rien n'est considéré comme un ordre.".format(
+            ", ".join(usable[:2])
+        )]
+
+    if summary:
+        # Keep only a very short opening sentence; skip the technical market commentary.
+        first_sentence = str(summary).strip().split("\n", 1)[0]
+        return ["Marché : " + _human_text(first_sentence, 125)]
+    return ["Marché : aucune piste exploitable signalée."]
 
 
 def _format_public_executor_activity(value):
+    """Report what the executor actually did, not its full internal reasoning."""
     run = _latest_real_run(value)
     if not run:
-        return [
-            "🤖 Décision de Cubrik",
-            "Je n'ai pas reçu de décision récente de l'exécuteur.",
-        ]
+        return ["Décision de Cubrik : aucune nouvelle décision disponible."]
 
-    lines = [
-        "🤖 Décision de Cubrik",
-        "Dernière vérification : {}".format(
-            _format_run_timestamp(run.get("at") or run.get("started_at") or run.get("timestamp"))
-        ),
-    ]
     decisions = run.get("decisions") or []
+    orders = run.get("orders") or run.get("placed_orders") or []
     actionable = []
-    waiting_reasons = []
     for decision in decisions:
         if not isinstance(decision, dict):
             continue
-        action = str(decision.get("action") or "review").lower()
-        if action not in ("skip", "wait", "hold", "none", "review"):
+        action = str(decision.get("action") or "").lower()
+        if action in ("buy", "sell", "long", "short", "open", "close", "market", "limit"):
             actionable.append(decision)
-        else:
-            reason = _pick(decision, ("reason", "explanation"))
-            if reason:
-                cleaned_reason = _human_text(reason, 180)
-                if cleaned_reason and cleaned_reason not in waiting_reasons:
-                    waiting_reasons.append(cleaned_reason)
+
+    if orders and isinstance(orders, list):
+        details = []
+        for order in orders[:2]:
+            if not isinstance(order, dict):
+                continue
+            symbol = _pick(order, ("symbol", "instrument", "instId")) or "Actif"
+            side = _public_trade_side(_pick(order, ("side", "direction", "action")))
+            status = _pick(order, ("status", "state", "order_status"))
+            detail = "{} : {}".format(symbol, side)
+            if status:
+                detail += " ({})".format(status)
+            details.append(detail)
+        if details:
+            return ["Décision de Cubrik : " + "; ".join(details) + "."]
 
     if actionable:
-        lines.append("Cubrik a validé une action :")
-        for decision in actionable[:3]:
-            instrument = _pick(decision, ("symbol", "instrument", "market")) or "Actif"
+        details = []
+        for decision in actionable[:2]:
+            symbol = _pick(decision, ("symbol", "instrument", "market")) or "Actif"
             side = _public_trade_side(_pick(decision, ("side", "direction", "action")))
-            state = _pick(decision, ("order_status", "orderStatus", "status", "execution_status"))
-            lines.append("• {} — {}{}".format(
-                instrument,
-                side,
-                (" — " + str(state)) if state else "",
-            ))
-            reason = _pick(decision, ("reason", "explanation"))
-            if reason:
-                lines.append("  " + _human_text(reason, 150))
-    elif decisions:
-        lines.append("Aucun ordre n'a été passé. Cubrik a choisi d'attendre.")
-        if waiting_reasons:
-            lines.append("La raison : " + waiting_reasons[0])
-    else:
-        summary = _pick(run, ("summary", "message", "result"))
-        cleaned = _human_text(summary, 300) if summary else ""
-        if cleaned:
-            lines.append(cleaned)
-        else:
-            lines.append("Aucune action n'a été exécutée.")
+            details.append("{} : {}".format(symbol, side))
+        return ["Décision de Cubrik : " + "; ".join(details) + "."]
 
-    orders = run.get("orders") or run.get("placed_orders") or []
-    if orders:
-        for order in orders[:3] if isinstance(orders, list) else []:
-            if isinstance(order, dict):
-                instrument = _pick(order, ("symbol", "instrument", "instId")) or "Actif"
-                status = _pick(order, ("status", "state", "order_status")) or "statut non communiqué"
-                lines.append("Ordre {} : {}".format(instrument, status))
-
-    if run.get("error"):
-        lines.append("⚠️ Cubrik signale un problème pendant cette exécution.")
-    return lines
+    # No order was submitted. Use one stable, human-readable explanation instead
+    # of forwarding multi-paragraph agent logs and market jargon.
+    return ["Décision de Cubrik : aucun ordre passé. Il préfère attendre un signal conforme à ses règles de risque."]
 
 
 def format_cubrik_agents_snapshot(data):
     currency = data.get("public_currency") or "USD"
     capital = data.get("public_capital")
-    analysis = data.get("analysis") or {}
     positions = data.get("public_positions") or []
+    captured_at = data.get("captured_at", "heure inconnue")
 
     lines = [
-        "🤖 ATLAS — Point sur le compte OKX",
-        "Mis à jour le {}".format(data.get("captured_at", "heure inconnue")),
-        "",
-        "💰 Capital total : {} {}".format(
+        "🤖 ATLAS — Compte OKX",
+        "Mise à jour : {}".format(captured_at),
+        "Capital : {} {}".format(
             _money(capital) if capital is not None else "non communiqué",
             currency,
         ),
     ]
     lines.extend(_format_public_positions(positions, currency))
-    lines.extend([""] + _format_public_trade_activity(
+    lines.extend(_format_public_trade_activity(
         data.get("history"),
-        analysis,
+        data.get("analysis"),
         currency,
     ))
-    lines.extend([""] + _format_public_scanner_activity(data.get("scanner_runs")))
-    lines.extend([""] + _format_public_executor_activity(data.get("executor_runs")))
+    lines.extend(_format_public_scanner_activity(data.get("scanner_runs")))
+    lines.extend(_format_public_executor_activity(data.get("executor_runs")))
 
     if data.get("warnings"):
-        lines.append("")
-        lines.append("À noter :")
-        lines.extend("• " + _human_text(warning, 220) for warning in data["warnings"][:3])
+        lines.append("À noter : certaines données n'ont pas pu être récupérées.")
 
-    lines.extend([
-        "",
-        "ATLAS consulte uniquement les données. Cubrik garde la main sur les décisions et les ordres.",
-    ])
+    lines.append("ATLAS observe ; Cubrik décide et passe les ordres.")
     return "\n".join(lines)
 
 def format_cubrik_snapshot(data, detailed=True):
