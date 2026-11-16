@@ -1,0 +1,18 @@
+{
+  "name": "kraken-mcp-cloudflare",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "dev": "wrangler dev",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "agents": "^0.17.1",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "typescript": "6.0.3",
+    "wrangler": "^4.105.0"
+  }
+}
