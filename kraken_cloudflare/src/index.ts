@@ -12,7 +12,6 @@ interface Env {
 
 const enc = new TextEncoder();
 const b64 = (s: string) => Uint8Array.from(atob(s), c => c.charCodeAt(0));
-const hex = (b: ArrayBuffer) => [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, "0")).join("");
 async function digest(data: string | Uint8Array): Promise<ArrayBuffer> {
   return crypto.subtle.digest("SHA-256", typeof data === "string" ? enc.encode(data) : data);
 }
@@ -65,7 +64,7 @@ async function futuresPrivate(env: Env, endpoint: string) {
 function createServer(env: Env) {
   const server = new McpServer({ name: "Kraken MCP", version: "1.0.0" });
 
-  server.registerTool("kraken_etat", { description: "État de la passerelle et présence des clés, sans révéler les secrets.", inputSchema: {} }, async () => ({
+  server.registerTool("kraken_etat", { description: "État de la passerelle et présence des clés, sans révéler les secrets.", inputSchema: z.object({}) }, async () => ({
     content: [{ type: "text", text: json({
       service: "Kraken MCP Cloudflare",
       spotCredentialsConfigured: !!(env.KRAKEN_SPOT_API_KEY && env.KRAKEN_SPOT_API_SECRET),
@@ -74,14 +73,14 @@ function createServer(env: Env) {
     }) }]
   }));
 
-  server.registerTool("kraken_spot_ticker", { description: "Ticker public Spot Kraken. Exemple : XBTUSD.", inputSchema: { pair: z.string() } }, async ({ pair }) => {
+  server.registerTool("kraken_spot_ticker", { description: "Ticker public Spot Kraken. Exemple : XBTUSD.", inputSchema: z.object({ pair: z.string() }) }, async ({ pair }) => {
     const u = new URL("https://api.kraken.com/0/public/Ticker"); u.searchParams.set("pair", pair);
     const r: any = await fetch(u).then(x => x.json());
     if (r.error?.length) throw new Error(r.error.join("; "));
     return { content: [{ type: "text", text: json(r.result) }] };
   });
 
-  server.registerTool("kraken_spot_paires", { description: "Liste les paires Spot Kraken.", inputSchema: { activesUniquement: z.boolean().optional() } }, async ({ activesUniquement = true }) => {
+  server.registerTool("kraken_spot_paires", { description: "Liste les paires Spot Kraken.", inputSchema: z.object({ activesUniquement: z.boolean().optional() }) }, async ({ activesUniquement = true }) => {
     const r: any = await fetch("https://api.kraken.com/0/public/AssetPairs").then(x => x.json());
     if (r.error?.length) throw new Error(r.error.join("; "));
     const data = activesUniquement ? Object.fromEntries(Object.entries(r.result).filter(([,v]: any) => v.status === "online")) : r.result;
