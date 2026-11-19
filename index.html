@@ -1159,8 +1159,6 @@
     <button class="rss-filter" type="button" data-rss-filter="it" aria-pressed="false">Veille informatique</button>
     <button class="rss-filter" type="button" data-rss-filter="nvidia" aria-pressed="false">NVIDIA</button>
     <button class="rss-filter" type="button" data-rss-filter="oracle" aria-pressed="false">Oracle</button>
-    <button class="rss-filter" type="button" data-rss-filter="srrk" aria-pressed="false">Scholar Rock</button>
-    <button class="rss-filter" type="button" data-rss-filter="sion" aria-pressed="false">Sionna Therapeutics</button>
   </div>
 </section>
 
@@ -1179,7 +1177,7 @@
 <section id="flux-rss-bourse" class="rss-panel" data-aos="fade-up" aria-labelledby="rss-stocks-title">
   <div class="veille-kicker"><i class="bi bi-graph-up-arrow"></i> Flux 02 · Recherches personnelles</div>
   <h3 id="rss-stocks-title">Recherches personnelles · Bourse</h3>
-  <p class="rss-lead">Actualités concernant les quatre entreprises que je suis : NVIDIA, Oracle, Scholar Rock et Sionna Therapeutics. Ce sont des articles de presse, pas des cours en temps réel ni des conseils d’investissement.</p>
+  <p class="rss-lead">Actualités concernant les entreprises que je suis : NVIDIA et Oracle. Ce sont des articles de presse, pas des cours en temps réel ni des conseils d’investissement.</p>
   <div class="rss-toolbar">
     <span id="rss-stocks-status" class="rss-status" role="status" aria-live="polite">Chargement des actualités boursières…</span>
     <button id="rss-stocks-refresh" class="rss-refresh" type="button"><i class="bi bi-arrow-clockwise"></i> Actualiser</button>
@@ -1467,12 +1465,10 @@
           statusId: "rss-stocks-status",
           refreshId: "rss-stocks-refresh",
           fallback: '<a href="https://news.google.com/" target="_blank" rel="noopener noreferrer">Google Actualités</a>',
-          backupFeed: { name: "Google Actualités · Entreprises suivies", category: "stocks-auto", url: "https://news.google.com/rss/search?q=NVIDIA+OR+NVDA+OR+%22Oracle+Corporation%22+OR+ORCL+OR+%22Scholar+Rock%22+OR+SRRK+OR+%22Sionna+Therapeutics%22+OR+SION&hl=en-US&gl=US&ceid=US:en" },
+          backupFeed: { name: "Google Actualités · NVIDIA et Oracle", category: "stocks-auto", url: "https://news.google.com/rss/search?q=NVIDIA+OR+NVDA+OR+%22Oracle+Corporation%22+OR+ORCL&hl=en-US&gl=US&ceid=US:en" },
           feeds: [
             { name: "NVIDIA · NVDA", category: "nvidia", url: "https://news.google.com/rss/search?q=NVIDIA+OR+NVDA&hl=en-US&gl=US&ceid=US:en" },
             { name: "Oracle · ORCL", category: "oracle", url: "https://news.google.com/rss/search?q=%22Oracle+Corporation%22+OR+ORCL&hl=en-US&gl=US&ceid=US:en" },
-            { name: "Scholar Rock · SRRK", category: "srrk", url: "https://news.google.com/rss/search?q=%22Scholar+Rock%22+OR+SRRK&hl=en-US&gl=US&ceid=US:en" },
-            { name: "Sionna Therapeutics · SION", category: "sion", url: "https://news.google.com/rss/search?q=%22Sionna+Therapeutics%22+OR+SION&hl=en-US&gl=US&ceid=US:en" }
           ]
         }
       ];
@@ -1550,8 +1546,6 @@
               if (feed.category !== "stocks-auto") return feed.category || "it";
               const text = cleanText([item.title, item.description, item.content].filter(Boolean).join(" ")).toLowerCase();
               if (/nvidia|\bnvda\b/.test(text)) return "nvidia";
-              if (/scholar rock|\bsrrk\b/.test(text)) return "srrk";
-              if (/sionna therapeutics|\bsion\b/.test(text)) return "sion";
               if (/oracle corporation|oracle|\borcl\b/.test(text)) return "oracle";
               return "stock-other";
             };
@@ -1701,7 +1695,7 @@
         filterButtons.forEach(button => button.setAttribute("aria-pressed", String(button.dataset.rssFilter === filter)));
         const panelRules = [
           { panelId: "flux-rss-informatique", containerId: "rss-it-articles", categories: ["all", "it"], statusId: "rss-it-status" },
-          { panelId: "flux-rss-bourse", containerId: "rss-stocks-articles", categories: ["all", "nvidia", "oracle", "srrk", "sion"], statusId: "rss-stocks-status" }
+          { panelId: "flux-rss-bourse", containerId: "rss-stocks-articles", categories: ["all", "nvidia", "oracle"], statusId: "rss-stocks-status" }
         ];
         panelRules.forEach(rule => {
           const panel = document.getElementById(rule.panelId);
